@@ -273,12 +273,23 @@ export default function SkillLibrary() {
             <span className="status is-remote">Valid metadata</span>
           </div>
           <p>{inspected.description}</p>
+          <div className={`skill-risk-banner risk-${inspected.checks.risk_level}`}>
+            <ShieldAlert size={16}/>
+            <span><strong>{inspected.checks.risk_level === "high" ? "High-risk patterns found" : inspected.checks.risk_level === "review" ? "Manual review recommended" : "No obvious patterns detected"}</strong><small>{inspected.disclaimer}</small></span>
+          </div>
           <div className="skill-check-grid">
             <span><CheckCircle2 size={13} /> YAML frontmatter</span>
             <span><Code2 size={13} /> {inspected.checks.size_bytes.toLocaleString()} bytes</span>
-            <span><ExternalLink size={13} /> {inspected.checks.external_urls} URLs</span>
-            <span className={inspected.checks.scripts_detected ? "is-warning" : ""}><ShieldAlert size={13} /> {inspected.checks.scripts_detected ? "Possible command references" : "No obvious command references"}</span>
+            <span><ExternalLink size={13} /> {inspected.checks.external_urls} URLs · {inspected.checks.external_hosts.length} hosts</span>
+            <span className={inspected.checks.scripts_detected ? "is-warning" : ""}><ShieldAlert size={13} /> {inspected.checks.scripts_detected ? "Script execution patterns" : "No shell patterns detected"}</span>
           </div>
+          {inspected.checks.findings.length > 0 && (
+            <div className="skill-findings-list">
+              <strong>Findings to review</strong>
+              {inspected.checks.findings.map((finding) => <div key={finding.id}><span>{finding.label}</span><small>{finding.severity}</small></div>)}
+            </div>
+          )}
+          {inspected.checks.external_hosts.length > 0 && <p className="availability-note">External hosts: {inspected.checks.external_hosts.join(", ")}</p>}
           <div className="skill-preview-actions">
             <button type="button" className="glass-add-button" onClick={importSkill} disabled={busy === "import"}>{busy === "import" ? "Saving…" : "Save disabled"}</button>
             <button type="button" className="glass-chip-btn" onClick={() => setInspected(null)}>Cancel</button>

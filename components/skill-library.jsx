@@ -100,10 +100,11 @@ export default function SkillLibrary() {
       const response = await fetch(`/api/catalog/skills?q=${encodeURIComponent(searchQuery)}`, { cache: "no-store" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Skills catalog search failed");
+      setCatalogPage(0);
       setRepositories((data.items || []).map((item) => ({
         id: item.id, full_name: item.source, description: item.description || item.name,
         html_url: item.installUrl || `https://github.com/${item.source}`,
-        default_branch: "main", stars: item.installs || 0,
+        default_branch: "", stars: item.stars || 0,
         license: item.duplicate ? "Possible duplicate" : "Catalog entry",
         language: "Agent Skill", catalogSkill: item,
       })));

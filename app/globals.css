@@ -359,7 +359,7 @@ input:focus-visible {
   padding: 2px 0 4px;
 }
 
-.liquid-navbar-5 {
+.liquid-navbar-3 {
   --lens-index: 0;
   --glare-x: 50%;
   position: relative;
@@ -420,13 +420,13 @@ input:focus-visible {
 }
 
 /* When scrubbing with finger/mouse, follow immediately & expand like a liquid lens */
-.liquid-navbar-5.is-dragging .liquid-lens-pill {
+.liquid-navbar-3.is-dragging .liquid-lens-pill {
   transition: transform 45ms linear;
   transform: translate3d(calc(var(--lens-index) * 100%), 0, 0) scaleX(1.13) scaleY(1.09);
 }
 
 /* Elastic stretch-and-squish when gliding between tabs on tap */
-.liquid-navbar-5.is-gliding .liquid-lens-pill {
+.liquid-navbar-3.is-gliding .liquid-lens-pill {
   transform: translate3d(calc(var(--lens-index) * 100%), 0, 0) scaleX(1.12) scaleY(1.06);
 }
 
@@ -2392,7 +2392,7 @@ input:focus-visible {
     min-width: 0;
   }
 
-  .liquid-navbar-5 {
+  .liquid-navbar-3 {
     height: 64px;
     padding: 5px;
   }
@@ -2423,7 +2423,7 @@ input:focus-visible {
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .app-topbar,
   .glass-surface,
-  .liquid-navbar-5,
+  .liquid-navbar-3,
   .integration-card {
     background: rgba(15, 22, 38, 0.96);
   }
@@ -2586,7 +2586,7 @@ body {
   transform:translateY(-3px);
 }
 .bottom-dock-stage { padding: 4px 0 2px; }
-.liquid-navbar-5 {
+.liquid-navbar-3 {
   width:min(100%,560px);
   height:76px;
   padding:7px;
@@ -2610,10 +2610,10 @@ body {
   width:calc((100% - 12px)/5);
   transition:transform 560ms cubic-bezier(.16,1,.3,1);
 }
-.liquid-navbar-5.is-gliding .liquid-lens-pill {
+.liquid-navbar-3.is-gliding .liquid-lens-pill {
   transform:translate3d(calc(var(--lens-index)*100%),0,0) scaleX(1.16) scaleY(1.08);
 }
-.liquid-navbar-5.is-dragging .liquid-lens-pill {
+.liquid-navbar-3.is-dragging .liquid-lens-pill {
   transition:transform 34ms linear;
   transform:translate3d(calc(var(--lens-index)*100%),0,0) scaleX(1.2) scaleY(1.1);
 }
@@ -2660,7 +2660,7 @@ body {
   .panel-welcome p { max-width:92%; }
   .quick-stats { grid-template-columns:1fr; gap:8px; }
   .quick-stat-card { min-height:66px; }
-  .liquid-navbar-5 { height:68px; }
+  .liquid-navbar-3 { height:68px; }
   .liquid-nav-label { font-size:9px; }
 }
 @media (prefers-reduced-motion: reduce) {

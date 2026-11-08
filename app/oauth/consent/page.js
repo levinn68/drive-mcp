@@ -60,7 +60,7 @@ export default function OAuthConsentPage() {
     } catch (e) { setError(e.message || "Could not complete authorization."); setBusy(false); }
   }
 
-  const scopes = (details?.scope || "").split(/\\s+/).filter(Boolean);
+  const scopes = (details?.scope || "").split(/\s+/).filter(Boolean);
   return (
     <main className="min-h-screen flex items-center justify-center px-5 py-12" style={{background:"radial-gradient(circle at 50% 0%, rgba(87,72,190,.22), transparent 42%), #080a12", color:"#f5f6ff"}}>
       <section className="w-full max-w-lg rounded-3xl border p-7 sm:p-9" style={{background:"rgba(18,21,34,.94)",borderColor:"rgba(255,255,255,.12)",boxShadow:"0 24px 90px rgba(0,0,0,.38)"}}>

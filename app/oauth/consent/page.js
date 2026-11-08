@@ -96,6 +96,9 @@ export default function OAuthConsentPage() {
 
   async function decide(allow) {
     if (!authorizationId) return;
+    // Open the DRIVE workspace directly from the user's click so popup blockers
+    // allow it. The current tab still completes the OAuth redirect to ChatGPT.
+    const dashboardTab = allow ? window.open("/", "_blank") : null;
     setBusy(true); setError("");
     try {
       const result = allow
@@ -103,8 +106,13 @@ export default function OAuthConsentPage() {
         : await supabase.auth.oauth.denyAuthorization(authorizationId);
       if (result.error) throw result.error;
       if (!result.data?.redirect_url) throw new Error("OAuth provider did not return a redirect URL.");
+      if (dashboardTab) dashboardTab.location.href = "/";
       window.location.assign(result.data.redirect_url);
-    } catch (e) { setError(e.message || "Could not complete authorization."); setBusy(false); }
+    } catch (e) {
+      if (dashboardTab && !dashboardTab.closed) dashboardTab.close();
+      setError(e.message || "Could not complete authorization.");
+      setBusy(false);
+    }
   }
 
   const scopes = (details?.scope || "").split(/\s+/).filter(Boolean);
@@ -176,7 +184,7 @@ export default function OAuthConsentPage() {
           </div>
           <div className="oauth-decision-actions">
             <button disabled={busy} onClick={()=>decide(false)} className="oauth-deny-button">Deny</button>
-            <button disabled={busy} onClick={()=>decide(true)} className="oauth-approve-button" style={{background:"linear-gradient(100deg,#b5a8ff,#8c7af0)",color:"#11111c"}}>{busy ? <LoaderCircle size={17} className="animate-spin"/> : <CheckCircle2 size={17}/>} Approve access</button>
+            <button disabled={busy} onClick={()=>decide(true)} className="oauth-approve-button" style={{background:"linear-gradient(100deg,#b5a8ff,#8c7af0)",color:"#11111c"}}>{busy ? <LoaderCircle size={17} className="animate-spin"/> : <CheckCircle2 size={17}/>} Approve & Open Dashboard</button>
           </div>
         </> : <div className="oauth-loading"><LoaderCircle className="animate-spin" size={18}/> Loading authorization request…</div>}
         {error && <div role="alert" className="oauth-error" style={{background:"rgba(248,113,113,.1)",color:"#fca5a5"}}><AlertCircle size={17} className="shrink-0"/>{error}</div>}

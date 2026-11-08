@@ -1,4 +1,5 @@
 import CustomMcpForm from "../components/custom-mcp-form";
+import MyMcpPanel, { AddMcpButton } from "../components/my-mcps";
 import { ArrowUpRight, Blocks, Command, Search, ShieldCheck, Sparkles, Zap, Globe2, Package, Server, ExternalLink } from "lucide-react";
 
 const REGISTRY = "https://registry.modelcontextprotocol.io";
@@ -51,7 +52,7 @@ function ServerCard({ entry }) {
     <div className="server-id">{item.id}</div>
     <div className="card-bottom">
       {item.repository ? <a href={item.repository} target="_blank" rel="noreferrer">Repository <ExternalLink size={13}/></a> : <span>Publisher metadata</span>}
-      <span className="version-tag">Official Registry</span>
+      <AddMcpButton serverId={item.id + "@" + item.version} remoteAvailable={item.remotes.length > 0}/>
     </div>
   </article>;
 }
@@ -72,16 +73,18 @@ export default async function Home({ searchParams }) {
     </nav>
 
     <section className="hero">
-      <div className="eyebrow"><span className="pulse"/> MCP SERVER DIRECTORY</div>
+      <div className="eyebrow"><span className="pulse"/> YOUR MCP WORKSPACE</div>
       <h1>One hub.<br/><span>Every connection.</span></h1>
-      <p className="hero-copy">Browse MCP servers from the official registry. Check what each server does, where its code lives and how it runs. Add a remote endpoint when you need something outside the directory.</p>
-      <div className="hero-actions"><a className="primary-btn" href="#directory">Explore MCP directory <ArrowUpRight size={17}/></a><a className="secondary-btn" href="#custom">Add custom MCP</a></div>
-      <div className="hero-foot"><span><ShieldCheck size={15}/> Source details</span><span><Zap size={15}/> Registry listing</span><span><Globe2 size={15}/> Open directory</span></div>
+      <p className="hero-copy">Keep the MCPs you actually use in one place. Add connections yourself, switch them on when needed, and keep the rest out of your workspace.</p>
+      <div className="hero-actions"><a className="primary-btn" href="#my-mcps">My MCPs <ArrowUpRight size={17}/></a><a className="secondary-btn" href="#directory">Discover servers</a></div>
+      <div className="hero-foot"><span><ShieldCheck size={15}/> Source details</span><span><Zap size={15}/> Personal switches</span><span><Globe2 size={15}/> Optional discovery</span></div>
       <div className="orb orb-one"/><div className="orb orb-two"/>
     </section>
 
+    <MyMcpPanel />
+
     <section className="catalog-section" id="directory">
-      <div className="section-head"><div><div className="eyebrow">MCP SERVER DIRECTORY</div><h2>Browse the directory.</h2><p>Servers listed in the official MCP Registry. Use search to narrow the list.</p></div>
+      <div className="section-head"><div><div className="eyebrow">MCP SERVER DIRECTORY</div><h2>Discover servers.</h2><p>Search when you need something new. Nothing is added to My MCPs until you choose it.</p></div>
       <form className="catalog-search" action="/" method="get"><Search size={16}/><input name="q" defaultValue={query} placeholder="Search MCP servers (3+ chars)" aria-label="Search MCP servers"/><button type="submit">Search</button></form></div>
       <div className="directory-stats"><span><strong>{servers.length}</strong> results on this page</span><span>Source: registry.modelcontextprotocol.io</span>{query && <a href="/">Clear search</a>}</div>
       {data.unavailable ? <div className="empty-state"><Globe2 size={24}/><h3>Registry temporarily unavailable</h3><p>DRIVE could not reach the official registry. Try again shortly.</p></div> : servers.length ? <div className="integration-grid">{servers.map((entry, index) => <ServerCard key={entry?.server?.name + ":" + entry?.server?.version || index} entry={entry}/>)}</div> : <div className="empty-state"><Search size={24}/><h3>No servers found</h3><p>Try another search term or clear the filter.</p></div>}

@@ -37,7 +37,7 @@ function navigateToTab(tabId) {
   window.dispatchEvent(new CustomEvent("drive:navigate", { detail: { tab: tabId } }));
 }
 
-export function AddMcpButton({ serverName, version, remoteAvailable }) {
+export function AddMcpButton({ serverName, version, registryEntry, remoteAvailable }) {
   const [state, setState] = useState("idle");
 
   async function add() {
@@ -55,7 +55,7 @@ export function AddMcpButton({ serverName, version, remoteAvailable }) {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ serverName, version }),
+        body: JSON.stringify({ serverName, version, registryEntry }),
       });
       const result = await response.json();
       setState(response.ok ? "Added to My MCPs" : result.error || "Could not add");

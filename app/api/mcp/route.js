@@ -60,7 +60,12 @@ async function authenticate(request) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  if (!token) return { anonymous: true, user: null, supabase: null };
+  if (!token) {
+    const resourceMetadata = new URL("/.well-known/oauth-protected-resource/api/mcp", process.env.NEXT_PUBLIC_APP_URL || "https://drive-mcp-five.vercel.app").toString();
+    return { error: response({ error: "Authentication required", message: "Authenticate with OAuth 2.1 to access DRIVE MCP." }, 401, {
+      "WWW-Authenticate": `Bearer resource_metadata="${resourceMetadata}"`
+    }) };
+  }
   if (!url || !key) return { error: response({ error: "Authentication is not configured" }, 503) };
   const supabase = createClient(url, key, {
     auth: { autoRefreshToken: false, persistSession: false },
@@ -253,13 +258,6 @@ async function handleMessage(message, context) {
   if (!hasId) return { notification: true };
   if (message.method === "ping") return { response: jsonRpc(id, {}) };
   if (message.method === "tools/list") {
-    if (context.anonymous) {
-      return { response: jsonRpc(id, { tools: [
-        { name: "drive_search_mcp_servers", description: "Search the public MCP server directory. This tool only reads public registry data.", inputSchema: { type: "object", properties: { query: { type: "string" }, limit: { type: "integer", minimum: 1, maximum: 30 } }, required: ["query"], additionalProperties: false } },
-        { name: "drive_get_mcp_server", description: "Look up a public MCP server by exact registry name. This tool only reads public registry data.", inputSchema: { type: "object", properties: { server_name: { type: "string" } }, required: ["server_name"], additionalProperties: false } },
-        { name: "drive_search_skills", description: "Search the public Agent Skills catalog. This tool does not install or execute Skills.", inputSchema: { type: "object", properties: { query: { type: "string" }, limit: { type: "integer", minimum: 1, maximum: 30 } }, required: ["query"], additionalProperties: false } }
-      ] }) };
-    }
     try {
       const catalog = await buildTools(context.supabase, context.user.id);
       const tools = catalog.tools.map(({_drive,...tool}) => tool);
@@ -269,10 +267,6 @@ async function handleMessage(message, context) {
   if (message.method === "tools/call") {
     const name = message.params?.name;
     try {
-      const publicToolNames = ["drive_search_mcp_servers", "drive_get_mcp_server", "drive_search_skills"];
-      if (context.anonymous && !publicToolNames.includes(name)) {
-        throw new Error("This tool requires a signed-in DRIVE account. Connect with OAuth to access personal MCP connections and Skills.");
-      }
       const result = await callTool(name, message.params?.arguments || {}, context);
       return { response: jsonRpc(id, result && result.content ? result : textResult(result)) };
     } catch (error) {

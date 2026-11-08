@@ -2831,3 +2831,11 @@ body {
 .skill-binding-controls { display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin-left:auto; }
 .skill-binding-existing { align-items:center; }
 @media(max-width:560px) { .skill-binding-controls { width:100%; margin-left:0; } .skill-binding-controls button { flex:1; justify-content:center; } }
+
+
+.skill-runtime-tool { display:grid; gap:7px; padding:10px; border:1px solid rgba(177,193,255,.1); border-radius:10px; background:rgba(2,7,18,.35); }
+.skill-runtime-tool>div:first-child>strong { display:block; color:#dce7ff; font-size:11px; overflow-wrap:anywhere; }
+.skill-runtime-tool>div:first-child>small { display:block; color:var(--muted,#98a4bd); font-size:10px; line-height:1.45; margin-top:3px; }
+.skill-runtime-tool textarea { width:100%; min-height:55px; resize:vertical; border:1px solid rgba(177,193,255,.16); border-radius:9px; padding:8px; color:#dce7ff; background:rgba(1,5,14,.7); font:10px/1.5 ui-monospace,SFMono-Regular,monospace; }
+.skill-runtime-tool>button { justify-self:start; }
+.skill-runtime-tool details pre { max-height:180px; }

@@ -48,8 +48,16 @@ export async function POST(request) {
   if (auth.error) return auth.error;
   let body;
   try { body = await request.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
-  const registryServerId = typeof body.registryServerId === "string" ? body.registryServerId : null;
+  let registryServerId = typeof body.registryServerId === "string" ? body.registryServerId : null;
+  const registryServerName = typeof body.serverName === "string" ? body.serverName.trim() : null;
+  const registryVersion = typeof body.version === "string" ? body.version.trim() : null;
   const customServerId = typeof body.customServerId === "string" ? body.customServerId : null;
+  if (!registryServerId && registryServerName && registryVersion) {
+    const { data: match, error: matchError } = await auth.supabase.from("mcp_servers").select("id").eq("server_name", registryServerName).eq("version", registryVersion).maybeSingle();
+    if (matchError) return json({ error: "Could not resolve this registry entry" }, 400);
+    if (!match) return json({ error: "This MCP is visible in Discover but has not been imported into the DRIVE registry database yet. Registry sync must run first." }, 409);
+    registryServerId = match.id;
+  }
   if (Boolean(registryServerId) === Boolean(customServerId)) {
     return json({ error: "Provide exactly one registryServerId or customServerId" }, 400);
   }

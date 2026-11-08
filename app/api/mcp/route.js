@@ -265,7 +265,7 @@ async function handleMessage(message, context) {
       const result = await callTool(name, message.params?.arguments || {}, context);
       return { response: jsonRpc(id, result && result.content ? result : textResult(result)) };
     } catch (error) {
-      return { response: jsonRpc(id, { content: [{ type: "text", text: String(error?.message || "Tool execution failed.").slice(0, 1000) }], isError: true }) }; }
+      return { response: jsonRpc(id, { content: [{ type: "text", text: String(error?.message || "Tool execution failed.").slice(0, 1000) }], isError: true }) };
     }
   }
   return { response: jsonRpcError(id, -32601, `Method not found: ${message.method}`) };

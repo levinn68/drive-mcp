@@ -271,11 +271,28 @@ export default async function Home({ searchParams }) {
           <input
             name="q"
             defaultValue={query}
-            placeholder="Search servers, publishers, capabilities…"
+            placeholder="Smart search: describe a task, tool, provider, or capability…"
             aria-label="Search MCP servers"
           />
           <button type="submit">Search</button>
         </form>
+      </div>
+
+      <div className="mcp-category-filter" role="group" aria-label="Browse MCP by category">
+        {[
+          ["All MCPs", ""],
+          ["AI & Agents", "ai agent"],
+          ["Development", "developer code"],
+          ["Databases", "database"],
+          ["Search & Knowledge", "search"],
+          ["Productivity", "productivity"],
+          ["Automation", "automation"],
+          ["Cloud & Infrastructure", "cloud"],
+          ["Communication", "communication"],
+          ["Security", "security"],
+        ].map(([label, term]) => (
+          <Link key={label} className={(!term && !query) || (term && query === term) ? "category-chip is-active" : "category-chip"} href={term ? `/?q=${encodeURIComponent(term)}#directory` : "/#directory"}>{label}</Link>
+        ))}
       </div>
 
       <div className="catalog-source-line">

@@ -25,6 +25,7 @@ export default function SkillLibrary() {
   const [repositoryDetails, setRepositoryDetails] = useState({});
   const [searching, setSearching] = useState(false);
   const [searchMessage, setSearchMessage] = useState("");
+  const [catalogPage, setCatalogPage] = useState(0);
   const [connections, setConnections] = useState([]);
   const [bindings, setBindings] = useState([]);
   const [bindingChoice, setBindingChoice] = useState({});
@@ -68,6 +69,29 @@ export default function SkillLibrary() {
   // Initial data loading synchronizes this component with Supabase on mount.
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      setSearching(true);
+      try {
+        const response = await fetch("/api/catalog/skills", { cache: "no-store" });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "Skills catalog unavailable");
+        if (!active) return;
+        setCatalogPage(0);\n      setRepositories((data.items || []).map((item) => ({
+          id: item.id, full_name: item.source, description: item.name,
+          html_url: item.installUrl || `https://github.com/${item.source}`,
+          default_branch: "main", stars: item.installs || 0,
+          license: item.duplicate ? "Possible duplicate" : "Catalog entry",
+          language: "Agent Skill", catalogSkill: item,
+        })));
+        setSearchMessage(`Loaded ${data.count || 0} Skills from the live skills.sh catalog. Select any entry to inspect its bundle.`);
+      } catch (e) { if (active) setSearchMessage(e.message || "Skills catalog unavailable"); }
+      finally { if (active) setSearching(false); }
+    })();
+    return () => { active = false; };
+  }, []);
 
   async function searchRepositories() {
     setSearching(true); setSearchMessage(""); setError("");
@@ -375,7 +399,7 @@ export default function SkillLibrary() {
       <div className="skill-import-panel">
         <div className="skill-import-title">
           <span className="benefit-icon"><Search size={18} /></span>
-          <div><strong>Discover Skill repositories</strong><small>Search a 1,000-entry Agent Skills catalog. Every selection is scanned before import.</small></div>
+          <div><strong>Discover Skill repositories</strong><small>Browse 1,000 Agent Skills from the live catalog. Every selected bundle is scanned before import.</small></div>
         </div>
         <form className="skill-url-row" onSubmit={(event) => { event.preventDefault(); searchRepositories(); }}>
           <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search 1,000 Skills by name or topic" aria-label="Search Skills catalog" />
@@ -388,7 +412,7 @@ export default function SkillLibrary() {
         {searchMessage && <p className="availability-note">{searchMessage}</p>}
         {repositories.length > 0 && (
           <div className="skill-repository-list">
-            {repositories.map((repository) => {
+            {repositories.slice(catalogPage * 20, (catalogPage + 1) * 20).map((repository) => {
               const detail = repositoryDetails[repository.id || repository.full_name];
               return (
                 <article className="skill-repository-card" key={repository.id || repository.full_name}>
@@ -419,6 +443,13 @@ export default function SkillLibrary() {
                 </article>
               );
             })}
+          </div>
+        )}
+        {repositories.length > 20 && (
+          <div className="load-more-row">
+            <button type="button" className="glass-chip-btn" onClick={() => setCatalogPage((page) => Math.max(0, page - 1))} disabled={catalogPage === 0}>Previous</button>
+            <span>Page {catalogPage + 1} of {Math.ceil(repositories.length / 20)} · {repositories.length.toLocaleString()} Skills</span>
+            <button type="button" className="glass-add-button" onClick={() => setCatalogPage((page) => Math.min(Math.ceil(repositories.length / 20) - 1, page + 1))} disabled={(catalogPage + 1) * 20 >= repositories.length}>Next</button>
           </div>
         )}
       </div>

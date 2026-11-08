@@ -17,7 +17,7 @@ async function accessToken() {
   return session?.access_token || null;
 }
 
-export function AddMcpButton({ serverId, remoteAvailable }) {
+export function AddMcpButton({ serverName, version, remoteAvailable }) {
   const [state, setState] = useState("idle");
   async function add() {
     const token = await accessToken();
@@ -25,7 +25,7 @@ export function AddMcpButton({ serverId, remoteAvailable }) {
     setState("busy");
     const response = await fetch("/api/connections", {
       method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ registryServerId: serverId }),
+      body: JSON.stringify({ serverName, version }),
     });
     const result = await response.json();
     setState(response.ok ? "Added to My MCPs" : result.error || "Could not add");
@@ -83,7 +83,7 @@ export default function MyMcpPanel() {
     </div>
     <div className="connection-summary"><div><span className="summary-value">{connections.length}</span><span className="summary-label">SAVED</span></div><div><span className="summary-value">{enabledCount}</span><span className="summary-label">TURNED ON</span></div><div className="summary-status"><span className={enabledCount ? "live-dot" : "idle-dot"}/>{enabledCount ? "Personal tools enabled" : "All connections off"}</div></div>
     {loading ? <div className="connection-empty"><RefreshCw className="spin" size={19}/><span>Loading your connections…</span></div>
-      : !signedIn ? <div className="connection-empty"><Command size={22}/><h3>Your workspace starts here</h3><p>Sign in with the email link below to see and manage your personal MCP connections.</p><a href="#custom" className="glass-link">Sign in <ArrowUpRight size={14}/></a></div>
+      : !signedIn ? <div className="connection-empty"><Command size={22}/><h3>Your workspace starts here</h3><p>Sign in with Google from the Add MCP tab to manage your personal connections.</p><a href="#custom" className="glass-link">Open Google sign-in <ArrowUpRight size={14}/></a></div>
       : connections.length === 0 ? <div className="connection-empty"><Cable size={24}/><h3>No MCPs added yet</h3><p>Find a remote MCP in Discover and add it here. Public registry entries never appear here automatically.</p><a href="#directory" className="glass-link">Explore available servers <ArrowUpRight size={14}/></a></div>
       : <div className="connection-list">{connections.map((connection) => {
         const server = connection.server || {};

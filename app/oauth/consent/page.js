@@ -26,6 +26,8 @@ export default function OAuthConsentPage() {
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("authorization_id") || "";
     setAuthorizationId(id);
+    const callbackError = new URLSearchParams(window.location.search).get("auth_error");
+    if (callbackError) setError(callbackError);
     supabase.auth.getSession().then(({ data }) => setSession(data.session || null));
     const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => setSession(nextSession));
     return () => listener.subscription.unsubscribe();
@@ -97,7 +99,7 @@ export default function OAuthConsentPage() {
     } catch (e) { setError(e.message || "Could not complete authorization."); setBusy(false); }
   }
 
-  const scopes = (details?.scope || "").split(/\\s+/).filter(Boolean);
+  const scopes = (details?.scope || "").split(/\s+/).filter(Boolean);
 
   return (
     <main className="relative min-h-screen overflow-hidden flex items-center justify-center px-4 py-10 sm:px-6" style={{background:"radial-gradient(ellipse at 50% -15%, rgba(111,87,255,.28), transparent 48%), radial-gradient(circle at 100% 100%, rgba(48,104,190,.13), transparent 35%), #080a12",color:"#f5f6ff"}}>

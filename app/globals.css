@@ -2733,3 +2733,20 @@ body {
   .skill-repository-main { flex-direction:column; }
   .skill-repository-main>.glass-chip-btn { width:100%; justify-content:center; }
 }
+
+
+/* MCP SKILL BINDING */
+.skill-binding-panel { margin-top:14px; padding:13px; border:1px solid rgba(177,193,255,.14); border-radius:14px; background:rgba(3,9,22,.34); }
+.skill-binding-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+.skill-binding-heading strong { color:#dce7ff; font-size:12px; }
+.skill-binding-heading small,.skill-binding-existing small { color:var(--muted,#98a4bd); font-size:10px; }
+.skill-binding-row { display:flex; gap:8px; }
+.skill-binding-row select { min-width:0; flex:1; width:100%; border:1px solid rgba(177,193,255,.18); border-radius:11px; padding:10px; background:#0b1427; color:#dce7ff; font-size:11px; }
+.skill-binding-existing { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0 0; margin-top:10px; border-top:1px solid rgba(177,193,255,.1); }
+.skill-binding-existing span,.skill-binding-existing strong,.skill-binding-existing small { display:block; }
+.skill-binding-existing strong { color:#dce7ff; font-size:11px; }
+.skill-binding-existing small { margin-top:3px; }
+@media(max-width:560px) {
+  .skill-binding-row { flex-direction:column; }
+  .skill-binding-row .glass-chip-btn { justify-content:center; }
+}

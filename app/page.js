@@ -1,54 +1,101 @@
-import { ArrowUpRight, Blocks, Command, Github, Figma, Cloud, Database, MessageSquare, Search, ShieldCheck, Sparkles, Workflow, Zap } from "lucide-react";
+import { ArrowUpRight, Blocks, Command, Search, ShieldCheck, Sparkles, Zap, Database, Github, Globe2, Package, Server, ExternalLink } from "lucide-react";
 
-const integrations = [
-  { name: "GitHub", category: "Developer tools", description: "Repositories, issues, pull requests and code workflows.", status: "Catalog", icon: Github },
-  { name: "Figma", category: "Design", description: "Design files, components, comments and team assets.", status: "Catalog", icon: Figma },
-  { name: "Supabase", category: "Database", description: "Projects, SQL, authentication and storage operations.", status: "Catalog", icon: Database },
-  { name: "Cloudflare", category: "Infrastructure", description: "Workers, DNS, security and edge infrastructure.", status: "Catalog", icon: Cloud },
-  { name: "Notion", category: "Knowledge", description: "Pages, databases and team knowledge spaces.", status: "Planned", icon: Blocks },
-  { name: "Slack", category: "Communication", description: "Messages, channels and team workflows.", status: "Planned", icon: MessageSquare },
-];
+const REGISTRY = "https://registry.modelcontextprotocol.io";
 
-const principles = [
-  ["One catalog", "Discover integrations from one curated directory."],
-  ["Secure by default", "Per-user access, scoped permissions and audit trails."],
-  ["MCP-native", "A unified gateway built around remote MCP transport."],
-];
+async function getServers(query, cursor) {
+  const params = new URLSearchParams({ limit: "24", version: "latest" });
+  if (query && query.trim().length >= 3) params.set("search", query.trim());
+  if (cursor) params.set("cursor", cursor);
+  try {
+    const response = await fetch(`${REGISTRY}/v0.1/servers?${params}`, {
+      headers: { accept: "application/json" },
+      next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(9000),
+    });
+    if (!response.ok) throw new Error(`Registry returned ${response.status}`);
+    return await response.json();
+  } catch {
+    return { servers: [], metadata: {}, unavailable: true };
+  }
+}
 
-export default function Home() {
-  return (
-    <main className="shell">
-      <nav className="nav">
-        <a className="brand" href="#"><span className="brand-mark"><Command size={19}/></span><span>NEXORA</span></a>
-        <div className="nav-links"><a href="#catalog">Integrations</a><a href="#security">Security</a><a href="#architecture">Platform</a></div>
-        <a className="nav-cta" href="#catalog">Explore catalog <ArrowUpRight size={15}/></a>
-      </nav>
+function details(entry) {
+  const server = entry?.server ?? entry;
+  const remotes = server?.remotes ?? [];
+  const packages = server?.packages ?? [];
+  const transport = remotes.length ? "Remote MCP" : packages.length ? "Package / STDIO" : "Registry entry";
+  const repository = server?.repository?.url || server?.repository || "";
+  const website = server?.websiteUrl || server?.website_url || repository || "";
+  const description = server?.description || "No description supplied by the publisher.";
+  return {
+    name: server?.title || server?.name || "Unnamed MCP server",
+    id: server?.name || "",
+    description,
+    version: server?.version || "Latest",
+    transport,
+    repository: typeof repository === "string" ? repository : repository?.url || "",
+    website: typeof website === "string" ? website : "",
+    remotes,
+    packages,
+  };
+}
 
-      <section className="hero">
-        <div className="eyebrow"><span className="pulse"/> THE MCP CONNECTION HUB</div>
-        <h1>One hub.<br/><span>Every connection.</span></h1>
-        <p className="hero-copy">Connect the tools you use to the AI systems you trust. Discover integrations, manage access, and bring your workflows together through one secure MCP gateway.</p>
-        <div className="hero-actions"><a className="primary-btn" href="#catalog">Explore integrations <ArrowUpRight size={17}/></a><a className="secondary-btn" href="#architecture">How it works</a></div>
-        <div className="hero-foot"><span><ShieldCheck size={15}/> User-scoped access</span><span><Zap size={15}/> MCP-ready architecture</span><span><Workflow size={15}/> One unified gateway</span></div>
-        <div className="orb orb-one"/><div className="orb orb-two"/>
-      </section>
+function ServerCard({ entry }) {
+  const item = details(entry);
+  return <article className="integration-card server-card">
+    <div className="card-top"><div className="integration-icon"><Server size={21}/></div><span className="status">Registry listed</span></div>
+    <div className="server-meta"><span>{item.transport}</span><span>v{item.version}</span></div>
+    <h3>{item.name}</h3>
+    <p>{item.description}</p>
+    <div className="server-id">{item.id}</div>
+    <div className="card-bottom">
+      {item.repository ? <a href={item.repository} target="_blank" rel="noreferrer">Repository <ExternalLink size={13}/></a> : <span>Publisher metadata</span>}
+      <span className="version-tag">Official Registry</span>
+    </div>
+  </article>;
+}
 
-      <section className="catalog-section" id="catalog">
-        <div className="section-head"><div><div className="eyebrow">INTEGRATION DIRECTORY</div><h2>Your stack, connected.</h2><p>Start with a curated catalog. More providers will be added as their adapters are verified.</p></div><div className="catalog-search"><Search size={16}/><span>Search integrations</span><kbd>⌘ K</kbd></div></div>
-        <div className="integration-grid">
-          {integrations.map((item) => { const Icon = item.icon; return <article className="integration-card" key={item.name}><div className="card-top"><div className="integration-icon"><Icon size={21}/></div><span className={item.status === "Catalog" ? "status" : "status planned"}>{item.status}</span></div><div className="category">{item.category}</div><h3>{item.name}</h3><p>{item.description}</p><div className="card-bottom"><span>Provider details</span><ArrowUpRight size={16}/></div></article>; })}
-        </div>
-        <div className="catalog-note"><Sparkles size={17}/><span>Catalog entries are discovery metadata. A provider becomes connectable only after its authentication flow and MCP adapter are implemented and verified.</span></div>
-      </section>
+export default async function Home({ searchParams }) {
+  const params = await searchParams;
+  const query = typeof params?.q === "string" ? params.q : "";
+  const cursor = typeof params?.cursor === "string" ? params.cursor : "";
+  const data = await getServers(query, cursor);
+  const servers = Array.isArray(data.servers) ? data.servers : [];
+  const nextCursor = data.metadata?.nextCursor;
 
-      <section className="platform-section" id="architecture">
-        <div className="eyebrow">BUILT FOR COMPOSABILITY</div><h2>Less setup. More flow.</h2>
-        <div className="principle-grid">{principles.map(([title, body], i) => <article className="principle" key={title}><div className="principle-number">0{i+1}</div><h3>{title}</h3><p>{body}</p></article>)}</div>
-      </section>
+  return <main className="shell">
+    <nav className="nav">
+      <a className="brand" href="/"><span className="brand-mark"><Command size={19}/></span><span>DRIVE</span></a>
+      <div className="nav-links"><a href="#directory">Directory</a><a href="#security">Security</a><a href="#custom">Custom MCP</a></div>
+      <a className="nav-cta" href="#directory">Explore directory <ArrowUpRight size={15}/></a>
+    </nav>
 
-      <section className="security-section" id="security"><div className="security-icon"><ShieldCheck size={25}/></div><div><div className="eyebrow">SECURITY IS THE FOUNDATION</div><h2>Your connections stay yours.</h2><p>Credentials must remain isolated per user, encrypted at rest, and limited to explicitly approved scopes. Sensitive tools require policy checks and auditable approvals.</p></div></section>
+    <section className="hero">
+      <div className="eyebrow"><span className="pulse"/> THE MCP CONNECTION HUB</div>
+      <h1>One hub.<br/><span>Every connection.</span></h1>
+      <p className="hero-copy">Discover MCP servers from the ecosystem, inspect their source and transport, then connect the tools you trust. Add your own remote MCP endpoint whenever you need it.</p>
+      <div className="hero-actions"><a className="primary-btn" href="#directory">Explore MCP directory <ArrowUpRight size={17}/></a><a className="secondary-btn" href="#custom">Add custom MCP</a></div>
+      <div className="hero-foot"><span><ShieldCheck size={15}/> Trust-aware discovery</span><span><Zap size={15}/> Live registry sync</span><span><Globe2 size={15}/> Open MCP ecosystem</span></div>
+      <div className="orb orb-one"/><div className="orb orb-two"/>
+    </section>
 
-      <footer><a className="brand" href="#"><span className="brand-mark"><Command size={17}/></span><span>NEXORA</span></a><span>One Hub. Every Connection.</span><span>© 2026 NEXORA</span></footer>
-    </main>
-  );
+    <section className="catalog-section" id="directory">
+      <div className="section-head"><div><div className="eyebrow">MCP SERVER DIRECTORY</div><h2>Find your next connection.</h2><p>Imported from the official MCP Registry. Results refresh automatically and are cached for one hour.</p></div>
+      <form className="catalog-search" action="/" method="get"><Search size={16}/><input name="q" defaultValue={query} placeholder="Search MCP servers (3+ chars)" aria-label="Search MCP servers"/><button type="submit">Search</button></form></div>
+      <div className="directory-stats"><span><strong>{servers.length}</strong> results on this page</span><span>Source: registry.modelcontextprotocol.io</span>{query && <a href="/">Clear search</a>}</div>
+      {data.unavailable ? <div className="empty-state"><Globe2 size={24}/><h3>Registry temporarily unavailable</h3><p>DRIVE could not reach the official registry. Try again shortly.</p></div> : servers.length ? <div className="integration-grid">{servers.map((entry, index) => <ServerCard key={entry?.server?.name + ":" + entry?.server?.version || index} entry={entry}/>)}</div> : <div className="empty-state"><Search size={24}/><h3>No servers found</h3><p>Try another search term or clear the filter.</p></div>}
+      <div className="directory-pagination">{cursor && <a className="secondary-btn" href={query ? `/?q=${encodeURIComponent(query)}` : "/"}>Back to first page</a>}{nextCursor && <a className="primary-btn" href={`/?${query ? `q=${encodeURIComponent(query)}&` : ""}cursor=${encodeURIComponent(nextCursor)}#directory`}>Next page <ArrowUpRight size={15}/></a>}</div>
+      <div className="catalog-note"><Sparkles size={17}/><span>Directory presence is not a safety certification or a promise that a server is remotely connectable. DRIVE displays publisher metadata and transport hints; connection support and security checks are separate steps.</span></div>
+    </section>
+
+    <section className="platform-section" id="custom">
+      <div className="eyebrow">BRING YOUR OWN SERVER</div><h2>Your MCP, your choice.</h2>
+      <p className="section-intro">Can’t find a server in the directory? DRIVE will support adding a custom remote MCP endpoint. Local STDIO packages need a hosted, isolated runtime before they can be connected remotely.</p>
+      <div className="principle-grid"><article className="principle"><div className="principle-number"><Globe2 size={17}/></div><h3>Remote endpoint</h3><p>Register a Streamable HTTP MCP URL and configure its authentication method.</p></article><article className="principle"><div className="principle-number"><Package size={17}/></div><h3>Local packages</h3><p>Browse package metadata and setup instructions. Execution requires an isolated runtime.</p></article><article className="principle"><div className="principle-number"><Blocks size={17}/></div><h3>Unified directory</h3><p>Search official registry entries alongside your own private connections.</p></article></div>
+      <div className="custom-placeholder"><div><strong>Custom MCP connection</strong><p>Connection form is the next implementation step. No credentials are collected on this page yet.</p></div><span className="status planned">Coming next</span></div>
+    </section>
+
+    <section className="security-section" id="security"><div className="security-icon"><ShieldCheck size={25}/></div><div><div className="eyebrow">SECURITY IS THE FOUNDATION</div><h2>Discovery is not trust.</h2><p>Registry metadata is treated as untrusted input. Before a server becomes connectable, DRIVE must verify its source, transport, authentication model, package provenance and tool permissions. Credentials stay server-side and sensitive actions require explicit approval.</p></div></section>
+    <footer><a className="brand" href="/"><span className="brand-mark"><Command size={17}/></span><span>DRIVE</span></a><span>One Hub. Every Connection.</span><span>© 2026 DRIVE</span></footer>
+  </main>;
 }

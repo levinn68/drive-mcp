@@ -94,11 +94,27 @@ export default function OAuthConsentPage() {
     finally { setBusy(false); }
   }
 
+  async function switchAccount() {
+    setBusy(true);
+    setError("");
+    try {
+      await supabase.auth.signOut({ scope: "local" });
+      setSession(null);
+      setDetails(null);
+      setPassword("");
+      setNotice("Signed out. Choose another account to continue.");
+    } catch (e) {
+      setError(e.message || "Could not switch account.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function decide(allow) {
     if (!authorizationId) return;
-    // Open the DRIVE workspace directly from the user's click so popup blockers
-    // allow it. The current tab still completes the OAuth redirect to ChatGPT.
-    const dashboardTab = allow ? window.open("/", "_blank") : null;
+    // Reserve the OAuth callback tab synchronously during the user gesture.
+    // After approval, keep this tab on DRIVE dashboard as requested.
+    const callbackTab = allow ? window.open("about:blank", "_blank") : null;
     setBusy(true); setError("");
     try {
       const result = allow
@@ -106,10 +122,19 @@ export default function OAuthConsentPage() {
         : await supabase.auth.oauth.denyAuthorization(authorizationId);
       if (result.error) throw result.error;
       if (!result.data?.redirect_url) throw new Error("OAuth provider did not return a redirect URL.");
-      if (dashboardTab) dashboardTab.location.href = "/";
-      window.location.assign(result.data.redirect_url);
+      if (allow) {
+        if (callbackTab) {
+          callbackTab.location.replace(result.data.redirect_url);
+          window.location.replace("/");
+        } else {
+          setNotice("Access approved. Your browser blocked the ChatGPT callback tab. Continue to DRIVE, then reconnect ChatGPT.");
+          window.location.assign("/");
+        }
+      } else {
+        window.location.assign(result.data.redirect_url);
+      }
     } catch (e) {
-      if (dashboardTab && !dashboardTab.closed) dashboardTab.close();
+      if (callbackTab && !callbackTab.closed) callbackTab.close();
       setError(e.message || "Could not complete authorization.");
       setBusy(false);
     }
@@ -172,6 +197,10 @@ export default function OAuthConsentPage() {
           </div>}
           <div className="oauth-security-note"><LockKeyhole size={14} className="mt-0.5 shrink-0 text-emerald-300/70"/> Your sign-in is protected by Supabase. DRIVE never stores your password.</div>
         </> : details ? <>
+          <div className="oauth-account-switch">
+            <span>Signed in as <strong>{session.user?.email || "your account"}</strong></span>
+            <button type="button" onClick={switchAccount} disabled={busy}>Switch account</button>
+          </div>
           <div className="oauth-permission-eyebrow">Permission request</div>
           <h1 className="oauth-title">Authorize {details.client?.name || "MCP client"}?</h1>
           <p className="oauth-subtitle">Review the access requested by this application before continuing.</p>

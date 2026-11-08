@@ -26,6 +26,7 @@ export default function SkillLibrary() {
   const [searching, setSearching] = useState(false);
   const [searchMessage, setSearchMessage] = useState("");
   const [catalogPage, setCatalogPage] = useState(0);
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [connections, setConnections] = useState([]);
   const [bindings, setBindings] = useState([]);
   const [bindingChoice, setBindingChoice] = useState({});
@@ -94,6 +95,12 @@ export default function SkillLibrary() {
     return () => { active = false; };
   }, []);
 
+  const categoryOptions = ["all", ...new Set(repositories.map((item) => item.catalogSkill?.category || "other"))];
+  const categorizedRepositories = selectedCategory === "all"
+    ? repositories
+    : repositories.filter((item) => (item.catalogSkill?.category || "other") === selectedCategory);
+  const visibleRepositories = categorizedRepositories.slice(catalogPage * 20, (catalogPage + 1) * 20);
+
   async function searchRepositories() {
     setSearching(true); setSearchMessage(""); setError("");
     try {
@@ -101,7 +108,7 @@ export default function SkillLibrary() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Skills catalog search failed");
       setCatalogPage(0);
-      setCatalogPage(0);
+      setSelectedCategory("all");
       setRepositories((data.items || []).map((item) => ({
         id: item.id, full_name: item.source, description: item.description || item.name,
         html_url: item.installUrl || `https://github.com/${item.source}`,
@@ -402,7 +409,7 @@ export default function SkillLibrary() {
       <div className="skill-import-panel">
         <div className="skill-import-title">
           <span className="benefit-icon"><Search size={18} /></span>
-          <div><strong>Discover Skill repositories</strong><small>Browse 1,000 Agent Skills from the live catalog. Every selected bundle is scanned before import.</small></div>
+          <div><strong>Discover Skill repositories</strong><small>Browse the Skills catalog by category. Each selected bundle is scanned by NVIDIA SkillSpector before import.</small></div>
         </div>
         <form className="skill-url-row" onSubmit={(event) => { event.preventDefault(); searchRepositories(); }}>
           <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search 1,000 Skills by name or topic" aria-label="Search Skills catalog" />
@@ -411,11 +418,11 @@ export default function SkillLibrary() {
             <span>Search Skills</span>
           </button>
         </form>
-        <p className="availability-note">skills.sh catalog · Install counts are discovery signals, not trust scores · NVIDIA SkillSpector scans selected bundles</p>
+        <p className="availability-note">Skills Directory · Categories separate discovery · NVIDIA SkillSpector checks selected bundles</p>
         {searchMessage && <p className="availability-note">{searchMessage}</p>}
         {repositories.length > 0 && (
           <div className="skill-repository-list">
-            {repositories.slice(catalogPage * 20, (catalogPage + 1) * 20).map((repository) => {
+            {visibleRepositories.map((repository) => {
               const detail = repositoryDetails[repository.id || repository.full_name];
               return (
                 <article className="skill-repository-card" key={repository.id || repository.full_name}>
@@ -448,11 +455,11 @@ export default function SkillLibrary() {
             })}
           </div>
         )}
-        {repositories.length > 20 && (
+        {categoryOptions.length > 1 && (\n          <div className="segmented-pills is-full skill-category-filter" role="group" aria-label="Filter Skills by category">\n            {categoryOptions.map((category) => (\n              <button key={category} type="button" className={`segmented-pill ${selectedCategory === category ? "is-active" : ""}`} onClick={() => { setSelectedCategory(category); setCatalogPage(0); }}>\n                {category === "all" ? "All Skills" : category.replace(/-/g, " ").replace(/\\b\\w/g, (letter) => letter.toUpperCase())}\n              </button>\n            ))}\n          </div>\n        )}\n        {categorizedRepositories.length > 0 && (
           <div className="load-more-row">
             <button type="button" className="glass-chip-btn" onClick={() => setCatalogPage((page) => Math.max(0, page - 1))} disabled={catalogPage === 0}>Previous</button>
-            <span>Page {catalogPage + 1} of {Math.ceil(repositories.length / 20)} · {repositories.length.toLocaleString()} Skills</span>
-            <button type="button" className="glass-add-button" onClick={() => setCatalogPage((page) => Math.min(Math.ceil(repositories.length / 20) - 1, page + 1))} disabled={(catalogPage + 1) * 20 >= repositories.length}>Next</button>
+            <span>Page {catalogPage + 1} of {Math.ceil(categorizedRepositories.length / 20)} · {categorizedRepositories.length.toLocaleString()} Skills</span>
+            <button type="button" className="glass-add-button" onClick={() => setCatalogPage((page) => Math.min(Math.ceil(categorizedRepositories.length / 20) - 1, page + 1))} disabled={(catalogPage + 1) * 20 >= categorizedRepositories.length}>Next</button>
           </div>
         )}
       </div>

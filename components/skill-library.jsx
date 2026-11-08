@@ -455,7 +455,16 @@ export default function SkillLibrary() {
             })}
           </div>
         )}
-        {categoryOptions.length > 1 && (\n          <div className="segmented-pills is-full skill-category-filter" role="group" aria-label="Filter Skills by category">\n            {categoryOptions.map((category) => (\n              <button key={category} type="button" className={`segmented-pill ${selectedCategory === category ? "is-active" : ""}`} onClick={() => { setSelectedCategory(category); setCatalogPage(0); }}>\n                {category === "all" ? "All Skills" : category.replace(/-/g, " ").replace(/\\b\\w/g, (letter) => letter.toUpperCase())}\n              </button>\n            ))}\n          </div>\n        )}\n        {categorizedRepositories.length > 0 && (
+        {categoryOptions.length > 1 && (
+          <div className="segmented-pills is-full skill-category-filter" role="group" aria-label="Filter Skills by category">
+            {categoryOptions.map((category) => (
+              <button key={category} type="button" className={"segmented-pill " + (selectedCategory === category ? "is-active" : "")} onClick={() => { setSelectedCategory(category); setCatalogPage(0); }}>
+                {category === "all" ? "All Skills" : category.replace(/-/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())}
+              </button>
+            ))}
+          </div>
+        )}
+        {categorizedRepositories.length > 20 && (
           <div className="load-more-row">
             <button type="button" className="glass-chip-btn" onClick={() => setCatalogPage((page) => Math.max(0, page - 1))} disabled={catalogPage === 0}>Previous</button>
             <span>Page {catalogPage + 1} of {Math.ceil(categorizedRepositories.length / 20)} · {categorizedRepositories.length.toLocaleString()} Skills</span>

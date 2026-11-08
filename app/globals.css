@@ -2711,3 +2711,25 @@ body {
   .skill-check-grid { grid-template-columns:1fr; }
   .skill-saved-top { flex-wrap:wrap; }
 }
+
+
+/* MANUAL SKILL REPOSITORY DISCOVERY */
+.skill-repository-list { display:grid; gap:10px; margin-top:14px; }
+.skill-repository-card { border:1px solid rgba(177,193,255,.14); border-radius:16px; background:rgba(4,10,23,.38); padding:13px; }
+.skill-repository-main { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.skill-repository-copy { min-width:0; flex:1; }
+.skill-repository-copy strong { color:#e5edff; font-size:13px; overflow-wrap:anywhere; }
+.skill-repository-copy p { color:var(--muted,#98a4bd); font-size:12px; line-height:1.5; margin:5px 0; }
+.skill-repository-copy small,.skill-repository-meta { color:var(--muted,#98a4bd); font-size:10px; letter-spacing:.02em; }
+.skill-repository-files { border-top:1px solid rgba(177,193,255,.12); margin-top:12px; padding-top:10px; }
+.skill-repository-meta { margin-bottom:8px; }
+.skill-file-row { display:flex; width:100%; justify-content:space-between; align-items:center; gap:10px; border:1px solid rgba(177,193,255,.12); border-radius:11px; background:rgba(30,43,70,.45); color:#d6e3ff; padding:10px; margin-top:6px; text-align:left; cursor:pointer; }
+.skill-file-row:hover { border-color:rgba(177,193,255,.35); background:rgba(50,66,101,.48); }
+.skill-file-row>span { display:flex; align-items:center; flex-wrap:wrap; gap:8px; min-width:0; overflow-wrap:anywhere; font-size:11px; }
+.skill-file-row small { width:100%; padding-left:22px; color:var(--muted,#98a4bd); font-size:10px; }
+.skill-repo-link { display:inline-flex; align-items:center; gap:5px; margin-top:10px; color:#c5d5f5; text-decoration:none; font-size:11px; }
+.skill-inline-error { color:#ffb9b9; font-size:11px; }
+@media(max-width:560px) {
+  .skill-repository-main { flex-direction:column; }
+  .skill-repository-main>.glass-chip-btn { width:100%; justify-content:center; }
+}

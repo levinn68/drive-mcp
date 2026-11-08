@@ -86,5 +86,28 @@ export async function POST(request) {
     status: "pending",
   }).select("id,display_name,endpoint_url,transport,status,created_at").single();
   if (error) return response({ error: "Could not save custom server", detail: error.message }, 400);
-  return response({ server: data }, 201);
+
+  // Keep the custom server and the user's My MCPs list in sync.
+  // The previous flow only inserted user_custom_mcp_servers, while My MCPs
+  // reads user_mcp_connections, so a successful save appeared to disappear.
+  const { data: connection, error: connectionError } = await supabase
+    .from("user_mcp_connections")
+    .upsert({
+      user_id: user.id,
+      registry_server_id: null,
+      custom_server_id: data.id,
+      enabled: false,
+    }, { onConflict: "user_id,custom_server_id" })
+    .select("id,registry_server_id,custom_server_id,enabled,created_at,updated_at")
+    .single();
+
+  if (connectionError) {
+    await supabase.from("user_custom_mcp_servers").delete().eq("id", data.id).eq("user_id", user.id);
+    return response({
+      error: "Server was not added to My MCPs",
+      detail: connectionError.message,
+    }, 400);
+  }
+
+  return response({ server: data, connection }, 201);
 }

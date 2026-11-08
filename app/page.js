@@ -1,5 +1,6 @@
 import CustomMcpForm from "../components/custom-mcp-form";
 import MyMcpPanel, { AddMcpButton } from "../components/my-mcps";
+import CopyButton from "../components/copy-button";
 import { ArrowUpRight, Blocks, Command, Search, ShieldCheck, Sparkles, Zap, Globe2, Package, Server, ExternalLink } from "lucide-react";
 
 const REGISTRY = "https://registry.modelcontextprotocol.io";
@@ -49,9 +50,9 @@ function ServerCard({ entry }) {
     <div className="server-meta"><span>{item.transport}</span><span>v{item.version}</span></div>
     <h3>{item.name}</h3>
     <p>{item.description}</p>
-    <div className="server-id">{item.id}</div>
+    <div className="server-id"><code>{item.id}</code><CopyButton value={item.id} label="Copy ID"/></div>
     <div className="card-bottom">
-      {item.repository ? <a href={item.repository} target="_blank" rel="noreferrer">Repository <ExternalLink size={13}/></a> : <span>Publisher metadata</span>}
+      {item.repository ? <div className="server-actions"><a href={item.repository} target="_blank" rel="noreferrer">Repository <ExternalLink size={13}/></a><CopyButton value={item.repository} label="Copy URL"/></div> : <span>Publisher metadata</span>}
       <AddMcpButton serverId={item.id + "@" + item.version} remoteAvailable={item.remotes.length > 0}/>
     </div>
   </article>;
@@ -60,10 +61,10 @@ function ServerCard({ entry }) {
 export default async function Home({ searchParams }) {
   const params = await searchParams;
   const query = typeof params?.q === "string" ? params.q : "";
-  const cursor = typeof params?.cursor === "string" ? params.cursor : "";
-  const data = await getServers(query, cursor);
+
+  const data = await getServers(query, "");
   const servers = Array.isArray(data.servers) ? data.servers : [];
-  const nextCursor = data.metadata?.nextCursor;
+
 
   return <main className="shell">
     <nav className="nav">
@@ -74,8 +75,8 @@ export default async function Home({ searchParams }) {
 
     <section className="hero">
       <div className="eyebrow"><span className="pulse"/> YOUR MCP WORKSPACE</div>
-      <h1>One hub.<br/><span>Every connection.</span></h1>
-      <p className="hero-copy">Keep the MCPs you actually use in one place. Add connections yourself, switch them on when needed, and keep the rest out of your workspace.</p>
+      <h1>Your MCPs.<br/><span>Under your control.</span></h1>
+      <p className="hero-copy">A cleaner home for the tools you rely on. Keep your connections close, copy setup details in one tap, and switch each MCP on only when you need it.</p>
       <div className="hero-actions"><a className="primary-btn" href="#my-mcps">My MCPs <ArrowUpRight size={17}/></a><a className="secondary-btn" href="#directory">Discover servers</a></div>
       <div className="hero-foot"><span><ShieldCheck size={15}/> Source details</span><span><Zap size={15}/> Personal switches</span><span><Globe2 size={15}/> Optional discovery</span></div>
       <div className="orb orb-one"/><div className="orb orb-two"/>
@@ -84,11 +85,11 @@ export default async function Home({ searchParams }) {
     <MyMcpPanel />
 
     <section className="catalog-section" id="directory">
-      <div className="section-head"><div><div className="eyebrow">MCP SERVER DIRECTORY</div><h2>Discover servers.</h2><p>Search when you need something new. Nothing is added to My MCPs until you choose it.</p></div>
+      <div className="section-head"><div><div className="eyebrow">EXPLORE</div><h2>Find your next connection.</h2><p>Search when you need something new. Nothing is added to My MCPs until you choose it.</p></div>
       <form className="catalog-search" action="/" method="get"><Search size={16}/><input name="q" defaultValue={query} placeholder="Search MCP servers (3+ chars)" aria-label="Search MCP servers"/><button type="submit">Search</button></form></div>
-      <div className="directory-stats"><span><strong>{servers.length}</strong> results on this page</span><span>Source: registry.modelcontextprotocol.io</span>{query && <a href="/">Clear search</a>}</div>
+      <div className="directory-stats"><span><strong>{servers.length}</strong> matching servers</span><span>Source: registry.modelcontextprotocol.io</span>{query && <a href="/">Clear search</a>}</div>
       {data.unavailable ? <div className="empty-state"><Globe2 size={24}/><h3>Registry temporarily unavailable</h3><p>DRIVE could not reach the official registry. Try again shortly.</p></div> : servers.length ? <div className="integration-grid">{servers.map((entry, index) => <ServerCard key={entry?.server?.name + ":" + entry?.server?.version || index} entry={entry}/>)}</div> : <div className="empty-state"><Search size={24}/><h3>No servers found</h3><p>Try another search term or clear the filter.</p></div>}
-      <div className="directory-pagination">{cursor && <a className="secondary-btn" href={query ? `/?q=${encodeURIComponent(query)}` : "/"}>Back to first page</a>}{nextCursor && <a className="primary-btn" href={`/?${query ? `q=${encodeURIComponent(query)}&` : ""}cursor=${encodeURIComponent(nextCursor)}#directory`}>Next page <ArrowUpRight size={15}/></a>}</div>
+
       <div className="catalog-note"><Sparkles size={17}/><span>Directory presence is not a safety certification or a promise that a server is remotely connectable. DRIVE displays publisher metadata and transport hints; connection support and security checks are separate steps.</span></div>
     </section>
 

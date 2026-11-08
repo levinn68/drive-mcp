@@ -72,16 +72,16 @@ export default async function Home({ searchParams }) {
     </nav>
 
     <section className="hero">
-      <div className="eyebrow"><span className="pulse"/> THE MCP CONNECTION HUB</div>
+      <div className="eyebrow"><span className="pulse"/> MCP SERVER DIRECTORY</div>
       <h1>One hub.<br/><span>Every connection.</span></h1>
-      <p className="hero-copy">Discover MCP servers from the ecosystem, inspect their source and transport, then connect the tools you trust. Add your own remote MCP endpoint whenever you need it.</p>
+      <p className="hero-copy">Browse MCP servers from the official registry. Check what each server does, where its code lives and how it runs. Add a remote endpoint when you need something outside the directory.</p>
       <div className="hero-actions"><a className="primary-btn" href="#directory">Explore MCP directory <ArrowUpRight size={17}/></a><a className="secondary-btn" href="#custom">Add custom MCP</a></div>
-      <div className="hero-foot"><span><ShieldCheck size={15}/> Trust-aware discovery</span><span><Zap size={15}/> Live registry sync</span><span><Globe2 size={15}/> Open MCP ecosystem</span></div>
+      <div className="hero-foot"><span><ShieldCheck size={15}/> Source details</span><span><Zap size={15}/> Registry listing</span><span><Globe2 size={15}/> Open directory</span></div>
       <div className="orb orb-one"/><div className="orb orb-two"/>
     </section>
 
     <section className="catalog-section" id="directory">
-      <div className="section-head"><div><div className="eyebrow">MCP SERVER DIRECTORY</div><h2>Find your next connection.</h2><p>Imported from the official MCP Registry. Results refresh automatically and are cached for one hour.</p></div>
+      <div className="section-head"><div><div className="eyebrow">MCP SERVER DIRECTORY</div><h2>Browse the directory.</h2><p>Servers listed in the official MCP Registry. Use search to narrow the list.</p></div>
       <form className="catalog-search" action="/" method="get"><Search size={16}/><input name="q" defaultValue={query} placeholder="Search MCP servers (3+ chars)" aria-label="Search MCP servers"/><button type="submit">Search</button></form></div>
       <div className="directory-stats"><span><strong>{servers.length}</strong> results on this page</span><span>Source: registry.modelcontextprotocol.io</span>{query && <a href="/">Clear search</a>}</div>
       {data.unavailable ? <div className="empty-state"><Globe2 size={24}/><h3>Registry temporarily unavailable</h3><p>DRIVE could not reach the official registry. Try again shortly.</p></div> : servers.length ? <div className="integration-grid">{servers.map((entry, index) => <ServerCard key={entry?.server?.name + ":" + entry?.server?.version || index} entry={entry}/>)}</div> : <div className="empty-state"><Search size={24}/><h3>No servers found</h3><p>Try another search term or clear the filter.</p></div>}
@@ -90,13 +90,13 @@ export default async function Home({ searchParams }) {
     </section>
 
     <section className="platform-section" id="custom">
-      <div className="eyebrow">BRING YOUR OWN SERVER</div><h2>Your MCP, your choice.</h2>
-      <p className="section-intro">Can’t find a server in the directory? DRIVE will support adding a custom remote MCP endpoint. Local STDIO packages need a hosted, isolated runtime before they can be connected remotely.</p>
+      <div className="eyebrow">BRING YOUR OWN SERVER</div><h2>Add a server</h2>
+      <p className="section-intro">Missing a server? Add a remote MCP endpoint here. Local STDIO packages need a separate hosted runtime and cannot be connected directly from a browser.</p>
       <div className="principle-grid"><article className="principle"><div className="principle-number"><Globe2 size={17}/></div><h3>Remote endpoint</h3><p>Register a Streamable HTTP MCP URL and configure its authentication method.</p></article><article className="principle"><div className="principle-number"><Package size={17}/></div><h3>Local packages</h3><p>Browse package metadata and setup instructions. Execution requires an isolated runtime.</p></article><article className="principle"><div className="principle-number"><Blocks size={17}/></div><h3>Unified directory</h3><p>Search official registry entries alongside your own private connections.</p></article></div>
       <CustomMcpForm />
     </section>
 
-    <section className="security-section" id="security"><div className="security-icon"><ShieldCheck size={25}/></div><div><div className="eyebrow">SECURITY IS THE FOUNDATION</div><h2>Discovery is not trust.</h2><p>Registry metadata is treated as untrusted input. Before a server becomes connectable, DRIVE must verify its source, transport, authentication model, package provenance and tool permissions. Credentials stay server-side and sensitive actions require explicit approval.</p></div></section>
+    <section className="security-section" id="security"><div className="security-icon"><ShieldCheck size={25}/></div><div><div className="eyebrow">SECURITY IS THE FOUNDATION</div><h2>Check before connecting.</h2><p>A registry listing is a starting point, not a security review. DRIVE keeps unverified servers separate from connected services. Source checks, transport validation and permission controls are required before a connection can be enabled.</p></div></section>
     <footer><a className="brand" href="/"><span className="brand-mark"><Command size={17}/></span><span>DRIVE</span></a><span>One Hub. Every Connection.</span><span>© 2026 DRIVE</span></footer>
   </main>;
 }

@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Cable, Compass, Plus, ShieldCheck, Command } from "lucide-react";
+import { Cable, Compass, Plus, ShieldCheck, Command, Sparkles } from "lucide-react";
 
 const items = [
-  { id: "connections", label: "Connections", icon: Cable },
-  { id: "discover", label: "Discover", icon: Compass },
-  { id: "add", label: "Add MCP", icon: Plus },
-  { id: "security", label: "Security", icon: ShieldCheck },
+  { id: "connections", label: "Workspace", short: "Home", icon: Cable },
+  { id: "discover", label: "Discover", short: "Explore", icon: Compass },
+  { id: "add", label: "Add MCP", short: "Add", icon: Plus },
+  { id: "security", label: "Security", short: "Secure", icon: ShieldCheck },
 ];
 
 export default function WorkspaceTabs({ connections, discover, add, security }) {
@@ -15,9 +15,9 @@ export default function WorkspaceTabs({ connections, discover, add, security }) 
   const panels = { connections, discover, add, security };
   return <main className="drive-app">
     <header className="app-topbar">
-      <a className="app-brand" href="/"><span className="brand-mark"><Command size={18}/></span><span>DRIVE</span></a>
-      <div className="app-context"><span className="context-dot"/> PERSONAL MCP WORKSPACE</div>
-      <div className="app-top-actions"><span className="app-status">PRIVATE</span></div>
+      <a className="app-brand" href="/" aria-label="DRIVE home"><span className="brand-mark"><Command size={18}/></span><span>DRIVE</span><span className="brand-beta">BETA</span></a>
+      <div className="app-context"><span className="context-dot"/> MCP WORKSPACE <span className="context-divider">/</span> DISCOVER · CONNECT · CONTROL</div>
+      <div className="app-top-actions"><span className="app-status"><Sparkles size={11}/> LIQUID WORKSPACE</span></div>
     </header>
     <section className="app-content" aria-live="polite">
       {items.map((item) => <div key={item.id} className="app-panel" hidden={active !== item.id}>
@@ -25,8 +25,8 @@ export default function WorkspaceTabs({ connections, discover, add, security }) 
       </div>)}
     </section>
     <nav className="bottom-dock" aria-label="Main navigation">
-      {items.map(({id,label,icon:Icon}) => <button key={id} type="button" className={`dock-item ${active===id?"active":""}`} aria-current={active===id?"page":undefined} onClick={()=>setActive(id)}>
-        <span className="dock-icon"><Icon size={18}/></span><span>{label}</span>
+      {items.map(({id,label,short,icon:Icon}) => <button key={id} type="button" className={`dock-item ${active===id?"active":""}`} aria-current={active===id?"page":undefined} aria-label={label} onClick={()=>setActive(id)}>
+        <span className="dock-icon"><Icon size={18}/></span><span className="dock-label">{short}</span>
       </button>)}
     </nav>
   </main>;

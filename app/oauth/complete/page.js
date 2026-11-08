@@ -1,18 +1,19 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 import { ArrowUpRight, CheckCircle2, ExternalLink, ShieldCheck } from "lucide-react";
 
 export default function OAuthCompletePage() {
-  const callback = useMemo(() => {
+  const [callback, setCallback] = useState("");
+
+  useEffect(() => {
     const raw = new URLSearchParams(window.location.search).get("callback") || "";
     try {
       const url = new URL(raw);
-      if (url.protocol !== "https:" && url.hostname !== "localhost") return "";
-      return url.toString();
-    } catch {
-      return "";
-    }
+      if (url.protocol === "https:" || url.hostname === "localhost") {
+        setCallback(url.toString());
+      }
+    } catch {}
   }, []);
 
   return (

@@ -69,7 +69,7 @@ def scan(payload: ScanRequest, authorization: str | None = Header(default=None))
         digest.update(path.encode("utf-8"))
         digest.update(b"\0")
         digest.update(raw)
-        digest.update(b"\\0")
+        digest.update(b"\x5c0")
     bundle_hash = digest.hexdigest()
 
     with tempfile.TemporaryDirectory(prefix="drive-skill-scan-") as temp:

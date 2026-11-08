@@ -414,12 +414,9 @@ export default function WorkspaceTabs({
   );
 
   const panels = {
-    connections,
-    discover,
-    add,
-    security,
-    settings: settingsPanel,
+    mcp: <>{connections}{discover}</>,
     skills,
+    account: <>{add}{security}{settingsPanel}</>,
   };
 
   return (
@@ -530,7 +527,7 @@ export default function WorkspaceTabs({
       <div className="bottom-dock-stage">
         <nav
           ref={dockRef}
-          className={`liquid-navbar-5 ${isDragging ? "is-dragging" : ""} ${
+          className={`liquid-navbar-3 ${isDragging ? "is-dragging" : ""} ${
             isAnimatingLens ? "is-gliding" : ""
           }`}
           aria-label="Main navigation"

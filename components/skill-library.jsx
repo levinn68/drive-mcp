@@ -99,8 +99,11 @@ export default function SkillLibrary() {
     setUrl(skillFile.raw_url);
     setBusy("inspect"); setError(""); setNotice(""); setInspected(null);
     try {
+      const supabase = getSupabase();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Sign in before scanning a Skill.");
       const response = await fetch("/api/skills/inspect", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ url: skillFile.raw_url }),
       });
       const data = await response.json();
@@ -113,8 +116,11 @@ export default function SkillLibrary() {
   async function inspect() {
     setBusy("inspect"); setError(""); setNotice(""); setInspected(null);
     try {
+      const supabase = getSupabase();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Sign in before scanning a Skill.");
       const response = await fetch("/api/skills/inspect", {
-        method: "POST", headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ url }),
       });
       const data = await response.json();
@@ -125,6 +131,10 @@ export default function SkillLibrary() {
   }
 
   async function importSkill() {
+    if (!inspected?.scan?.safe_to_install || !inspected.scan.complete || !inspected.scan.content_sha256) {
+      setError("A complete NVIDIA SkillSpector SAFE verdict is required before importing.");
+      return;
+    }
     if (!inspected) return;
     setBusy("import"); setError(""); setNotice("");
     const supabase = getSupabase();
@@ -139,6 +149,11 @@ export default function SkillLibrary() {
       skill_md: inspected.skill_md,
       version: inspected.version,
       license: inspected.license,
+      security_scan: inspected.scan,
+      security_scan_hash: inspected.scan.content_sha256,
+      security_scan_status: "safe",
+      security_scanned_at: inspected.scan.scanned_at,
+      security_scanner_version: inspected.scan.scanner_version,
       status: "review_required",
       updated_at: new Date().toISOString(),
     }, { onConflict: "user_id,source_repo,skill_path" });
@@ -457,9 +472,15 @@ export default function SkillLibrary() {
           <div className="skill-card-heading">
             <span className="highlight-icon"><BookOpen size={18} /></span>
             <div><small>INSPECTION RESULT</small><h3>{inspected.name}</h3></div>
-            <span className="status is-remote">Valid metadata</span>
+            <span className="status is-remote">SkillSpector SAFE</span>
           </div>
           <p>{inspected.description}</p>
+          <div className="skill-check-grid">
+            <span><ShieldAlert size={13}/> NVIDIA SkillSpector {inspected.scan.scanner_version}</span>
+            <span><CheckCircle2 size={13}/> Verdict: {inspected.scan.recommendation}</span>
+            <span>Risk score: {inspected.scan.risk_score ?? "Not reported"}/100</span>
+            <span>Mode: {inspected.scan.scan_mode}</span>
+          </div>
           <div className={`skill-risk-banner risk-${inspected.checks.risk_level}`}>
             <ShieldAlert size={16}/>
             <span><strong>{inspected.checks.risk_level === "high" ? "High-risk patterns found" : inspected.checks.risk_level === "review" ? "Manual review recommended" : "No obvious patterns detected"}</strong><small>{inspected.disclaimer}</small></span>

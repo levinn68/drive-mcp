@@ -30,7 +30,7 @@ export async function GET(request) {
     });
     if (!treeResponse.ok) return NextResponse.json({ error: "Could not inspect repository tree. The repository may be too large or its branch unavailable." }, { status: 502 });
     const tree = await treeResponse.json();
-    const skillFiles = (tree.tree || [])
+    let skillFiles = (tree.tree || [])
       .filter((entry) => entry.type === "blob" && /(^|\/)SKILL\.md$/i.test(entry.path))
       .slice(0, 200)
       .map((entry) => ({

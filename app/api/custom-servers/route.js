@@ -1,4 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
+import { isIP } from "node:net";
+import { lookup } from "node:dns/promises";
 
 export const runtime = "nodejs";
 
@@ -6,15 +8,44 @@ function response(body, status = 200) {
   return Response.json(body, { status, headers: { "Cache-Control": "no-store" } });
 }
 
-function isPublicHttpsUrl(value) {
+function isPrivateIPv4(address) {
+  const parts = address.split(".").map(Number);
+  if (parts.length !== 4 || parts.some((part) => !Number.isInteger(part) || part < 0 || part > 255)) return true;
+  const [a, b] = parts;
+  return a === 0 || a === 10 || a === 127 || a >= 224 ||
+    (a === 100 && b >= 64 && b <= 127) ||
+    (a === 169 && b === 254) ||
+    (a === 172 && b >= 16 && b <= 31) ||
+    (a === 192 && (b === 0 || b === 168)) ||
+    (a === 198 && (b === 18 || b === 19 || b === 51)) ||
+    (a === 203 && b === 0);
+}
+
+function isPrivateIPv6(address) {
+  const value = address.toLowerCase().split("%")[0];
+  if (value === "::" || value === "::1" || value.startsWith("fc") || value.startsWith("fd") ||
+      value.startsWith("fe8") || value.startsWith("fe9") || value.startsWith("fea") ||
+      value.startsWith("feb") || value.startsWith("ff") || value.startsWith("2001:db8:")) return true;
+  const mapped = value.match(/::ffff:(\d+\.\d+\.\d+\.\d+)$/);
+  return mapped ? isPrivateIPv4(mapped[1]) : false;
+}
+
+async function isPublicHttpsUrl(value) {
   try {
     const url = new URL(value);
     if (url.protocol !== "https:" || url.username || url.password) return false;
-    const host = url.hostname.toLowerCase();
-    if (host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local")) return false;
-    if (/^(127\.|10\.|192\.168\.|169\.254\.)/.test(host)) return false;
-    if (host === "0.0.0.0" || host === "::1" || host.startsWith("fc") || host.startsWith("fd")) return false;
-    return true;
+    const host = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+    if (!host || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local")) return false;
+
+    const ipVersion = isIP(host);
+    if (ipVersion === 4) return !isPrivateIPv4(host);
+    if (ipVersion === 6) return !isPrivateIPv6(host);
+
+    const addresses = await lookup(host, { all: true, verbatim: true });
+    if (!addresses.length) return false;
+    return addresses.every(({ address, family }) =>
+      family === 4 ? !isPrivateIPv4(address) : !isPrivateIPv6(address)
+    );
   } catch {
     return false;
   }
@@ -41,7 +72,9 @@ export async function POST(request) {
   const endpointUrl = typeof body.endpointUrl === "string" ? body.endpointUrl.trim() : "";
   const authType = ["none", "bearer", "oauth2", "custom_header"].includes(body.authType) ? body.authType : "none";
   if (displayName.length < 2 || displayName.length > 80) return response({ error: "Name must be between 2 and 80 characters" }, 400);
-  if (!isPublicHttpsUrl(endpointUrl)) return response({ error: "Use a public HTTPS endpoint. Local and private network addresses are not allowed." }, 400);
+  if (!await isPublicHttpsUrl(endpointUrl)) {
+    return response({ error: "Use a public HTTPS endpoint. Private, local and unresolved hosts are not allowed." }, 400);
+  }
   if (authType !== "none") return response({ error: "Credential setup is not enabled yet. Add the endpoint without credentials first." }, 400);
 
   const { data, error } = await supabase.from("user_custom_mcp_servers").insert({

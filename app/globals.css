@@ -2839,3 +2839,9 @@ body {
 .skill-runtime-tool textarea { width:100%; min-height:55px; resize:vertical; border:1px solid rgba(177,193,255,.16); border-radius:9px; padding:8px; color:#dce7ff; background:rgba(1,5,14,.7); font:10px/1.5 ui-monospace,SFMono-Regular,monospace; }
 .skill-runtime-tool>button { justify-self:start; }
 .skill-runtime-tool details pre { max-height:180px; }
+
+
+.skill-runtime-panel>p { margin:0; color:#bdcce5; font-size:11px; line-height:1.55; }
+.skill-runtime-panel>button+button { justify-self:start; }
+.skill-runtime-source pre { max-height:160px; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; padding:8px; border-radius:8px; background:rgba(0,0,0,.25); color:#c5d3ec; font-size:9px; line-height:1.45; }
+.skill-runtime-source>button { justify-self:start; }

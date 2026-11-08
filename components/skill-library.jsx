@@ -36,6 +36,8 @@ export default function SkillLibrary() {
     setLoading(false);
   }, []);
 
+  // Initial data loading synchronizes this component with Supabase on mount.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
   async function inspect() {

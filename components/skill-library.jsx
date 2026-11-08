@@ -166,6 +166,25 @@ export default function SkillLibrary() {
     setBusy("");
   }
 
+  async function executeApproval(approvalId) {
+    const supabase = getSupabase();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setError("Sign in to execute this request."); return; }
+    setBusy(`execute:${approvalId}`); setError(""); setNotice("");
+    try {
+      const response = await fetch("/api/skills/execute", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ approvalId }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || data.error || "Tool execution failed");
+      setNotice(data.executed ? "MCP tool executed successfully." : "MCP tool returned an error.");
+      await load();
+    } catch (e) { setError(e.message || "Tool execution failed"); await load(); }
+    finally { setBusy(""); }
+  }
+
   async function reviewApproval(approvalId, decision) {
     const supabase = getSupabase();
     const { data: { session } } = await supabase.auth.getSession();
@@ -350,6 +369,14 @@ export default function SkillLibrary() {
               <div className="skill-approval-actions">
                 <button type="button" className="glass-chip-btn" onClick={() => reviewApproval(item.id, "denied")} disabled={busy === `approval:${item.id}`}>Deny</button>
                 <button type="button" className="glass-add-button" onClick={() => reviewApproval(item.id, "approved")} disabled={busy === `approval:${item.id}`}>Approve</button>
+              </div>
+            </div>
+          ))}
+          {approvals.filter((item) => item.status === "approved").map((item) => (
+            <div className="skill-approval-row" key={item.id}>
+              <div><strong>{item.tool_name}</strong><small>Approved · expires {new Date(item.expires_at).toLocaleString()}</small><pre>{JSON.stringify(item.arguments, null, 2)}</pre></div>
+              <div className="skill-approval-actions">
+                <button type="button" className="glass-add-button" onClick={() => executeApproval(item.id)} disabled={busy === `execute:${item.id}`}>{busy === `execute:${item.id}` ? <LoaderCircle className="spin" size={13}/> : <Code2 size={13}/>} Execute once</button>
               </div>
             </div>
           ))}

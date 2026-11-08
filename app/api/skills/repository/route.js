@@ -13,6 +13,7 @@ export async function GET(request) {
   const owner = (searchParams.get("owner") || "").trim();
   const repo = (searchParams.get("repo") || "").trim();
   const branch = (searchParams.get("branch") || "").trim();
+  const skill = (searchParams.get("skill") || "").trim().toLowerCase();
   if (!/^[a-zA-Z0-9_.-]{1,100}$/.test(owner) || !/^[a-zA-Z0-9_.-]{1,100}$/.test(repo)) {
     return NextResponse.json({ error: "Invalid GitHub owner or repository" }, { status: 400 });
   }
@@ -31,12 +32,17 @@ export async function GET(request) {
     const tree = await treeResponse.json();
     const skillFiles = (tree.tree || [])
       .filter((entry) => entry.type === "blob" && /(^|\/)SKILL\.md$/i.test(entry.path))
-      .slice(0, 40)
+      .slice(0, 200)
       .map((entry) => ({
         path: entry.path,
         raw_url: `https://raw.githubusercontent.com/${owner}/${repo}/${selectedBranch}/${entry.path.split("/").map(encodeURIComponent).join("/")}`,
         size: entry.size || 0,
       }));
+    if (skill) {
+      const matches = skillFiles.filter((file) => file.path.split("/").at(-2)?.toLowerCase() === skill);
+      if (!matches.length) return NextResponse.json({ error: "Could not locate this catalog Skill folder in its GitHub repository." }, { status: 404 });
+      skillFiles = matches;
+    }
     return NextResponse.json({
       repository: meta.full_name,
       html_url: meta.html_url,

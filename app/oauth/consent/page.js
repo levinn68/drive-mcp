@@ -129,7 +129,7 @@ export default function OAuthConsentPage() {
 
           <div className="oauth-tabs">
             <button type="button" onClick={()=>{setMode("password");setError("");setNotice("");}} className="oauth-tab" style={mode==="password"?{background:"rgba(155,139,255,.18)",color:"#d5ceff"}:{color:"rgba(255,255,255,.48)"}}>Password</button>
-            <button type="button" onClick={()=>{setMode("magic");setAccountMode("signin");setError("");setNotice("");}} className="rounded-lg py-2.5 text-xs font-semibold transition" style={mode==="magic"?{background:"rgba(155,139,255,.18)",color:"#d5ceff"}:{color:"rgba(255,255,255,.48)"}}>Magic link</button>
+            <button type="button" onClick={()=>{setMode("magic");setAccountMode("signin");setError("");setNotice("");}} className="oauth-tab" style={mode==="magic"?{background:"rgba(155,139,255,.18)",color:"#d5ceff"}:{color:"rgba(255,255,255,.48)"}}>Magic link</button>
           </div>
 
           <form onSubmit={submitEmail} className="oauth-form">
@@ -141,10 +141,10 @@ export default function OAuthConsentPage() {
               </span>
             </label>
             {mode==="password" && <label className="oauth-field">
-              <span className="mb-1.5 block text-xs font-medium text-white/55">Password</span>
-              <span className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[.04] px-3 focus-within:border-violet-300/50">
-                <KeyRound size={16} className="text-white/35"/>
-                <input type="password" autoComplete={accountMode==="signup"?"new-password":"current-password"} required minLength={6} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Enter your password" className="w-full bg-transparent py-3 text-sm text-white outline-none placeholder:text-white/25"/>
+              <span className="oauth-field-label">Password</span>
+              <span className="oauth-input-wrap">
+                <KeyRound size={16}/>
+                <input type="password" autoComplete={accountMode==="signup"?"new-password":"current-password"} required minLength={6} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Enter your password" className="oauth-input"/>
               </span>
             </label>}
             <button disabled={busy} className="oauth-submit-button" style={{background:"linear-gradient(100deg,#b5a8ff,#8c7af0)",color:"#11111c"}}>

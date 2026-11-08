@@ -191,9 +191,9 @@ export default function SkillLibrary() {
     finally { setBusy(""); }
   }
 
-  async function requestRuntimeToolApproval(bindingId, toolName, skillId) {
+  async function requestRuntimeToolApproval(bindingId, toolName, skillId, overrideArgs) {
     const key = `${skillId}:${toolName}`;
-    const raw = runtimeToolArgs[key] || "{}";
+    const raw = overrideArgs === undefined ? (runtimeToolArgs[key] || "{}") : JSON.stringify(overrideArgs);
     let args;
     try { args = JSON.parse(raw); } catch { setError(`Arguments for ${toolName} must be valid JSON.`); return; }
     if (!args || typeof args !== "object" || Array.isArray(args)) { setError("Tool arguments must be a JSON object."); return; }
@@ -557,7 +557,7 @@ export default function SkillLibrary() {
                           <pre>{JSON.stringify(step.arguments, null, 2)}</pre>
                           <button type="button" className="glass-chip-btn" onClick={() => {
                             setRuntimeToolArgs((current) => ({ ...current, [`${skill.id}:${step.tool}`]: JSON.stringify(step.arguments, null, 2) }));
-                            requestRuntimeToolApproval(step.bindingId, step.tool, skill.id);
+                            requestRuntimeToolApproval(step.bindingId, step.tool, skill.id, step.arguments);
                           }} disabled={busy === `request:${skill.id}:${step.tool}`}>Request approval for this step</button>
                         </div>
                       ))}

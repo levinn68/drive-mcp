@@ -45,3 +45,38 @@ html:has(.oauth-page), body:has(.oauth-page) {
 @media (max-height: 760px) {
   .oauth-page { align-items: flex-start; }
 }
+
+/* Liquid Glass refinement: restrained refraction, consistent controls, no utility-class leakage. */
+.oauth-card{
+  max-width:460px;
+  padding:32px;
+  background:linear-gradient(150deg,rgba(31,34,53,.82),rgba(14,17,30,.88));
+  -webkit-backdrop-filter:blur(30px) saturate(185%);
+  backdrop-filter:blur(30px) saturate(185%);
+  border:1px solid rgba(255,255,255,.15);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16),inset 0 -1px 0 rgba(255,255,255,.035),0 28px 80px rgba(0,0,0,.48);
+}
+.oauth-card:before{
+  content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(135deg,rgba(255,255,255,.075),transparent 28%,transparent 72%,rgba(161,145,255,.045));
+}
+.oauth-brand-mark{border-radius:17px;box-shadow:inset 0 1px 0 rgba(255,255,255,.22),0 10px 28px rgba(111,87,255,.12)}
+.oauth-google-button{min-height:52px;border:1px solid rgba(255,255,255,.86);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 8px 22px rgba(0,0,0,.12)}
+.oauth-google-button:hover{transform:translateY(-1px);box-shadow:inset 0 1px 0 #fff,0 12px 26px rgba(0,0,0,.2)}
+.oauth-tabs{position:relative;gap:4px;padding:4px;border-radius:15px;background:rgba(0,0,0,.24);box-shadow:inset 0 1px 3px rgba(0,0,0,.24)}
+.oauth-tab{min-height:42px;border-radius:11px;transition:background .2s ease,color .2s ease,box-shadow .2s ease}
+.oauth-tab[style*=background]{background:linear-gradient(180deg,rgba(163,145,255,.27),rgba(123,105,222,.18))!important;color:#e6e0ff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.13),0 2px 8px rgba(0,0,0,.12)}
+.oauth-input-wrap{min-height:54px;border-radius:15px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.055);transition:border-color .18s,box-shadow .18s,background .18s}
+.oauth-input-wrap:focus-within{background:rgba(255,255,255,.075);border-color:rgba(174,157,255,.58);box-shadow:0 0 0 3px rgba(145,125,255,.12),inset 0 1px 0 rgba(255,255,255,.08)}
+.oauth-input{font:inherit;font-size:14px;line-height:1.4;color:#f7f7ff}
+.oauth-input::placeholder{color:rgba(230,232,255,.32)}
+.oauth-input-wrap svg{flex:none;color:rgba(219,215,255,.56)}
+.oauth-field-label{font-size:12px;letter-spacing:.01em;color:rgba(235,236,255,.68)}
+.oauth-form{gap:14px}
+.oauth-submit-button,.oauth-approve-button{min-height:50px;border-radius:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 8px 20px rgba(113,91,224,.18)}
+.oauth-submit-button:hover,.oauth-approve-button:hover{filter:brightness(1.07);transform:translateY(-1px)}
+.oauth-security-note{border-radius:14px;background:rgba(255,255,255,.035);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+.oauth-footer{letter-spacing:.025em}
+@media(max-width:520px){.oauth-card{padding:25px 20px}.oauth-brand{gap:11px}.oauth-brand-mark{width:44px;height:44px}}
+@media(prefers-reduced-motion:reduce){.oauth-card{animation:none}.oauth-google-button,.oauth-tab,.oauth-submit-button,.oauth-approve-button{transition:none}}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.oauth-card{background:rgba(20,23,38,.97)}}

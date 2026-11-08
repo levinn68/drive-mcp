@@ -41,9 +41,21 @@ create policy "Users add their own MCP connections" on public.user_mcp_connectio
     )
   );
 drop policy if exists "Users update their own MCP connections" on public.user_mcp_connections;
+drop policy if exists "Users update their own MCP connections" on public.user_mcp_connections;
 create policy "Users update their own MCP connections" on public.user_mcp_connections
   for update to authenticated using ((select auth.uid()) = user_id)
-  with check ((select auth.uid()) = user_id);
+  with check (
+    (select auth.uid()) = user_id
+    and (
+      (registry_server_id is not null and custom_server_id is null)
+      or
+      (registry_server_id is null and custom_server_id is not null
+       and exists (
+         select 1 from public.user_custom_mcp_servers c
+         where c.id = custom_server_id and c.user_id = (select auth.uid())
+       ))
+    )
+  );
 drop policy if exists "Users delete their own MCP connections" on public.user_mcp_connections;
 create policy "Users delete their own MCP connections" on public.user_mcp_connections
   for delete to authenticated using ((select auth.uid()) = user_id);

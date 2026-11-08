@@ -39,9 +39,15 @@ export async function GET(request) {
         raw_url: `https://raw.githubusercontent.com/${owner}/${repo}/${selectedBranch}/${entry.path.split("/").map(encodeURIComponent).join("/")}`,
         size: entry.size || 0,
       }));
-    if (skill) {
-      const matches = skillFiles.filter((file) => file.path.split("/").at(-2)?.toLowerCase() === skill);
-      if (!matches.length) return NextResponse.json({ error: "Could not locate this catalog Skill folder in its GitHub repository." }, { status: 404 });
+    if (skill || skillName) {
+      const normalize = (value) => String(value || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      const wanted = [normalize(skillName), normalize(skill)].filter(Boolean);
+      let matches = skillFiles.filter((file) => {
+        const folder = normalize(file.path.split("/").at(-2) || "");
+        return wanted.some((candidate) => candidate === folder || candidate.endsWith(`-${folder}`) || folder.endsWith(`-${candidate}`));
+      });
+      if (!matches.length && skillFiles.length === 1) matches = skillFiles;
+      if (!matches.length) return NextResponse.json({ error: "This catalog entry could not be matched to a unique SKILL.md folder in its source repository. Open the repository and choose the Skill manually." }, { status: 404 });
       skillFiles = matches;
     }
     return NextResponse.json({

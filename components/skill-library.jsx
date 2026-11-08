@@ -36,6 +36,7 @@ export default function SkillLibrary() {
   const [runtimeTasks, setRuntimeTasks] = useState({});
   const [runtimeContexts, setRuntimeContexts] = useState({});
   const [runtimeToolArgs, setRuntimeToolArgs] = useState({});
+  const [workflowPlans, setWorkflowPlans] = useState({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -167,6 +168,27 @@ export default function SkillLibrary() {
     if (saveError) setError(saveError.message);
     else { setNotice("MCP linked to this Skill. Binding remains disabled until tool permissions are configured."); await load(); }
     setBusy("");
+  }
+
+  async function generateWorkflowPlan(skill) {
+    const task = (runtimeTasks[skill.id] || "").trim();
+    if (!task) { setError("Describe the task before generating a workflow plan."); return; }
+    const supabase = getSupabase();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setError("Sign in before generating a plan."); return; }
+    setBusy(`plan:${skill.id}`); setError(""); setNotice("");
+    try {
+      const response = await fetch("/api/skills/orchestrate/plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ skillId: skill.id, task }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.detail || data.error || "Workflow planning failed");
+      setWorkflowPlans((current) => ({ ...current, [skill.id]: data }));
+      setNotice("Workflow plan generated. Nothing has been executed; each step still needs individual approval.");
+    } catch (e) { setError(e.message || "Workflow planning failed"); }
+    finally { setBusy(""); }
   }
 
   async function requestRuntimeToolApproval(bindingId, toolName, skillId) {
@@ -520,6 +542,28 @@ export default function SkillLibrary() {
                     {busy === `runtime:${skill.id}` ? <LoaderCircle className="spin" size={13}/> : <Code2 size={13}/>}
                     Prepare runtime context
                   </button>
+                  <button type="button" className="glass-chip-btn" onClick={() => generateWorkflowPlan(skill)} disabled={busy === `plan:${skill.id}` || !runtimeTasks[skill.id]?.trim()}>
+                    {busy === `plan:${skill.id}` ? <LoaderCircle className="spin" size={13}/> : <Code2 size={13}/>}
+                    Generate AI workflow plan
+                  </button>
+                  {workflowPlans[skill.id] && (
+                    <div className="skill-runtime-result">
+                      <div className="skill-runtime-meta"><strong>Proposed workflow</strong><span>{workflowPlans[skill.id].plan.steps.length} steps · not executed</span></div>
+                      <p>{workflowPlans[skill.id].plan.summary}</p>
+                      {workflowPlans[skill.id].plan.steps.map((step) => (
+                        <div className="skill-runtime-source" key={step.index}>
+                          <strong>{step.index}. {step.tool}</strong>
+                          <small>{step.purpose || "No purpose supplied."}</small>
+                          <pre>{JSON.stringify(step.arguments, null, 2)}</pre>
+                          <button type="button" className="glass-chip-btn" onClick={() => {
+                            setRuntimeToolArgs((current) => ({ ...current, [`${skill.id}:${step.tool}`]: JSON.stringify(step.arguments, null, 2) }));
+                            requestRuntimeToolApproval(step.bindingId, step.tool, skill.id);
+                          }} disabled={busy === `request:${skill.id}:${step.tool}`}>Request approval for this step</button>
+                        </div>
+                      ))}
+                      {workflowPlans[skill.id].plan.risks.length > 0 && <div className="skill-runtime-source"><strong>Planner risk notes</strong><small>{workflowPlans[skill.id].plan.risks.join(" · ")}</small></div>}
+                    </div>
+                  )}
                   {runtimeContexts[skill.id] && (
                     <div className="skill-runtime-result">
                       <div className="skill-runtime-meta"><strong>Context prepared</strong><span>{runtimeContexts[skill.id].sources.reduce((n, source) => n + (source.tools?.length || 0), 0)} allowed tools available</span></div>

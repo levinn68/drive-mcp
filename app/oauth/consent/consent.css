@@ -21,3 +21,27 @@
 .oauth-footer{margin-top:25px;text-align:center;color:rgba(255,255,255,.3);font-size:10px;line-height:1.5}
 .oauth-permission-eyebrow{margin-bottom:12px;color:#c4b5fd;font-size:10px;font-weight:700;letter-spacing:.17em;text-transform:uppercase}.oauth-permission-card{display:grid;gap:14px;padding:17px;border:1px solid rgba(255,255,255,.1);border-radius:16px;background:rgba(255,255,255,.035)}.oauth-client-row{display:flex;align-items:center;gap:9px;font-size:12px}.oauth-redirect{overflow-wrap:anywhere;color:rgba(255,255,255,.45);font-size:10px}.oauth-scopes{padding-top:13px;border-top:1px solid rgba(255,255,255,.1)}.oauth-scopes-title{margin-bottom:9px;color:rgba(255,255,255,.45);font-size:10px;letter-spacing:.1em;text-transform:uppercase}.oauth-scope-list{display:flex;flex-wrap:wrap;gap:7px}.oauth-scope{padding:6px 10px;border:1px solid rgba(196,181,253,.15);border-radius:99px;background:rgba(167,139,250,.1);color:#ddd6fe;font-size:10px}.oauth-decision-actions{display:flex;gap:10px;margin-top:20px}.oauth-deny-button,.oauth-approve-button{flex:1;width:auto;min-height:45px}.oauth-deny-button{border:1px solid rgba(255,255,255,.16);border-radius:12px;background:rgba(255,255,255,.04);color:rgba(255,255,255,.8);font-size:12px;cursor:pointer}.oauth-loading{display:flex;align-items:center;gap:10px;color:rgba(255,255,255,.6);font-size:12px}.oauth-error,.oauth-notice{display:flex;gap:9px;margin-top:18px;padding:12px;border-radius:12px;font-size:12px;line-height:1.5}.oauth-error{border:1px solid rgba(248,113,113,.15);background:rgba(248,113,113,.1);color:#fca5a5}.oauth-notice{border:1px solid rgba(52,211,153,.15);background:rgba(52,211,153,.07);color:#a7f3d0}
 @media(max-width:520px){.oauth-page{padding:18px 12px}.oauth-card{padding:24px 19px;border-radius:22px}.oauth-brand{margin-bottom:27px}.oauth-title{font-size:26px}.oauth-secure-pill{font-size:8px;padding:7px 8px}.oauth-decision-actions{flex-direction:column}}
+
+/* Consent page is a standalone scrollable auth surface; the app shell globally locks body scrolling. */
+html:has(.oauth-page), body:has(.oauth-page) {
+  height: auto !important;
+  min-height: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+}
+.oauth-page {
+  min-height: 100svh;
+  height: auto;
+  overflow: visible;
+  padding-top: max(42px, env(safe-area-inset-top));
+  padding-bottom: max(42px, env(safe-area-inset-bottom));
+}
+.oauth-field { display: block; width: 100%; }
+.oauth-form { width: 100%; }
+.oauth-input-wrap { min-height: 54px; }
+.oauth-input { display:block; }
+.oauth-submit-button { margin-top: 2px; }
+.oauth-security-note { max-width: 100%; }
+@media (max-height: 760px) {
+  .oauth-page { align-items: flex-start; }
+}

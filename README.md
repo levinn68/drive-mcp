@@ -1,19 +1,29 @@
-# NEXORA / drive-mcp
+# DRIVE / drive-mcp
 
 **One Hub. Every Connection.**
 
-NEXORA is a curated integration hub and remote MCP gateway. Its goal is to let users discover supported providers, authorize their own accounts, and expose approved tools through a secure, user-scoped MCP endpoint.
+DRIVE is an MCP server directory and connection platform. It imports server metadata from the official MCP Registry, adds discovery and trust signals, and will let users connect supported remote MCP servers or register custom endpoints.
 
-## Current status
+## Current implementation
 
-This repository begins with the NEXORA web catalog shell. The Supabase project and initial catalog schema are provisioned separately. Provider cards are discovery metadata only; they do not imply that an OAuth flow or MCP adapter is already implemented.
+- Next.js App Router directory page.
+- Live read-only import from the official MCP Registry API: `https://registry.modelcontextprotocol.io/v0.1/servers`.
+- Uses `version=latest`, cursor pagination and registry search (minimum three characters).
+- Server-side fetch with a one-hour cache.
+- Displays registry metadata, publisher server name, version, repository and transport hints.
+- Clear warning that registry listing does not equal security verification or connection readiness.
+
+## Important transport distinction
+
+- Remote servers can expose Streamable HTTP transport and may be connectable after authentication and compatibility checks.
+- Package-based STDIO servers are not automatically remote. They require an isolated hosted runtime before DRIVE can execute them.
+- Registry metadata is untrusted input. Never execute package commands or connect to a server merely because it appears in the directory.
 
 ## Stack
 
-- Next.js App Router
-- React
-- Supabase (Auth, Postgres, Row Level Security)
-- Cloudflare Workers (planned remote MCP gateway)
+- Next.js App Router / React
+- Supabase Postgres + RLS for user connections, policies and audit events
+- Cloudflare Workers for the future authenticated MCP gateway
 
 ## Local development
 
@@ -26,15 +36,19 @@ npm run dev
 ## Security requirements
 
 - Never expose service-role keys or provider credentials to the browser.
-- Store provider credentials encrypted server-side.
+- Store credentials encrypted server-side and isolate them per user.
 - Enforce per-user ownership and tool-level scopes.
 - Require explicit approval for destructive or sensitive tools.
-- Audit connection, authorization, and tool execution events.
+- Audit connection, authorization and tool execution events.
+- Apply timeouts, rate limits, SSRF protection and allowlists to remote MCP connections.
+- Do not execute untrusted STDIO packages in the web application process.
 
 ## Roadmap
 
-1. Connect the web app to Supabase Auth and the integration catalog.
-2. Implement provider OAuth and API-key connection flows.
-3. Build provider adapters and normalized tool discovery.
+1. Add custom remote MCP registration and validation.
+2. Add registry-source provenance, deduplication and sync status.
+3. Add server security and compatibility verification.
 4. Implement authenticated Streamable HTTP MCP transport on Cloudflare Workers.
-5. Add approval policies, audit logs, rate limits, and end-to-end tests.
+5. Add isolated hosted STDIO runtime support.
+6. Connect Supabase Auth, per-user connections, tool policies and audit logs.
+7. Add automated tests and deployment checks.

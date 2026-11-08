@@ -1,0 +1,3 @@
+fastapi==0.115.12
+uvicorn[standard]==0.34.2
+skillspector @ git+https://github.com/NVIDIA/SkillSpector.git@v2.13.1

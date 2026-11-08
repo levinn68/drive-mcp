@@ -78,11 +78,11 @@ export async function POST(request) {
       await audit(auth.supabase, auth.user.id, { binding_id: binding.id, tool_name: toolName, action: "blocked", outcome: "blocked", details: { reason: "tool_not_allowlisted" } });
       return json({ error: "This tool is not in the Skill allowlist" }, 403);
     }
-    const { data: skill } = await auth.supabase.from("user_skills").select("id,status,security_scan_status,security_scan_hash,skill_md")
+    const { data: skill } = await auth.supabase.from("user_skills").select("id,status,security_scan_status,security_scan_hash,security_bundle_hash,security_bundle_manifest,skill_md")
       .eq("id", binding.skill_id).eq("user_id", auth.user.id).maybeSingle();
     if (!skill || skill.status !== "enabled") return json({ error: "Skill must be reviewed and enabled first" }, 403);
     const currentHash = createHash("sha256").update(skill.skill_md || "").digest("hex");
-    if (skill.security_scan_status !== "safe" || !skill.security_scan_hash || currentHash !== skill.security_scan_hash) {
+    if (skill.security_scan_status !== "safe" || !skill.security_scan_hash || currentHash !== skill.security_scan_hash || !skill.security_bundle_hash || !Array.isArray(skill.security_bundle_manifest) || skill.security_bundle_manifest.length < 1) {
       return json({ error: "Skill security scan is missing, stale, or not SAFE. Re-scan before requesting tools." }, 403);
     }
 

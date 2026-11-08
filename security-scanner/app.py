@@ -31,8 +31,8 @@ def valid_path(value: str) -> bool:
     path = PurePosixPath(value)
     return (
         not path.is_absolute()
-        and "\\\\" not in value
-        and "\\0" not in value
+        and "\\" not in value
+        and "\0" not in value
         and all(part not in ("", ".", "..") and SAFE_PART.fullmatch(part) for part in value.split("/"))
     )
 
@@ -67,7 +67,7 @@ def scan(payload: ScanRequest, authorization: str | None = Header(default=None))
     digest = hashlib.sha256()
     for path, raw in normalized:
         digest.update(path.encode("utf-8"))
-        digest.update(b"\\0")
+        digest.update(b"\0")
         digest.update(raw)
         digest.update(b"\\0")
     bundle_hash = digest.hexdigest()

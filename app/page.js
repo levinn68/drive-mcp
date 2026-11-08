@@ -25,21 +25,34 @@ import {
 
 const REGISTRY = "https://registry.modelcontextprotocol.io";
 
-async function getServers(query, cursor) {
-  const params = new URLSearchParams({ limit: "100", version: "latest" });
-  if (query && query.trim().length >= 3) params.set("search", query.trim());
-  if (cursor) params.set("cursor", cursor);
+async function getServers(query) {
+  const all = [];
+  const seen = new Set();
+  let cursor = "";
   try {
-    const response = await fetch(`${REGISTRY}/v0.1/servers?${params}`, {
-      headers: { accept: "application/json" },
-      next: { revalidate: 3600 },
-      signal: AbortSignal.timeout(9000),
-    });
-    if (!response.ok) throw new Error("Registry unavailable");
-    const payload = await response.json();
-    return { ...payload, nextCursor: payload.metadata?.nextCursor || null };
+    for (let page = 0; page < 10 && all.length < 1000; page++) {
+      const params = new URLSearchParams({ limit: "100", version: "latest" });
+      if (query && query.trim().length >= 3) params.set("search", query.trim());
+      if (cursor) params.set("cursor", cursor);
+      const response = await fetch(`${REGISTRY}/v0.1/servers?${params}`, {
+        headers: { accept: "application/json" },
+        next: { revalidate: query ? 900 : 3600 },
+        signal: AbortSignal.timeout(12000),
+      });
+      if (!response.ok) throw new Error("Registry unavailable");
+      const payload = await response.json();
+      for (const entry of payload.servers || []) {
+        const server = entry?.server || entry;
+        const key = `${server?.name || ""}@${server?.version || ""}`;
+        if (server?.name && !seen.has(key)) { seen.add(key); all.push(entry); }
+        if (all.length >= 1000) break;
+      }
+      cursor = payload.metadata?.nextCursor || "";
+      if (!cursor) break;
+    }
+    return { servers: all.slice(0, 1000), nextCursor: cursor || null, unavailable: false };
   } catch {
-    return { servers: [], metadata: {}, unavailable: true };
+    return { servers: all.slice(0, 1000), nextCursor: cursor || null, unavailable: all.length === 0 };
   }
 }
 
@@ -150,7 +163,7 @@ export default async function Home({ searchParams }) {
   const cursor = typeof params?.cursor === "string" ? params.cursor : "";
   const data = await getServers(query, cursor);
   const servers = Array.isArray(data.servers) ? data.servers : [];
-  const initialTab = query || cursor ? "discover" : "connections";
+  const visibleServers = servers.slice(page * pageSize, (page + 1) * pageSize);\n  const initialTab = query ? "mcp" : "mcp";
 
   const connections = (
     <div className="workspace-stack">
@@ -265,7 +278,7 @@ export default async function Home({ searchParams }) {
 
       <div className="catalog-source-line">
         <span className="source-indicator" />
-        Official MCP Registry · Manual source review
+        Official MCP Registry · Up to 1,000 latest server entries
       </div>
 
       <div className="discover-highlights">
@@ -301,7 +314,7 @@ export default async function Home({ searchParams }) {
       <div className="directory-toolbar">
         <div className="directory-stats">
           <strong>{servers.length}</strong>{" "}
-          <span>{query ? `matching results for "${query}"` : "servers on this page"}</span>
+          <span>{query ? `matching results for "${query}"` : "MCP servers indexed"}</span>
           <span className="registry-live">
             <i /> Official MCP Registry
           </span>
@@ -328,7 +341,7 @@ export default async function Home({ searchParams }) {
         </div>
       ) : servers.length ? (
         <div className="integration-grid">
-          {servers.map((entry, index) => (
+          {visibleServers.map((entry, index) => (
             <ServerCard
               key={`${entry?.server?.name || entry?.name || "server"}:${
                 entry?.server?.version || entry?.version || index
@@ -356,19 +369,11 @@ export default async function Home({ searchParams }) {
         </div>
       )}
 
-      {data.nextCursor && (
+      {servers.length > pageSize && (
         <div className="load-more-row">
-          <a
-            className="load-more-button"
-            href={`/?${new URLSearchParams({
-              ...(query ? { q: query } : {}),
-              cursor: data.nextCursor,
-            }).toString()}#directory`}
-          >
-            <span>Load next page</span>
-            <ArrowUpRight size={14} />
-          </a>
-          <span>Continue browsing the MCP catalog</span>
+          {page > 0 && <a className="load-more-button" href={`/?${new URLSearchParams({ ...(query ? { q: query } : {}), page: String(page - 1) }).toString()}#mcp`}>Previous</a>}
+          <span>Page {page + 1} of {Math.ceil(servers.length / pageSize)} · {servers.length.toLocaleString()} MCP servers loaded</span>
+          {(page + 1) * pageSize < servers.length && <a className="load-more-button" href={`/?${new URLSearchParams({ ...(query ? { q: query } : {}), page: String(page + 1) }).toString()}#mcp`}>Next <ArrowUpRight size={14}/></a>}
         </div>
       )}
 

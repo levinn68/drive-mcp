@@ -435,8 +435,8 @@ export default function SkillLibrary() {
                   <div className="skill-repository-main">
                     <div className="skill-repository-copy">
                       <strong>{repository.catalogSkill?.name || repository.full_name}</strong>
-                      <p>{repository.catalogSkill ? `Source: ${repository.full_name} · ${repository.catalogSkill?.category || "other"}` : (repository.description || "No repository description provided.")}</p>
-                      <small>{repository.stars.toLocaleString()} installs · {repository.license || "License not declared"} · {repository.language || "Language not specified"}</small>
+                      <p>{(repository.catalogSkill?.description || repository.description || "No description provided.").length > 150 ? `${(repository.catalogSkill?.description || repository.description).slice(0, 147).trimEnd()}…` : (repository.catalogSkill?.description || repository.description || "No description provided.")}</p>
+                      <small>★ {repository.stars.toLocaleString()} stars · {repository.catalogSkill?.category || "Other"} · {repository.catalogSkill?.verified ? "Verified listing" : "Community listing"}</small>
                     </div>
                     <button type="button" className="glass-chip-btn" onClick={() => inspectRepository(repository)} disabled={detail?.loading}>
                       {detail?.loading ? <LoaderCircle className="spin" size={13}/> : <FileSearch size={13}/>}

@@ -281,7 +281,7 @@ export default function WorkspaceTabs({
             </div>
           </div>
           <p>
-            Adjust translucent backdrop blur saturation and curved lens bevel highlights across cards and the 5-tab navigation dock.
+            Adjust translucent backdrop blur saturation and curved lens bevel highlights across cards and the 3-tab navigation dock.
           </p>
           <div className="segmented-pills is-full" role="radiogroup" aria-label="Glass blur intensity">
             {[
@@ -475,13 +475,9 @@ export default function WorkspaceTabs({
           <span className="island-sub">
             {active === "mcp"
               ? `${serverCount} SERVERS`
-              : active === "mcp"
-              ? "PERSONAL HUB"
-              : active === "account"
-              ? "STREAMABLE HTTP"
-              : active === "account"
-              ? "ZERO-TRUST GUARD"
-              : "LIQUID ENGINE"}
+              : active === "skills"
+              ? "SKILL LIBRARY"
+              : "ACCOUNT & SECURITY"}
           </span>
         </div>
 
@@ -493,16 +489,16 @@ export default function WorkspaceTabs({
             title="Open MCP Marketplace"
           >
             <Compass size={13} />
-            <span>{serverCount ? `${serverCount} MCPs` : "Directory"}</span>
+            <span>{active === "skills" ? "Skills" : active === "account" ? "Security" : serverCount ? `${serverCount} MCPs` : "Directory"}</span>
           </button>
           <button
             type="button"
             className="top-pill-btn is-accent"
             onClick={() => selectTab("account", true)}
-            title="Add Custom MCP"
+            title={active === "skills" ? "Open Skills Library" : active === "account" ? "Account Security" : "Add Custom MCP"}
           >
             <Sparkles size={12} />
-            <span>Connect</span>
+            <span>{active === "skills" ? "My Skills" : active === "account" ? "Security" : "Connect"}</span>
           </button>
         </div>
       </header>
@@ -523,7 +519,7 @@ export default function WorkspaceTabs({
         })}
       </section>
 
-      {/* 5-Tab iOS 26 Liquid Glass Bottom Navbar (Video Reference Match) */}
+      {/* 3-Tab iOS 26 Liquid Glass Bottom Navbar (Video Reference Match) */}
       <div className="bottom-dock-stage">
         <nav
           ref={dockRef}

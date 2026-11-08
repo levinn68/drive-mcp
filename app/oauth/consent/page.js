@@ -118,7 +118,7 @@ export default function OAuthConsentPage() {
           <div className="oauth-intro">
             <div className="oauth-welcome-pill" style={{background:"rgba(139,124,255,.12)"}}><Sparkles size={13}/> Welcome to DRIVE</div>
             <h1 className="oauth-title">{accountMode === "signup" ? "Create your account" : "Sign in to DRIVE"}</h1>
-            <p className="oauth-subtitle">Choose a secure sign-in method to review and approve this MCP connection.</p>
+            <p className="oauth-subtitle">Sign in to continue to your DRIVE workspace.</p>
           </div>
 
           <button type="button" onClick={signInWithGoogle} disabled={busy} className="oauth-google-button">
@@ -140,7 +140,7 @@ export default function OAuthConsentPage() {
                 <input type="email" autoComplete="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="you@example.com" className="oauth-input"/>
               </span>
             </label>
-            {mode==="password" && <label className="block">
+            {mode==="password" && <label className="oauth-field">
               <span className="mb-1.5 block text-xs font-medium text-white/55">Password</span>
               <span className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[.04] px-3 focus-within:border-violet-300/50">
                 <KeyRound size={16} className="text-white/35"/>
@@ -156,7 +156,7 @@ export default function OAuthConsentPage() {
             {accountMode==="signin" ? "New to DRIVE? " : "Already have an account? "}
             <button type="button" onClick={()=>{setAccountMode(accountMode==="signin"?"signup":"signin");setError("");setNotice("");}} className="oauth-switch-link">{accountMode==="signin"?"Create account":"Sign in"}</button>
           </div>}
-          <div className="oauth-security-note"><LockKeyhole size={14} className="mt-0.5 shrink-0 text-emerald-300/70"/> Your credentials are handled directly by Supabase Auth. DRIVE never sees or stores your password.</div>
+          <div className="oauth-security-note"><LockKeyhole size={14} className="mt-0.5 shrink-0 text-emerald-300/70"/> Your sign-in is protected by Supabase. DRIVE never stores your password.</div>
         </> : details ? <>
           <div className="oauth-permission-eyebrow">Permission request</div>
           <h1 className="oauth-title">Authorize {details.client?.name || "MCP client"}?</h1>
@@ -175,7 +175,7 @@ export default function OAuthConsentPage() {
         </> : <div className="oauth-loading"><LoaderCircle className="animate-spin" size={18}/> Loading authorization request…</div>}
         {error && <div role="alert" className="oauth-error" style={{background:"rgba(248,113,113,.1)",color:"#fca5a5"}}><AlertCircle size={17} className="shrink-0"/>{error}</div>}
         {notice && <div role="status" className="oauth-notice">{notice}</div>}
-        <p className="oauth-footer">DRIVE Secure Authorization · You can revoke connected applications from Account settings.</p>
+        <p className="oauth-footer">DRIVE · Secure connection authorization</p>
       </section>
     </main>
   );

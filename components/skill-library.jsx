@@ -131,7 +131,7 @@ export default function SkillLibrary() {
   }
 
   async function importSkill() {
-    if (!inspected?.scan?.safe_to_install || !inspected.scan.complete || !inspected.scan.content_sha256) {
+    if (!inspected?.scan?.safe_to_install || !inspected.scan.complete || !inspected.scan.content_sha256 || !inspected.scan.bundle_sha256 || !Array.isArray(inspected.scan.bundle_manifest)) {
       setError("A complete NVIDIA SkillSpector SAFE verdict is required before importing.");
       return;
     }
@@ -151,6 +151,8 @@ export default function SkillLibrary() {
       license: inspected.license,
       security_scan: inspected.scan,
       security_scan_hash: inspected.scan.content_sha256,
+      security_bundle_hash: inspected.scan.bundle_sha256,
+      security_bundle_manifest: inspected.scan.bundle_manifest,
       security_scan_status: "safe",
       security_scanned_at: inspected.scan.scanned_at,
       security_scanner_version: inspected.scan.scanner_version,

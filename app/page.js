@@ -82,8 +82,23 @@ function details(entry) {
   };
 }
 
-function ServerCard({ entry }) {
+async function ServerCard({ entry }) {
   const item = details(entry);
+  let stars = null;
+  try {
+    const match = item.repository.match(/github\\.com\\/([^/]+)\\/([^/#?]+)/i);
+    if (match) {
+      const response = await fetch(`https://api.github.com/repos/${match[1]}/${match[2].replace(/\\.git$/, "")}`, {
+        headers: { accept: "application/vnd.github+json" },
+        next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(5000),
+      });
+      if (response.ok) {
+        const repository = await response.json();
+        stars = Number(repository.stargazers_count || 0);
+      }
+    }
+  } catch {}
   const isRemote = item.remotes.length > 0;
   return (
     <article className="integration-card server-card">
@@ -105,11 +120,11 @@ function ServerCard({ entry }) {
 
       <div className="server-meta">
         <span className="transport-pill">{item.transport}</span>
-        <span className="version-pill">v{item.version}</span>
+        <span className="version-pill">v{item.version}</span>\n        {stars !== null && <span className="version-pill" title="GitHub stars">★ {stars.toLocaleString()}</span>}
       </div>
 
       <h3>{item.name}</h3>
-      <p>{item.description}</p>
+      <p>{item.description.length > 145 ? `${item.description.slice(0, 142).trimEnd()}…` : item.description}</p>
 
       <div className="server-tags">
         <span>
@@ -148,9 +163,7 @@ function ServerCard({ entry }) {
           )}
         </div>
         <AddMcpButton
-          serverName={item.id}
-          version={item.version}
-          remoteAvailable={isRemote}
+          serverName={item.id}\n          version={item.version}\n          registryEntry={entry}\n          remoteAvailable={isRemote}
         />
       </div>
     </article>

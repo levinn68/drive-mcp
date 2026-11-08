@@ -25,6 +25,9 @@ export default function SkillLibrary() {
   const [repositoryDetails, setRepositoryDetails] = useState({});
   const [searching, setSearching] = useState(false);
   const [searchMessage, setSearchMessage] = useState("");
+  const [connections, setConnections] = useState([]);
+  const [bindings, setBindings] = useState([]);
+  const [bindingChoice, setBindingChoice] = useState({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -38,6 +41,15 @@ export default function SkillLibrary() {
       .order("updated_at", { ascending: false });
     if (loadError) setError(loadError.message);
     else setSkills(data || []);
+    const { data: bindingRows, error: bindingError } = await supabase.from("mcp_skill_bindings")
+      .select("id,skill_id,connection_id,allowed_tools,enabled,requires_approval");
+    if (bindingError) setError(bindingError.message);
+    else setBindings(bindingRows || []);
+    const token = session.access_token;
+    const connectionResponse = await fetch("/api/connections", { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
+    const connectionData = await connectionResponse.json();
+    if (connectionResponse.ok) setConnections(connectionData.connections || []);
+    else setError(connectionData.error || "Could not load MCP connections");
     setLoading(false);
   }, []);
 
@@ -120,6 +132,37 @@ export default function SkillLibrary() {
     }, { onConflict: "user_id,source_repo,skill_path" });
     if (saveError) setError(saveError.message);
     else { setNotice("Skill saved to your library. It remains disabled pending your review."); setInspected(null); setUrl(""); await load(); }
+    setBusy("");
+  }
+
+  async function attachConnection(skill) {
+    const connectionId = bindingChoice[skill.id];
+    if (!connectionId) { setError("Choose an MCP connection first."); return; }
+    if (skill.status !== "enabled") { setError("Approve this Skill after reviewing it before creating a binding."); return; }
+    setBusy(`bind:${skill.id}`); setError(""); setNotice("");
+    const supabase = getSupabase();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setError("Sign in before creating a binding."); setBusy(""); return; }
+    const { error: saveError } = await supabase.from("mcp_skill_bindings").upsert({
+      user_id: session.user.id,
+      skill_id: skill.id,
+      connection_id: connectionId,
+      allowed_tools: [],
+      enabled: false,
+      requires_approval: true,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "user_id,skill_id,connection_id" });
+    if (saveError) setError(saveError.message);
+    else { setNotice("MCP linked to this Skill. Binding remains disabled until tool permissions are configured."); await load(); }
+    setBusy("");
+  }
+
+  async function removeBinding(binding) {
+    const supabase = getSupabase();
+    setBusy(`unbind:${binding.id}`); setError("");
+    const { error: deleteError } = await supabase.from("mcp_skill_bindings").delete().eq("id", binding.id);
+    if (deleteError) setError(deleteError.message);
+    else await load();
     setBusy("");
   }
 
@@ -271,7 +314,26 @@ export default function SkillLibrary() {
                 {skill.status === "enabled" && <button type="button" className="glass-chip-btn" onClick={() => setStatus(skill,"review_required")} disabled={busy === skill.id}>Disable approval</button>}
                 <button type="button" className="glass-chip-btn" onClick={() => remove(skill)} disabled={busy === skill.id}><Trash2 size={13}/>Remove</button>
               </div>
-              <small className="availability-note">Approval only. DRIVE does not execute scripts or load this Skill into an agent runtime yet.</small>
+              <div className="skill-binding-panel">
+                <div className="skill-binding-heading"><strong>Connect an MCP</strong><small>{bindings.filter((binding) => binding.skill_id === skill.id).length} linked</small></div>
+                {connections.length === 0 ? <p className="availability-note">Add a remote MCP connection in the Add tab before linking it here.</p> : (
+                  <div className="skill-binding-row">
+                    <select aria-label={`Select MCP for ${skill.name}`} value={bindingChoice[skill.id] || ""} onChange={(event) => setBindingChoice((current) => ({ ...current, [skill.id]: event.target.value }))}>
+                      <option value="">Choose your MCP connection…</option>
+                      {connections.map((connection) => <option key={connection.id} value={connection.id}>{connection.server?.title || connection.server?.display_name || connection.server?.server_name || connection.server?.endpoint_url || "MCP connection"}{connection.enabled ? " · Active" : " · Off"}</option>)}
+                    </select>
+                    <button type="button" className="glass-chip-btn" onClick={() => attachConnection(skill)} disabled={busy === `bind:${skill.id}` || skill.status !== "enabled"}>Link</button>
+                  </div>
+                )}
+                {bindings.filter((binding) => binding.skill_id === skill.id).map((binding) => {
+                  const connection = connections.find((item) => item.id === binding.connection_id);
+                  return <div className="skill-binding-existing" key={binding.id}>
+                    <span><strong>{connection?.server?.title || connection?.server?.display_name || connection?.server?.server_name || "Connected MCP"}</strong><small>{binding.enabled ? "Enabled" : "Linked · Disabled"} · {binding.allowed_tools?.length || 0} tools allowed · Approval required</small></span>
+                    <button type="button" className="glass-chip-btn" onClick={() => removeBinding(binding)} disabled={busy === `unbind:${binding.id}`}>Unlink</button>
+                  </div>;
+                })}
+              </div>
+              <small className="availability-note">Approval does not execute the Skill. New bindings are always disabled and have no allowed tools until a permission manager is configured.</small>
             </article>
           ))}
         </div>

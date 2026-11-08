@@ -79,7 +79,7 @@ export async function POST(request) {
       name: metadata.name, description: metadata.description, version: metadata.version || null, license: metadata.license || null,
       source_repo: `https://github.com/${parts[0]}/${parts[1]}`, skill_path: parts.slice(3).join("/"), skill_md: markdown,
       scan: { scanner: scan.scanner, scanner_version: scan.scanner_version, content_sha256: hash, scan_mode: scan.scan_mode, risk_score: scan.risk_score, severity: scan.severity, recommendation: scan.recommendation, safe_to_install: true, complete: true, findings: scan.findings || [], scanned_at: new Date().toISOString() },
-      checks: { frontmatter: true, size_bytes: size, risk_level: "safe", external_urls: [...markdown.matchAll(/https?:\\/\\/[^\\s)\\]}>"']+/g)].length, external_hosts: [], scripts_detected: false, findings: [] },
+      checks: { frontmatter: true, size_bytes: size, risk_level: "safe", external_urls: (markdown.split("https://").length - 1) + (markdown.split("http://").length - 1), external_hosts: [], scripts_detected: false, findings: [] },
       disclaimer: "SkillSpector static analysis passed. This is defense-in-depth, not a sandbox or a guarantee of safety."
     });
   } catch {

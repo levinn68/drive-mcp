@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import { ArrowUpRight, Cable, CircleAlert, Command, RefreshCw, ShieldCheck } from "lucide-react";
+import CopyButton from "./copy-button";
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -91,7 +92,7 @@ export default function MyMcpPanel() {
         const ready = connection.kind === "registry" ? Array.isArray(server.remotes) && server.remotes.length > 0 : server.status === "verified";
         return <article className="connection-row" key={connection.id}>
           <div className="connection-symbol"><Cable size={19}/></div>
-          <div className="connection-info"><div className="connection-title">{title}<span className="connection-kind">{connection.kind === "custom" ? "CUSTOM" : "REGISTRY"}</span></div><p>{detail}</p><span className="connection-meta">{ready ? "Remote endpoint listed" : "Needs verification"} · Added {new Date(connection.created_at).toLocaleDateString()}</span></div>
+          <div className="connection-info"><div className="connection-title">{title}<span className="connection-kind">{connection.kind === "custom" ? "CUSTOM" : "REGISTRY"}</span></div><p>{detail}</p><span className="connection-meta">{ready ? "Remote endpoint listed" : "Needs verification"} · Added {new Date(connection.created_at).toLocaleDateString()}</span><div className="connection-copy"><CopyButton value={server.endpoint_url || server.repository_url || server.server_name || title} label="Copy details"/></div></div>
           <div className="connection-control"><span className={connection.enabled ? "switch-label is-on" : "switch-label"}>{connection.enabled ? "ON" : "OFF"}</span><button type="button" role="switch" aria-checked={connection.enabled} aria-label={`${connection.enabled ? "Disable" : "Enable"} ${title}`} className={`ios-switch ${connection.enabled ? "checked" : ""}`} onClick={() => toggle(connection)} disabled={busyId === connection.id || !ready}><span/></button></div>
         </article>;
       })}</div>}

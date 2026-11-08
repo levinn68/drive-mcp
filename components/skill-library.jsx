@@ -29,6 +29,8 @@ export default function SkillLibrary() {
   const [bindings, setBindings] = useState([]);
   const [bindingChoice, setBindingChoice] = useState({});
   const [bindingDrafts, setBindingDrafts] = useState({});
+  const [discoveredTools, setDiscoveredTools] = useState({});
+  const [discoveringConnection, setDiscoveringConnection] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -156,6 +158,32 @@ export default function SkillLibrary() {
     if (saveError) setError(saveError.message);
     else { setNotice("MCP linked to this Skill. Binding remains disabled until tool permissions are configured."); await load(); }
     setBusy("");
+  }
+
+  async function discoverMcpTools(connectionId) {
+    setDiscoveringConnection(connectionId); setError(""); setNotice("");
+    try {
+      const supabase = getSupabase();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Sign in before discovering MCP tools.");
+      const response = await fetch("/api/skills/tools", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ connectionId }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "MCP tool discovery failed");
+      setDiscoveredTools((current) => ({ ...current, [connectionId]: data }));
+      setNotice(`Discovered ${data.total} MCP tools. Select only the tools this Skill needs.`);
+    } catch (e) { setError(e.message || "MCP tool discovery failed"); }
+    finally { setDiscoveringConnection(""); }
+  }
+
+  function toggleAllowedTool(binding, toolName, checked) {
+    const current = bindingDrafts[binding.id] ?? (binding.allowed_tools || []).join("\n");
+    const selected = new Set(current.split(/[\n,]/).map((name) => name.trim()).filter(Boolean));
+    if (checked) selected.add(toolName); else selected.delete(toolName);
+    setBindingDrafts((state) => ({ ...state, [binding.id]: [...selected].join("\n") }));
   }
 
   async function saveBindingPolicy(binding) {
@@ -360,13 +388,33 @@ export default function SkillLibrary() {
                   return <div className="skill-binding-existing" key={binding.id}>
                     <span><strong>{connection?.server?.title || connection?.server?.display_name || connection?.server?.server_name || "Connected MCP"}</strong><small>{binding.enabled ? "Enabled" : "Linked · Disabled"} · {binding.allowed_tools?.length || 0} tools allowed · Approval required</small></span>
                     <button type="button" className="glass-chip-btn" onClick={() => removeBinding(binding)} disabled={busy === `unbind:${binding.id}`}>Unlink</button>
-                    <div className="skill-policy-editor">
+<div className="skill-policy-editor">
+                      <div className="skill-policy-discovery-head">
+                        <label>Available MCP tools</label>
+                        <button type="button" className="glass-chip-btn" onClick={() => discoverMcpTools(binding.connection_id)} disabled={discoveringConnection === binding.connection_id}>
+                          {discoveringConnection === binding.connection_id ? <LoaderCircle className="spin" size={12}/> : <Search size={12}/>}
+                          {discoveringConnection === binding.connection_id ? "Discovering…" : "Discover tools"}
+                        </button>
+                      </div>
+                      {discoveredTools[binding.connection_id] ? (
+                        <div className="skill-tool-picker">
+                          <small>{discoveredTools[binding.connection_id].total} tools reported by server{discoveredTools[binding.connection_id].truncated ? " · showing first 200" : ""}</small>
+                          {discoveredTools[binding.connection_id].tools.map((tool) => {
+                            const selected = (bindingDrafts[binding.id] ?? (binding.allowed_tools || []).join("\n")).split(/[\n,]/).map((name) => name.trim()).includes(tool.name);
+                            return <label className="skill-tool-option" key={tool.name}>
+                              <input type="checkbox" checked={selected} onChange={(event) => toggleAllowedTool(binding, tool.name, event.target.checked)} />
+                              <span><strong>{tool.name}</strong><small>{tool.description || "No description provided by server."}</small></span>
+                            </label>;
+                          })}
+                        </div>
+                      ) : <p className="availability-note">Discover tools from this MCP endpoint to choose them from a list.</p>}
                       <label htmlFor={`tools-${binding.id}`}>Allowed tool names, one per line</label>
-                      <textarea id={`tools-${binding.id}`} rows={3} value={bindingDrafts[binding.id] ?? (binding.allowed_tools || []).join("\\n")} onChange={(event) => setBindingDrafts((current) => ({ ...current, [binding.id]: event.target.value }))} placeholder={"github.search_repositories\\ngithub.get_file"} />
+                      <textarea id={`tools-${binding.id}`} rows={3} value={bindingDrafts[binding.id] ?? (binding.allowed_tools || []).join("\n")} onChange={(event) => setBindingDrafts((current) => ({ ...current, [binding.id]: event.target.value }))} placeholder={"server.tool_name"} />
                       <div className="skill-policy-actions">
                         <small>Allowlist metadata only · execution disabled · approval required</small>
                         <button type="button" className="glass-chip-btn" onClick={() => saveBindingPolicy(binding)} disabled={busy === `policy:${binding.id}`}>Save allowlist</button>
                       </div>
+                    </div>
                     </div>
                   </div>;
                 })}

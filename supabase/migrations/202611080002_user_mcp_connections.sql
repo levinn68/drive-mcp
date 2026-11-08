@@ -14,10 +14,10 @@ create table if not exists public.user_mcp_connections (
 );
 create unique index if not exists user_mcp_connections_registry_unique
   on public.user_mcp_connections(user_id, registry_server_id)
-  where registry_server_id is not null;
+  ;
 create unique index if not exists user_mcp_connections_custom_unique
   on public.user_mcp_connections(user_id, custom_server_id)
-  where custom_server_id is not null;
+  ;
 create index if not exists user_mcp_connections_user_enabled_idx
   on public.user_mcp_connections(user_id, enabled);
 alter table public.user_mcp_connections enable row level security;

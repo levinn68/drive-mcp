@@ -461,7 +461,6 @@ export default function SkillLibrary() {
             })}
           </div>
         )}
-}
       </div>
 
       <div className="skill-import-panel">

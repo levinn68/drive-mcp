@@ -83,6 +83,7 @@ export default function WorkspaceTabs({
 }) {
   const [active, setActive] = useState(query ? "discover" : initialTab);
   const [dragIndex, setDragIndex] = useState(null);
+  const [hoverIndex, setHoverIndex] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isAnimatingLens, setIsAnimatingLens] = useState(false);
   const [lensGlareX, setLensGlareX] = useState(50);
@@ -207,8 +208,10 @@ export default function WorkspaceTabs({
       const dock = dockRef.current;
       if (dock) {
         const rect = dock.getBoundingClientRect();
-        const pct = Math.round(((event.clientX - rect.left) / Math.max(1, rect.width)) * 100);
-        setLensGlareX(Math.min(95, Math.max(5, pct)));
+        const pct = Math.min(95, Math.max(5, ((event.clientX - rect.left) / Math.max(1, rect.width)) * 100));
+        setLensGlareX(Math.round(pct));
+        const innerX = Math.min(Math.max(0, event.clientX - rect.left - 6), Math.max(1, rect.width - 12));
+        setHoverIndex((innerX / Math.max(1, rect.width - 12)) * NAV_ITEMS.length - 0.5);
       }
       return;
     }
@@ -223,6 +226,10 @@ export default function WorkspaceTabs({
     }
   }
 
+  function handlePointerLeave() {
+    if (!isDragging) setHoverIndex(null);
+  }
+
   function finishPointerDrag(event) {
     if (!isDragging) return;
     const finalIdx =
@@ -232,6 +239,7 @@ export default function WorkspaceTabs({
     const target = NAV_ITEMS[Math.min(NAV_ITEMS.length - 1, Math.max(0, finalIdx))];
     setIsDragging(false);
     setDragIndex(null);
+    setHoverIndex(null);
     if (target) {
       selectTab(target.id, true);
     }
@@ -270,7 +278,7 @@ export default function WorkspaceTabs({
     } catch {}
   }
 
-  const currentLensIndex = isDragging && dragIndex !== null ? dragIndex : activeIndex;
+  const currentLensIndex = isDragging && dragIndex !== null ? dragIndex : hoverIndex ?? activeIndex;
   const activeMeta = NAV_ITEMS[activeIndex] || NAV_ITEMS[0];
 
   const settingsPanel = (
@@ -565,6 +573,7 @@ export default function WorkspaceTabs({
           onPointerMove={handlePointerMove}
           onPointerUp={finishPointerDrag}
           onPointerCancel={finishPointerDrag}
+          onPointerLeave={handlePointerLeave}
           onKeyDown={handleKeyDown}
           style={{
             "--lens-index": currentLensIndex,

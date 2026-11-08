@@ -48,24 +48,67 @@ export async function POST(request) {
   if (auth.error) return auth.error;
   let body;
   try { body = await request.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
+
   let registryServerId = typeof body.registryServerId === "string" ? body.registryServerId : null;
-  const registryServerName = typeof body.serverName === "string" ? body.serverName.trim() : null;
-  const registryVersion = typeof body.version === "string" ? body.version.trim() : null;
   const customServerId = typeof body.customServerId === "string" ? body.customServerId : null;
-  if (!registryServerId && registryServerName && registryVersion) {
-    const { data: match, error: matchError } = await auth.supabase.from("mcp_servers").select("id").eq("server_name", registryServerName).eq("version", registryVersion).maybeSingle();
-    if (matchError) return json({ error: "Could not resolve this registry entry" }, 400);
-    if (!match) return json({ error: "This MCP is visible in Discover but has not been imported into the DRIVE registry database yet. Registry sync must run first." }, 409);
-    registryServerId = match.id;
+
+  // Discover catalog entries come directly from the public registry. Import the
+  // exact selected entry on demand before creating the per-user connection.
+  if (!registryServerId && body.registryEntry && typeof body.registryEntry === "object") {
+    const entry = body.registryEntry;
+    const server = entry.server || entry;
+    const name = typeof server.name === "string" ? server.name : "";
+    const version = typeof server.version === "string" ? server.version : "";
+    const remotes = Array.isArray(server.remotes) ? server.remotes : [];
+    const packages = Array.isArray(server.packages) ? server.packages : [];
+    if (!name || !version) return json({ error: "Registry entry is missing its name or version" }, 400);
+    if (!remotes.length) return json({ error: "This MCP has no supported remote endpoint. Local STDIO packages cannot be connected from the hosted workspace." }, 409);
+
+    const sourceUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!sourceUrl || !serviceKey) return json({ error: "Registry import is not configured on the server" }, 503);
+    const admin = createClient(sourceUrl, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
+    const officialMeta = entry._meta?.["io.modelcontextprotocol.registry/official"] || {};
+    const repository = server.repository?.url || server.repository || null;
+    const row = {
+      id: `${name}@${version}`,
+      server_name: name,
+      version,
+      title: server.title || name,
+      description: server.description || "",
+      repository_url: typeof repository === "string" ? repository : repository?.url || null,
+      website_url: server.websiteUrl || null,
+      transport_types: [...new Set([
+        ...remotes.map((remote) => remote?.type || "streamable_http"),
+        ...packages.map((pkg) => pkg?.transport?.type || "stdio"),
+      ])],
+      packages,
+      remotes,
+      registry_metadata: entry._meta || {},
+      source_id: "official-mcp-registry",
+      source_status: officialMeta.status || "active",
+      trust_level: "unverified",
+      is_latest: officialMeta.isLatest === true,
+      published_at: server.updatedAt || server.createdAt || null,
+      updated_at: new Date().toISOString(),
+    };
+    const { data: imported, error: importError } = await admin
+      .from("mcp_servers")
+      .upsert(row, { onConflict: "server_name,version" })
+      .select("id")
+      .single();
+    if (importError || !imported) return json({ error: "Could not import this MCP into the DRIVE registry", detail: importError?.message }, 400);
+    registryServerId = imported.id;
   }
+
   if (Boolean(registryServerId) === Boolean(customServerId)) {
-    return json({ error: "Provide exactly one registryServerId or customServerId" }, 400);
+    return json({ error: "Provide exactly one registryServerId, registryEntry, or customServerId" }, 400);
   }
 
   if (registryServerId) {
     const { data: server, error } = await auth.supabase
       .from("mcp_servers").select("id,remotes").eq("id", registryServerId).maybeSingle();
-    if (error || !server) return json({ error: "MCP server was not found" }, 404);
+    if (error || !server) return json({ error: "MCP server was not found after registry import" }, 404);
     if (!Array.isArray(server.remotes) || server.remotes.length === 0) {
       return json({ error: "This registry entry has no remote endpoint and cannot be enabled as a connection" }, 409);
     }
@@ -73,9 +116,7 @@ export async function POST(request) {
     const { data: server, error } = await auth.supabase
       .from("user_custom_mcp_servers").select("id,status").eq("id", customServerId).maybeSingle();
     if (error || !server) return json({ error: "Custom MCP server was not found" }, 404);
-    if (server.status !== "verified") {
-      return json({ error: "Verify this custom endpoint before enabling it" }, 409);
-    }
+    if (server.status !== "verified") return json({ error: "Verify this custom endpoint before enabling it" }, 409);
   }
 
   const payload = {
@@ -88,7 +129,7 @@ export async function POST(request) {
     .from("user_mcp_connections").upsert(payload, {
       onConflict: registryServerId ? "user_id,registry_server_id" : "user_id,custom_server_id",
     }).select("id,registry_server_id,custom_server_id,enabled").single();
-  if (error) return json({ error: "Could not add MCP to your connections" }, 400);
+  if (error) return json({ error: "Could not add MCP to your connections", detail: error.message }, 400);
   return json({ connection: data }, 201);
 }
 

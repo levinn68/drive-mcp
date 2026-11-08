@@ -25,12 +25,6 @@ export default function CustomMcpForm() {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function refreshUser() {
-    const supabase = getSupabase();
-    if (!supabase) return;
-    const { data: { user: current } } = await supabase.auth.getUser();
-    setUser(current);
-  }
 
   async function signIn() {
     const supabase = getSupabase();

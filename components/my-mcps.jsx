@@ -28,6 +28,7 @@ export function AddMcpButton({ serverId, remoteAvailable }) {
     });
     const result = await response.json();
     setState(response.ok ? "Added to My MCPs" : result.error || "Could not add");
+    if (response.ok) window.dispatchEvent(new Event("drive:connections-changed"));
   }
   if (!remoteAvailable) return <span className="availability-note">Package only · not remotely connectable</span>;
   return <button className="glass-add-button" type="button" onClick={add} disabled={state === "busy" || state === "Added to My MCPs"}>
@@ -53,7 +54,12 @@ export default function MyMcpPanel() {
     else setConnections(result.connections || []);
     setLoading(false);
   }, []);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    const refresh = () => load();
+    window.addEventListener("drive:connections-changed", refresh);
+    return () => window.removeEventListener("drive:connections-changed", refresh);
+  }, [load]);
 
   async function toggle(connection) {
     const token = await accessToken();

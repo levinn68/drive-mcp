@@ -112,6 +112,16 @@ export default function OAuthConsentPage() {
 
   async function decide(allow) {
     if (!authorizationId || busy) return;
+    // Open DRIVE synchronously inside the Approve click, before awaiting the
+    // network. This avoids the extra confirmation screen on browsers that
+    // permit a user-initiated tab, while preserving the provider OAuth callback.
+    let dashboardTab = null;
+    if (allow) {
+      try {
+        dashboardTab = window.open("/", "_blank");
+        if (dashboardTab) dashboardTab.opener = null;
+      } catch {}
+    }
     setBusy(true);
     setError("");
     setNotice("");
@@ -125,9 +135,13 @@ export default function OAuthConsentPage() {
       if (!redirectUrl) throw new Error("Supabase did not return the OAuth callback URL.");
 
       if (allow) {
-        // Use a same-origin handoff screen. Android in-app browsers often
-        // suppress window.open(), so asking the user to open the dashboard
-        // and finish the provider callback with explicit links is reliable.
+        if (dashboardTab && !dashboardTab.closed) {
+          // Dashboard is already open. Complete OAuth in this tab so the
+          // MCP provider receives its authorization code as expected.
+          window.location.replace(redirectUrl);
+          return;
+        }
+        // Popup blocked: keep a functional fallback instead of losing OAuth.
         const handoff = new URL("/oauth/complete", window.location.origin);
         handoff.searchParams.set("callback", redirectUrl);
         window.location.replace(handoff.toString());

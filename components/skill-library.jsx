@@ -187,8 +187,8 @@ export default function SkillLibrary() {
   }
 
   async function saveBindingPolicy(binding) {
-    const raw = bindingDrafts[binding.id] ?? (binding.allowed_tools || []).join("\\n");
-    const tools = [...new Set(raw.split(/[\\n,]/).map((name) => name.trim()).filter(Boolean))];
+    const raw = bindingDrafts[binding.id] ?? (binding.allowed_tools || []).join("\n");
+    const tools = [...new Set(raw.split(/[\n,]/).map((name) => name.trim()).filter(Boolean))];
     if (tools.some((name) => !/^[a-zA-Z0-9_.:-]{1,128}$/.test(name))) {
       setError("Tool names may only contain letters, numbers, underscore, dot, colon, and hyphen.");
       return;
@@ -414,7 +414,6 @@ export default function SkillLibrary() {
                         <small>Allowlist metadata only · execution disabled · approval required</small>
                         <button type="button" className="glass-chip-btn" onClick={() => saveBindingPolicy(binding)} disabled={busy === `policy:${binding.id}`}>Save allowlist</button>
                       </div>
-                    </div>
                     </div>
                   </div>;
                 })}

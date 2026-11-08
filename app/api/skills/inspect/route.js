@@ -121,7 +121,7 @@ export async function POST(request) {
     const contentHash = await sha256(markdown);
     const bundleManifest = bundle.files.map(({ path, content }) => ({ path, sha256: null, bytes: new TextEncoder().encode(content).length }));
     for (let i = 0; i < bundle.files.length; i++) bundleManifest[i].sha256 = await sha256(bundle.files[i].content);
-    const bundleHash = await sha256(bundle.files.map(({ path, content }) => `${path}\0${content}`).join("\0"));
+    const bundleHash = await sha256(bundle.files.map(({ path, content }) => `${path}\0${content}\0`).join(""));
     if (scan.content_sha256 !== bundleHash || scan.complete !== true || scan.safe_to_install !== true || String(scan.recommendation).toUpperCase() !== "SAFE") {
       return json({ error: "SkillSpector did not return a complete SAFE verdict for the entire bundle. This Skill cannot be imported.", scan: { ...scan, raw_report: undefined } }, 422);
     }

@@ -2826,3 +2826,8 @@ body {
 .skill-runtime-result details { border-top:1px solid rgba(177,193,255,.1); padding-top:8px; }
 .skill-runtime-result summary { color:#b9c9e5; font-size:10px; cursor:pointer; }
 .skill-runtime-result pre { max-height:260px; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; padding:10px; margin-top:8px; border-radius:9px; background:rgba(0,0,0,.25); color:#c5d3ec; font-size:9px; line-height:1.5; }
+
+
+.skill-binding-controls { display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin-left:auto; }
+.skill-binding-existing { align-items:center; }
+@media(max-width:560px) { .skill-binding-controls { width:100%; margin-left:0; } .skill-binding-controls button { flex:1; justify-content:center; } }

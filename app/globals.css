@@ -230,3 +230,26 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #a9c4
  .registry-live{display:none}
  .directory-toolbar{align-items:flex-start;flex-direction:column}
 }
+
+
+/* DRIVE directory: restrained editorial catalog */
+.app-panel .catalog-section{background:rgba(13,19,31,.94);border:1px solid rgba(200,214,239,.14);border-radius:22px;box-shadow:0 22px 65px rgba(0,0,0,.22)}
+.app-panel .section-head h1{font-size:clamp(28px,4vw,42px);font-weight:650;letter-spacing:-.055em}
+.app-panel .section-head p{max-width:520px;color:#9eabc0;font-size:12px;line-height:1.7}
+.app-panel .catalog-search{border-radius:13px;background:#0b1220;border:1px solid #344158;box-shadow:none}
+.app-panel .catalog-search:focus-within{border-color:#91a9d5;box-shadow:0 0 0 3px rgba(145,169,213,.12)}
+.app-panel .catalog-search button{border-radius:9px;background:#dce5f3;color:#142034;box-shadow:none}
+.app-panel .integration-grid{display:flex;flex-direction:column;gap:0;border-top:1px solid rgba(195,208,230,.14)}
+.app-panel .integration-card{display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:start;gap:12px;min-height:0;padding:15px 4px;border:0;border-bottom:1px solid rgba(195,208,230,.12);border-radius:0;background:transparent;box-shadow:none}
+.app-panel .integration-card:before{display:none}.app-panel .integration-card:hover{background:rgba(180,198,230,.04)}
+.app-panel .integration-icon{grid-row:1;grid-column:1;width:36px;height:36px;border-radius:10px;background:#172338;border:1px solid rgba(190,207,235,.16)}
+.app-panel .integration-card .card-top{display:contents}.app-panel .integration-card .status{grid-column:3;grid-row:1;align-self:start;background:transparent;border:0;color:#a5b2c7;font-size:8px}.app-panel .integration-card .status svg{display:none}
+.app-panel .integration-card .server-meta{grid-column:2;grid-row:1;display:flex;gap:8px;margin:0 0 5px;color:#8e9db3;font-size:8px}
+.app-panel .integration-card h3{grid-column:2;grid-row:2;margin:0;font-size:13px;font-weight:620;letter-spacing:-.02em}
+.app-panel .integration-card p{grid-column:2;grid-row:3;min-height:0;margin:5px 0 8px;color:#9aa8bd;font-size:10px;line-height:1.6;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.app-panel .integration-card .server-tags,.app-panel .integration-card .server-id{grid-column:2;grid-row:4;margin-top:0}
+.app-panel .integration-card .card-bottom{grid-column:3;grid-row:2 / span 3;align-items:flex-end;flex-direction:column;gap:8px}
+.app-panel .integration-card .server-actions{display:flex;gap:8px;align-items:center}
+.app-panel .integration-card .glass-add-button{min-height:31px;padding:0 11px;border-radius:8px;background:#dce5f3;color:#142034;border:0;box-shadow:none;font-size:9px}
+@media(max-width:700px){.app-panel .integration-card{grid-template-columns:32px minmax(0,1fr);gap:9px;padding:13px 0}.app-panel .integration-icon{width:31px;height:31px}.app-panel .integration-card .status{grid-column:2;grid-row:5;justify-self:start}.app-panel .integration-card .card-bottom{grid-column:2;grid-row:6;align-items:flex-start;flex-direction:row;flex-wrap:wrap}.app-panel .integration-card h3{font-size:12px}.app-panel .integration-card p{font-size:9px}}
+@media(prefers-reduced-motion:reduce){.app-panel .integration-card{transition:none}}

@@ -42,7 +42,13 @@ export async function GET(request) {
     .order("requested_at", { ascending: false })
     .limit(100);
   if (error) return json({ error: "Could not load approval queue" }, 400);
-  return json({ approvals: data || [] });
+  const { data: logs, error: logError } = await auth.supabase.from("skill_tool_audit_logs")
+    .select("id,binding_id,approval_id,tool_name,action,outcome,details,created_at")
+    .eq("user_id", auth.user.id)
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (logError) return json({ error: "Could not load Skill audit log" }, 400);
+  return json({ approvals: data || [], auditLogs: logs || [] });
 }
 
 export async function POST(request) {

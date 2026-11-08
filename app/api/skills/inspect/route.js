@@ -11,7 +11,7 @@ const MAX_BUNDLE_BYTES = 1_000_000;
 async function authenticate(request) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const token = request.headers.get("authorization")?.replace(/^Bearer\\s+/i, "");
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   if (!url || !key) return { error: json({ error: "Authentication is not configured" }, 503) };
   if (!token) return { error: json({ error: "Sign in is required" }, 401) };
   const supabase = createClient(url, key, { auth: { autoRefreshToken: false, persistSession: false }, global: { headers: { Authorization: `Bearer ${token}` } } });
@@ -20,18 +20,18 @@ async function authenticate(request) {
 }
 
 function parseFrontmatter(markdown) {
-  const match = markdown.match(/^---\\s*\\r?\\n([\\s\\S]*?)\\r?\\n---(?:\\r?\\n|$)/);
+  const match = markdown.match(/^---\s*\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
   if (!match) return null;
   const fields = {};
-  for (const line of match[1].split(/\\r?\\n/)) {
-    const item = line.match(/^([a-zA-Z0-9_-]+):\\s*(.*)$/);
+  for (const line of match[1].split(/\r?\n/)) {
+    const item = line.match(/^([a-zA-Z0-9_-]+):\s*(.*)$/);
     if (item) fields[item[1]] = item[2].replace(/^["']|["']$/g, "").trim();
   }
   return fields;
 }
 
 function validRelativePath(path) {
-  if (typeof path !== "string" || !path || path.length > 240 || path.startsWith("/") || path.includes("\\\\") || path.includes("\\0")) return false;
+  if (typeof path !== "string" || !path || path.length > 240 || path.startsWith("/") || path.includes("\\\\") || path.includes("\0")) return false;
   const parts = path.split("/");
   return parts.every((part) => part && part !== "." && part !== ".." && /^[A-Za-z0-9_.@+-]+$/.test(part));
 }
@@ -121,7 +121,7 @@ export async function POST(request) {
     const contentHash = await sha256(markdown);
     const bundleManifest = bundle.files.map(({ path, content }) => ({ path, sha256: null, bytes: new TextEncoder().encode(content).length }));
     for (let i = 0; i < bundle.files.length; i++) bundleManifest[i].sha256 = await sha256(bundle.files[i].content);
-    const bundleHash = await sha256(bundle.files.map(({ path, content }) => `${path}\\0${content}`).join("\\0"));
+    const bundleHash = await sha256(bundle.files.map(({ path, content }) => `${path}\0${content}`).join("\0"));
     if (scan.content_sha256 !== bundleHash || scan.complete !== true || scan.safe_to_install !== true || String(scan.recommendation).toUpperCase() !== "SAFE") {
       return json({ error: "SkillSpector did not return a complete SAFE verdict for the entire bundle. This Skill cannot be imported.", scan: { ...scan, raw_report: undefined } }, 422);
     }

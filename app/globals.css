@@ -2845,3 +2845,12 @@ body {
 .skill-runtime-panel>button+button { justify-self:start; }
 .skill-runtime-source pre { max-height:160px; overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; padding:8px; border-radius:8px; background:rgba(0,0,0,.25); color:#c5d3ec; font-size:9px; line-height:1.45; }
 .skill-runtime-source>button { justify-self:start; }
+
+
+/* CATEGORY-FIRST DIRECTORY DISCOVERY */
+.mcp-category-filter { display:flex; flex-wrap:wrap; gap:8px; margin:18px 0 14px; }
+.category-chip { display:inline-flex; align-items:center; justify-content:center; min-height:34px; padding:8px 13px; border:1px solid rgba(220,235,249,.12); border-radius:999px; color:#c7d2e4; background:rgba(255,255,255,.035); text-decoration:none; font-size:11px; transition:background .18s ease,border-color .18s ease,transform .18s ease; }
+.category-chip:hover,.category-chip.is-active { border-color:rgba(199,243,107,.38); color:#efffcf; background:rgba(199,243,107,.09); }
+.category-chip:hover { transform:translateY(-1px); }
+.skill-category-filter { display:flex; flex-wrap:wrap; gap:8px; }
+.skill-category-filter .segmented-pill { flex:0 0 auto; min-width:unset; }

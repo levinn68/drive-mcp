@@ -5,6 +5,9 @@ import { NextResponse } from "next/server";
 export async function GET(request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
+  const requestedNext = searchParams.get("next") || "/";
+  const next = requestedNext.startsWith("/") && !requestedNext.startsWith("//") ? requestedNext : "/";
+
   if (code) {
     const cookieStore = await cookies();
     const supabase = createServerClient(
@@ -21,7 +24,13 @@ export async function GET(request) {
         },
       },
     );
-    await supabase.auth.exchangeCodeForSession(code);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) {
+      const failed = new URL("/oauth/consent", origin);
+      failed.searchParams.set("auth_error", error.message);
+      return NextResponse.redirect(failed);
+    }
   }
-  return NextResponse.redirect(`${origin}/#custom`);
+
+  return NextResponse.redirect(new URL(next, origin));
 }

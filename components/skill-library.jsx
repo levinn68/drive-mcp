@@ -31,6 +31,8 @@ export default function SkillLibrary() {
   const [bindingDrafts, setBindingDrafts] = useState({});
   const [discoveredTools, setDiscoveredTools] = useState({});
   const [discoveringConnection, setDiscoveringConnection] = useState("");
+  const [approvals, setApprovals] = useState([]);
+  const [auditLogs, setAuditLogs] = useState([]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -53,6 +55,10 @@ export default function SkillLibrary() {
     const connectionData = await connectionResponse.json();
     if (connectionResponse.ok) setConnections(connectionData.connections || []);
     else setError(connectionData.error || "Could not load MCP connections");
+    const approvalResponse = await fetch("/api/skills/approvals", { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
+    const approvalData = await approvalResponse.json();
+    if (approvalResponse.ok) { setApprovals(approvalData.approvals || []); setAuditLogs(approvalData.auditLogs || []); }
+    else setError(approvalData.error || "Could not load approval queue");
     setLoading(false);
   }, []);
 
@@ -158,6 +164,25 @@ export default function SkillLibrary() {
     if (saveError) setError(saveError.message);
     else { setNotice("MCP linked to this Skill. Binding remains disabled until tool permissions are configured."); await load(); }
     setBusy("");
+  }
+
+  async function reviewApproval(approvalId, decision) {
+    const supabase = getSupabase();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setError("Sign in to review this request."); return; }
+    setBusy(`approval:${approvalId}`); setError(""); setNotice("");
+    try {
+      const response = await fetch("/api/skills/approvals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ action: "review", approvalId, decision }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not review approval");
+      setNotice(decision === "approved" ? "Approval recorded. Tool execution is a separate step." : "Request denied.");
+      await load();
+    } catch (e) { setError(e.message || "Could not review approval"); }
+    finally { setBusy(""); }
   }
 
   async function discoverMcpTools(connectionId) {
@@ -311,6 +336,32 @@ export default function SkillLibrary() {
 
       {error && <div className="skill-alert is-error"><ShieldAlert size={16} />{error}</div>}
       {notice && <div className="skill-alert is-success"><CheckCircle2 size={16} />{notice}</div>}
+
+      {signedIn && (
+        <div className="skill-import-panel skill-approval-panel">
+          <div className="skill-import-title">
+            <span className="benefit-icon"><ShieldAlert size={18}/></span>
+            <div><strong>Execution approvals</strong><small>Review requests before any connected tool can run</small></div>
+            <span className="skill-approval-count">{approvals.filter((item) => item.status === "pending" && new Date(item.expires_at).getTime() > Date.now()).length} pending</span>
+          </div>
+          {approvals.filter((item) => item.status === "pending").length === 0 ? <p className="availability-note">No pending approval requests.</p> : approvals.filter((item) => item.status === "pending").map((item) => (
+            <div className="skill-approval-row" key={item.id}>
+              <div><strong>{item.tool_name}</strong><small>Expires {new Date(item.expires_at).toLocaleString()}</small><pre>{JSON.stringify(item.arguments, null, 2)}</pre></div>
+              <div className="skill-approval-actions">
+                <button type="button" className="glass-chip-btn" onClick={() => reviewApproval(item.id, "denied")} disabled={busy === `approval:${item.id}`}>Deny</button>
+                <button type="button" className="glass-add-button" onClick={() => reviewApproval(item.id, "approved")} disabled={busy === `approval:${item.id}`}>Approve</button>
+              </div>
+            </div>
+          ))}
+          <div className="skill-audit-heading"><strong>Recent tool activity</strong><small>Latest 100 events</small></div>
+          {auditLogs.length === 0 ? <p className="availability-note">No tool activity recorded yet.</p> : auditLogs.slice(0,12).map((item) => (
+            <div className="skill-audit-row" key={item.id}>
+              <span><strong>{item.tool_name}</strong><small>{item.action} · {item.outcome}</small></span>
+              <time>{new Date(item.created_at).toLocaleString()}</time>
+            </div>
+          ))}
+        </div>
+      )}
 
       {inspected && (
         <article className="skill-preview-card">

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
-import { BookOpen, CheckCircle2, ChevronDown, Code2, ExternalLink, FileSearch, LoaderCircle, Plus, RefreshCw, ShieldAlert, Trash2 } from "lucide-react";
+import { BookOpen, CheckCircle2, ChevronDown, Code2, ExternalLink, FileSearch, LoaderCircle, RefreshCw, Search, ShieldAlert, ChevronRight, Trash2 } from "lucide-react";
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -20,6 +20,11 @@ export default function SkillLibrary() {
   const [notice, setNotice] = useState("");
   const [signedIn, setSignedIn] = useState(false);
   const [expanded, setExpanded] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [repositories, setRepositories] = useState([]);
+  const [repositoryDetails, setRepositoryDetails] = useState({});
+  const [searching, setSearching] = useState(false);
+  const [searchMessage, setSearchMessage] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -39,6 +44,47 @@ export default function SkillLibrary() {
   // Initial data loading synchronizes this component with Supabase on mount.
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
+
+  async function searchRepositories() {
+    setSearching(true); setSearchMessage(""); setError("");
+    try {
+      const response = await fetch(`/api/skills/discover?q=${encodeURIComponent(searchQuery)}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Repository search failed");
+      setRepositories(data.items || []);
+      setSearchMessage(data.total_count ? `Showing ${data.items.length} repositories from ${data.total_count.toLocaleString()} matches. Choose one to inspect its Skill files.` : "No repositories matched this search.");
+    } catch (e) { setError(e.message || "Repository search failed"); setRepositories([]); }
+    finally { setSearching(false); }
+  }
+
+  async function inspectRepository(repository) {
+    setRepositoryDetails((current) => ({ ...current, [repository.full_name]: { loading: true, skills: [] } }));
+    setError("");
+    try {
+      const [owner, repo] = repository.full_name.split("/");
+      const response = await fetch(`/api/skills/repository?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}&branch=${encodeURIComponent(repository.default_branch || "")}`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not inspect repository");
+      setRepositoryDetails((current) => ({ ...current, [repository.full_name]: { ...data, loading: false } }));
+    } catch (e) {
+      setRepositoryDetails((current) => ({ ...current, [repository.full_name]: { loading: false, error: e.message, skills: [] } }));
+    }
+  }
+
+  async function selectSkillFile(skillFile) {
+    setUrl(skillFile.raw_url);
+    setBusy("inspect"); setError(""); setNotice(""); setInspected(null);
+    try {
+      const response = await fetch("/api/skills/inspect", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: skillFile.raw_url }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Skill inspection failed");
+      setInspected(data);
+    } catch (e) { setError(e.message || "Could not inspect selected Skill"); }
+    finally { setBusy(""); }
+  }
 
   async function inspect() {
     setBusy("inspect"); setError(""); setNotice(""); setInspected(null);
@@ -109,8 +155,59 @@ export default function SkillLibrary() {
 
       <div className="skill-import-panel">
         <div className="skill-import-title">
+          <span className="benefit-icon"><Search size={18} /></span>
+          <div><strong>Discover Skill repositories</strong><small>Search GitHub manually. You choose every repository and Skill.</small></div>
+        </div>
+        <form className="skill-url-row" onSubmit={(event) => { event.preventDefault(); searchRepositories(); }}>
+          <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="e.g. browser automation agent skills" aria-label="Search GitHub Skill repositories" />
+          <button type="submit" className="glass-add-button" disabled={searching || searchQuery.trim().length < 2}>
+            {searching ? <LoaderCircle className="spin" size={14} /> : <Search size={14} />}
+            <span>Search GitHub</span>
+          </button>
+        </form>
+        <p className="availability-note">Public GitHub repository search · Results are candidates, not endorsements · No auto-import</p>
+        {searchMessage && <p className="availability-note">{searchMessage}</p>}
+        {repositories.length > 0 && (
+          <div className="skill-repository-list">
+            {repositories.map((repository) => {
+              const detail = repositoryDetails[repository.full_name];
+              return (
+                <article className="skill-repository-card" key={repository.full_name}>
+                  <div className="skill-repository-main">
+                    <div className="skill-repository-copy">
+                      <strong>{repository.full_name}</strong>
+                      <p>{repository.description || "No repository description provided."}</p>
+                      <small>{repository.stars.toLocaleString()} stars · {repository.license || "License not declared"} · {repository.language || "Language not specified"}</small>
+                    </div>
+                    <button type="button" className="glass-chip-btn" onClick={() => inspectRepository(repository)} disabled={detail?.loading}>
+                      {detail?.loading ? <LoaderCircle className="spin" size={13}/> : <FileSearch size={13}/>}
+                      <span>Inspect</span>
+                    </button>
+                  </div>
+                  {detail?.error && <p className="skill-inline-error">{detail.error}</p>}
+                  {detail && !detail.loading && !detail.error && (
+                    <div className="skill-repository-files">
+                      <div className="skill-repository-meta">{detail.skills.length} SKILL.md file{detail.skills.length === 1 ? "" : "s"} found · branch {detail.branch}{detail.truncated ? " · tree truncated" : ""}</div>
+                      {detail.skills.length === 0 ? <p className="availability-note">No SKILL.md files found in this repository tree.</p> : detail.skills.map((file) => (
+                        <button type="button" className="skill-file-row" key={file.path} onClick={() => selectSkillFile(file)} disabled={busy === "inspect"}>
+                          <span><BookOpen size={14}/>{file.path}<small>{file.size.toLocaleString()} bytes</small></span>
+                          <ChevronRight size={15}/>
+                        </button>
+                      ))}
+                      <a className="skill-repo-link" href={detail.html_url} target="_blank" rel="noreferrer">Open repository <ExternalLink size={11}/></a>
+                    </div>
+                  )}
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="skill-import-panel">
+        <div className="skill-import-title">
           <span className="benefit-icon"><FileSearch size={18} /></span>
-          <div><strong>Inspect a GitHub Skill</strong><small>Paste the raw URL to a SKILL.md file</small></div>
+          <div><strong>Inspect a direct SKILL.md URL</strong><small>Or paste a raw GitHub URL manually</small></div>
         </div>
         <div className="skill-url-row">
           <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://raw.githubusercontent.com/owner/repo/main/path/SKILL.md" aria-label="Raw GitHub SKILL.md URL" />

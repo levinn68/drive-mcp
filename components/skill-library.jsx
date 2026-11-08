@@ -420,7 +420,16 @@ export default function SkillLibrary() {
         </form>
         <p className="availability-note">Skills Directory · Categories separate discovery · NVIDIA SkillSpector checks selected bundles</p>
         {searchMessage && <p className="availability-note">{searchMessage}</p>}
-        {repositories.length > 0 && (
+        {categoryOptions.length > 1 && (
+          <div className="segmented-pills is-full skill-category-filter" role="group" aria-label="Filter Skills by category">
+            {categoryOptions.map((category) => (
+              <button key={category} type="button" className={"segmented-pill " + (selectedCategory === category ? "is-active" : "")} onClick={() => { setSelectedCategory(category); setCatalogPage(0); }}>
+                {category === "all" ? "All Skills" : category.replace(/-/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())}
+              </button>
+            ))}
+          </div>
+        )}
+        {categorizedRepositories.length > 0 && (
           <div className="skill-repository-list">
             {visibleRepositories.map((repository) => {
               const detail = repositoryDetails[repository.id || repository.full_name];
@@ -453,15 +462,6 @@ export default function SkillLibrary() {
                 </article>
               );
             })}
-          </div>
-        )}
-        {categoryOptions.length > 1 && (
-          <div className="segmented-pills is-full skill-category-filter" role="group" aria-label="Filter Skills by category">
-            {categoryOptions.map((category) => (
-              <button key={category} type="button" className={"segmented-pill " + (selectedCategory === category ? "is-active" : "")} onClick={() => { setSelectedCategory(category); setCatalogPage(0); }}>
-                {category === "all" ? "All Skills" : category.replace(/-/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())}
-              </button>
-            ))}
           </div>
         )}
         {categorizedRepositories.length > 20 && (

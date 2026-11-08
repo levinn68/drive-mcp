@@ -22,63 +22,17 @@ import {
 } from "lucide-react";
 
 const NAV_ITEMS = [
-  {
-    id: "connections",
-    label: "Workspace",
-    short: "Home",
-    hash: "#home",
-    icon: Cable,
-  },
-  {
-    id: "discover",
-    label: "Directory",
-    short: "Discover",
-    hash: "#directory",
-    icon: Compass,
-  },
-  {
-    id: "add",
-    label: "Add MCP",
-    short: "Add MCP",
-    hash: "#custom",
-    icon: Plus,
-    isCenterAction: true,
-  },
-  {
-    id: "security",
-    label: "Security",
-    short: "Security",
-    hash: "#security",
-    icon: ShieldCheck,
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    short: "Control",
-    hash: "#settings",
-    icon: SlidersHorizontal,
-  },
-  {
-    id: "skills",
-    label: "Skill Library",
-    short: "Skills",
-    hash: "#skills",
-    icon: BookOpen,
-  },
+  { id: "mcp", label: "MCP Marketplace", short: "MCP", hash: "#mcp", icon: Cable },
+  { id: "skills", label: "Skills Marketplace", short: "Skills", hash: "#skills", icon: BookOpen },
+  { id: "account", label: "Account & Security", short: "Account", hash: "#account", icon: LockKeyhole },
 ];
 
 const HASH_TO_TAB = {
-  "#home": "connections",
-  "#my-mcps": "connections",
-  "#connections": "connections",
-  "#directory": "discover",
-  "#discover": "discover",
-  "#custom": "add",
-  "#add": "add",
-  "#security": "security",
-  "#settings": "settings",
-  "#control": "settings",
+  "#mcp": "mcp", "#home": "mcp", "#my-mcps": "mcp", "#connections": "mcp",
+  "#directory": "mcp", "#discover": "mcp",
   "#skills": "skills",
+  "#account": "account", "#custom": "account", "#add": "account",
+  "#security": "account", "#settings": "account", "#control": "account",
 };
 
 export default function WorkspaceTabs({
@@ -91,7 +45,7 @@ export default function WorkspaceTabs({
   serverCount = 0,
   query = "",
 }) {
-  const [active, setActive] = useState(query ? "discover" : initialTab);
+  const [active, setActive] = useState(query ? "mcp" : (["mcp","skills","account"].includes(initialTab) ? initialTab : "mcp"));
   const [dragIndex, setDragIndex] = useState(null);
   const [hoverIndex, setHoverIndex] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
@@ -183,7 +137,7 @@ export default function WorkspaceTabs({
     };
   }, [selectTab]);
 
-  // Pointer scrubbing along the 5-tab Liquid Glass navbar (matches video gesture)
+  // Pointer scrubbing along the 3-tab Liquid Glass navbar (matches video gesture)
   function computeIndexFromClientX(clientX) {
     const dock = dockRef.current;
     if (!dock) return null;
@@ -307,7 +261,7 @@ export default function WorkspaceTabs({
           <button
             type="button"
             className="glass-link is-primary"
-            onClick={() => selectTab("add", true)}
+            onClick={() => selectTab("account", true)}
           >
             <Plus size={14} />
             <span>Manage Google Auth</span>
@@ -505,7 +459,7 @@ export default function WorkspaceTabs({
           href="#home"
           onClick={(e) => {
             e.preventDefault();
-            selectTab("connections", true);
+            selectTab("mcp", true);
           }}
           aria-label="DRIVE home"
         >
@@ -522,13 +476,13 @@ export default function WorkspaceTabs({
           <span className="island-section">{activeMeta.label.toUpperCase()}</span>
           <span className="context-divider">·</span>
           <span className="island-sub">
-            {active === "discover"
+            {active === "mcp"
               ? `${serverCount} SERVERS`
-              : active === "connections"
+              : active === "mcp"
               ? "PERSONAL HUB"
-              : active === "add"
+              : active === "account"
               ? "STREAMABLE HTTP"
-              : active === "security"
+              : active === "account"
               ? "ZERO-TRUST GUARD"
               : "LIQUID ENGINE"}
           </span>
@@ -538,8 +492,8 @@ export default function WorkspaceTabs({
           <button
             type="button"
             className="top-pill-btn"
-            onClick={() => selectTab("discover", true)}
-            title="Search MCP Registry"
+            onClick={() => selectTab("mcp", true)}
+            title="Open MCP Marketplace"
           >
             <Compass size={13} />
             <span>{serverCount ? `${serverCount} MCPs` : "Directory"}</span>
@@ -547,7 +501,7 @@ export default function WorkspaceTabs({
           <button
             type="button"
             className="top-pill-btn is-accent"
-            onClick={() => selectTab("add", true)}
+            onClick={() => selectTab("account", true)}
             title="Add Custom MCP"
           >
             <Sparkles size={12} />
@@ -601,7 +555,7 @@ export default function WorkspaceTabs({
             <div className="liquid-lens-shine" />
           </div>
 
-          {/* 5 Navigation Items */}
+          {/* 3 Navigation Items */}
           {NAV_ITEMS.map(({ id, label, short, icon: Icon, isCenterAction }, index) => {
             const distance = Math.abs(currentLensIndex - index);
             const isSelected = active === id;

@@ -9,7 +9,7 @@ function json(body, status = 200) {
 async function getUserClient(request) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const token = request.headers.get("authorization")?.replace(/^Bearer\\s+/i, "");
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   if (!url || !key) return { error: json({ error: "Authentication is not configured" }, 503) };
   if (!token) return { error: json({ error: "Sign in is required" }, 401) };
   const supabase = createClient(url, key, {

@@ -79,14 +79,14 @@ export default function SkillLibrary() {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Skills catalog unavailable");
         if (!active) return;
-        setCatalogPage(0);\n      setRepositories((data.items || []).map((item) => ({
+        setCatalogPage(0);\n      setCatalogPage(0);\n      setRepositories((data.items || []).map((item) => ({
           id: item.id, full_name: item.source, description: item.description || item.name,
           html_url: item.installUrl || `https://github.com/${item.source}`,
           default_branch: "main", stars: item.installs || 0,
           license: item.duplicate ? "Possible duplicate" : "Catalog entry",
           language: "Agent Skill", catalogSkill: item,
         })));
-        setSearchMessage(`Loaded ${data.count || 0} Skills from the live skills.sh catalog. Select any entry to inspect its bundle.`);
+        setSearchMessage(`Loaded ${data.count || 0} Skills from the public Skills Directory. Select any entry to inspect its bundle.`);
       } catch (e) { if (active) setSearchMessage(e.message || "Skills catalog unavailable"); }
       finally { if (active) setSearching(false); }
     })();
@@ -100,13 +100,13 @@ export default function SkillLibrary() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Skills catalog search failed");
       setRepositories((data.items || []).map((item) => ({
-        id: item.id, full_name: item.source, description: item.name,
+        id: item.id, full_name: item.source, description: item.description || item.name,
         html_url: item.installUrl || `https://github.com/${item.source}`,
         default_branch: "main", stars: item.installs || 0,
         license: item.duplicate ? "Possible duplicate" : "Catalog entry",
         language: "Agent Skill", catalogSkill: item,
       })));
-      setSearchMessage(`Showing ${data.count || 0} catalog Skills from skills.sh. Select one to inspect its source bundle with NVIDIA SkillSpector.`);
+      setSearchMessage(`Showing ${data.count || 0} catalog Skills from the public Skills Directory. Select one to inspect its source bundle with NVIDIA SkillSpector.`);
     } catch (e) { setError(e.message || "Repository search failed"); setRepositories([]); }
     finally { setSearching(false); }
   }

@@ -160,10 +160,12 @@ function ServerCard({ entry }) {
 export default async function Home({ searchParams }) {
   const params = await searchParams;
   const query = typeof params?.q === "string" ? params.q : "";
-  const cursor = typeof params?.cursor === "string" ? params.cursor : "";
-  const data = await getServers(query, cursor);
+  const page = Math.max(0, Math.min(41, Number.parseInt(params?.page || "0", 10) || 0));
+  const pageSize = 24;
+  const data = await getServers(query);
   const servers = Array.isArray(data.servers) ? data.servers : [];
-  const visibleServers = servers.slice(page * pageSize, (page + 1) * pageSize);\n  const initialTab = query ? "mcp" : "mcp";
+  const visibleServers = servers.slice(page * pageSize, (page + 1) * pageSize);
+  const initialTab = "mcp";
 
   const connections = (
     <div className="workspace-stack">

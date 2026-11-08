@@ -72,26 +72,32 @@ export default function SkillLibrary() {
   async function searchRepositories() {
     setSearching(true); setSearchMessage(""); setError("");
     try {
-      const response = await fetch(`/api/skills/discover?q=${encodeURIComponent(searchQuery)}`);
+      const response = await fetch(`/api/catalog/skills?q=${encodeURIComponent(searchQuery)}`, { cache: "no-store" });
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Repository search failed");
-      setRepositories(data.items || []);
-      setSearchMessage(data.total_count ? `Showing ${data.items.length} repositories from ${data.total_count.toLocaleString()} matches. Choose one to inspect its Skill files.` : "No repositories matched this search.");
+      if (!response.ok) throw new Error(data.error || "Skills catalog search failed");
+      setRepositories((data.items || []).map((item) => ({
+        id: item.id, full_name: item.source, description: item.name,
+        html_url: item.installUrl || `https://github.com/${item.source}`,
+        default_branch: "main", stars: item.installs || 0,
+        license: item.duplicate ? "Possible duplicate" : "Catalog entry",
+        language: "Agent Skill", catalogSkill: item,
+      })));
+      setSearchMessage(`Showing ${data.count || 0} catalog Skills from skills.sh. Select one to inspect its source bundle with NVIDIA SkillSpector.`);
     } catch (e) { setError(e.message || "Repository search failed"); setRepositories([]); }
     finally { setSearching(false); }
   }
 
   async function inspectRepository(repository) {
-    setRepositoryDetails((current) => ({ ...current, [repository.full_name]: { loading: true, skills: [] } }));
+    setRepositoryDetails((current) => ({ ...current, [repository.id || repository.full_name]: { loading: true, skills: [] } }));
     setError("");
     try {
       const [owner, repo] = repository.full_name.split("/");
-      const response = await fetch(`/api/skills/repository?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}&branch=${encodeURIComponent(repository.default_branch || "")}`);
+      const response = await fetch(`/api/skills/repository?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}&branch=${encodeURIComponent(repository.default_branch || "")}&skill=${encodeURIComponent(repository.catalogSkill?.slug || "")}`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Could not inspect repository");
-      setRepositoryDetails((current) => ({ ...current, [repository.full_name]: { ...data, loading: false } }));
+      setRepositoryDetails((current) => ({ ...current, [repository.id || repository.full_name]: { ...data, loading: false } }));
     } catch (e) {
-      setRepositoryDetails((current) => ({ ...current, [repository.full_name]: { loading: false, error: e.message, skills: [] } }));
+      setRepositoryDetails((current) => ({ ...current, [repository.id || repository.full_name]: { loading: false, error: e.message, skills: [] } }));
     }
   }
 
@@ -369,32 +375,32 @@ export default function SkillLibrary() {
       <div className="skill-import-panel">
         <div className="skill-import-title">
           <span className="benefit-icon"><Search size={18} /></span>
-          <div><strong>Discover Skill repositories</strong><small>Search GitHub manually. You choose every repository and Skill.</small></div>
+          <div><strong>Discover Skill repositories</strong><small>Search a 1,000-entry Agent Skills catalog. Every selection is scanned before import.</small></div>
         </div>
         <form className="skill-url-row" onSubmit={(event) => { event.preventDefault(); searchRepositories(); }}>
-          <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="e.g. browser automation agent skills" aria-label="Search GitHub Skill repositories" />
+          <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search 1,000 Skills by name or topic" aria-label="Search Skills catalog" />
           <button type="submit" className="glass-add-button" disabled={searching || searchQuery.trim().length < 2}>
             {searching ? <LoaderCircle className="spin" size={14} /> : <Search size={14} />}
-            <span>Search GitHub</span>
+            <span>Search Skills</span>
           </button>
         </form>
-        <p className="availability-note">Public GitHub repository search · Results are candidates, not endorsements · No auto-import</p>
+        <p className="availability-note">skills.sh catalog · Install counts are discovery signals, not trust scores · NVIDIA SkillSpector scans selected bundles</p>
         {searchMessage && <p className="availability-note">{searchMessage}</p>}
         {repositories.length > 0 && (
           <div className="skill-repository-list">
             {repositories.map((repository) => {
-              const detail = repositoryDetails[repository.full_name];
+              const detail = repositoryDetails[repository.id || repository.full_name];
               return (
-                <article className="skill-repository-card" key={repository.full_name}>
+                <article className="skill-repository-card" key={repository.id || repository.full_name}>
                   <div className="skill-repository-main">
                     <div className="skill-repository-copy">
-                      <strong>{repository.full_name}</strong>
-                      <p>{repository.description || "No repository description provided."}</p>
-                      <small>{repository.stars.toLocaleString()} stars · {repository.license || "License not declared"} · {repository.language || "Language not specified"}</small>
+                      <strong>{repository.catalogSkill?.name || repository.full_name}</strong>
+                      <p>{repository.catalogSkill ? `Source: ${repository.full_name}` : (repository.description || "No repository description provided.")}</p>
+                      <small>{repository.stars.toLocaleString()} installs · {repository.license || "License not declared"} · {repository.language || "Language not specified"}</small>
                     </div>
                     <button type="button" className="glass-chip-btn" onClick={() => inspectRepository(repository)} disabled={detail?.loading}>
                       {detail?.loading ? <LoaderCircle className="spin" size={13}/> : <FileSearch size={13}/>}
-                      <span>Inspect</span>
+                      <span>Inspect Skill</span>
                     </button>
                   </div>
                   {detail?.error && <p className="skill-inline-error">{detail.error}</p>}
@@ -517,7 +523,7 @@ export default function SkillLibrary() {
       ) : loading ? (
         <div className="connection-empty"><LoaderCircle className="spin" size={22}/><p>Loading your Skills…</p></div>
       ) : skills.length === 0 ? (
-        <div className="connection-empty"><div className="empty-orb"><BookOpen size={22}/></div><h3>No Skills saved yet</h3><p>Search GitHub manually, inspect a SKILL.md, and save it here for review.</p></div>
+        <div className="connection-empty"><div className="empty-orb"><BookOpen size={22}/></div><h3>No Skills saved yet</h3><p>Browse the Skills marketplace, inspect a selected bundle, and save it here for review.</p></div>
       ) : (
         <div className="skill-list">
           {skills.map((skill) => (

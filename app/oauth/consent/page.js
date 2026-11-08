@@ -111,31 +111,39 @@ export default function OAuthConsentPage() {
   }
 
   async function decide(allow) {
-    if (!authorizationId) return;
-    // Reserve the OAuth callback tab synchronously during the user gesture.
-    // After approval, keep this tab on DRIVE dashboard as requested.
-    const callbackTab = allow ? window.open("about:blank", "_blank") : null;
-    setBusy(true); setError("");
+    if (!authorizationId || busy) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+
+    let callbackTab = null;
     try {
-      const result = allow
+      // Some Android in-app browsers throw when opening a tab. Keep this
+      // inside try/catch so the approval request still runs and errors render.
+      if (allow) {
+        try { callbackTab = window.open("about:blank", "_blank"); } catch { callbackTab = null; }
+      }
+
+      const { data, error: decisionError } = allow
         ? await supabase.auth.oauth.approveAuthorization(authorizationId)
         : await supabase.auth.oauth.denyAuthorization(authorizationId);
-      if (result.error) throw result.error;
-      if (!result.data?.redirect_url) throw new Error("OAuth provider did not return a redirect URL.");
-      if (allow) {
-        if (callbackTab) {
-          callbackTab.location.replace(result.data.redirect_url);
-          window.location.replace("/");
-        } else {
-          setNotice("Access approved. Your browser blocked the ChatGPT callback tab. Continue to DRIVE, then reconnect ChatGPT.");
-          window.location.assign("/");
-        }
-      } else {
-        window.location.assign(result.data.redirect_url);
+
+      if (decisionError) throw decisionError;
+      const redirectUrl = data?.redirect_url;
+      if (!redirectUrl) throw new Error("Supabase did not return the OAuth callback URL.");
+
+      if (allow && callbackTab && !callbackTab.closed) {
+        callbackTab.location.replace(redirectUrl);
+        window.location.replace("/");
+        return;
       }
+
+      // If Android blocks popups, complete the OAuth client callback in this
+      // tab instead of silently abandoning the authorization flow.
+      window.location.assign(redirectUrl);
     } catch (e) {
       if (callbackTab && !callbackTab.closed) callbackTab.close();
-      setError(e.message || "Could not complete authorization.");
+      setError(e?.message || "Could not complete authorization. Please try again.");
       setBusy(false);
     }
   }

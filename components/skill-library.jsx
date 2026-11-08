@@ -80,7 +80,7 @@ export default function SkillLibrary() {
         if (!response.ok) throw new Error(data.error || "Skills catalog unavailable");
         if (!active) return;
         setCatalogPage(0);
-        setCatalogPage(0);\n      setRepositories((data.items || []).map((item) => ({
+        setRepositories((data.items || []).map((item) => ({
           id: item.id, full_name: item.source, description: item.description || item.name,
           html_url: item.installUrl || `https://github.com/${item.source}`,
           default_branch: "", stars: item.stars || 0,
@@ -100,6 +100,7 @@ export default function SkillLibrary() {
       const response = await fetch(`/api/catalog/skills?q=${encodeURIComponent(searchQuery)}`, { cache: "no-store" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Skills catalog search failed");
+      setCatalogPage(0);
       setCatalogPage(0);
       setRepositories((data.items || []).map((item) => ({
         id: item.id, full_name: item.source, description: item.description || item.name,

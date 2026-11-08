@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Activity,
+  BookOpen,
   Cable,
   CheckCircle2,
   Command,
@@ -57,6 +58,13 @@ const NAV_ITEMS = [
     hash: "#settings",
     icon: SlidersHorizontal,
   },
+  {
+    id: "skills",
+    label: "Skill Library",
+    short: "Skills",
+    hash: "#skills",
+    icon: BookOpen,
+  },
 ];
 
 const HASH_TO_TAB = {
@@ -70,6 +78,7 @@ const HASH_TO_TAB = {
   "#security": "security",
   "#settings": "settings",
   "#control": "settings",
+  "#skills": "skills",
 };
 
 export default function WorkspaceTabs({
@@ -77,6 +86,7 @@ export default function WorkspaceTabs({
   discover,
   add,
   security,
+  skills,
   initialTab = "connections",
   serverCount = 0,
   query = "",
@@ -455,6 +465,7 @@ export default function WorkspaceTabs({
     add,
     security,
     settings: settingsPanel,
+    skills,
   };
 
   return (

@@ -1,4 +1,4 @@
-import { ArrowUpRight, Blocks, Command, Search, ShieldCheck, Sparkles, Zap, Database, Github, Globe2, Package, Server, ExternalLink } from "lucide-react";
+import { ArrowUpRight, Blocks, Command, Search, ShieldCheck, Sparkles, Zap, Globe2, Package, Server, ExternalLink } from "lucide-react";
 
 const REGISTRY = "https://registry.modelcontextprotocol.io";
 

@@ -285,3 +285,7 @@ footer{color:#8296ad}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
  .nav,.my-mcps,.integration-card,.custom-form,.catalog-search{background:rgba(16,25,39,.96)}
 }
+
+.connection-copy{margin-top:8px}
+.connection-copy .copy-button{min-height:27px;padding:4px 9px}
+@media(max-width:520px){.connection-copy{margin-top:6px}}

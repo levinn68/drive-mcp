@@ -80,3 +80,8 @@ html:has(.oauth-page), body:has(.oauth-page) {
 @media(max-width:520px){.oauth-card{padding:25px 20px}.oauth-brand{gap:11px}.oauth-brand-mark{width:44px;height:44px}}
 @media(prefers-reduced-motion:reduce){.oauth-card{animation:none}.oauth-google-button,.oauth-tab,.oauth-submit-button,.oauth-approve-button{transition:none}}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.oauth-card{background:rgba(20,23,38,.97)}}
+
+.oauth-account-switch{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-4px 0 20px;padding:11px 13px;border:1px solid rgba(255,255,255,.1);border-radius:13px;background:rgba(255,255,255,.035);color:rgba(255,255,255,.55);font-size:11px}
+.oauth-account-switch strong{color:#f3f0ff;font-weight:650}
+.oauth-account-switch button{flex:none;border:1px solid rgba(185,173,255,.24);border-radius:9px;padding:7px 10px;background:rgba(139,124,255,.1);color:#d8ceff;font-size:11px;font-weight:650;cursor:pointer}
+.oauth-account-switch button:disabled{opacity:.5;cursor:wait}

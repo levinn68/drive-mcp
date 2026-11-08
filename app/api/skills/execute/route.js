@@ -120,10 +120,10 @@ export async function POST(request) {
   }
 
   const { data: skill, error: skillError } = await auth.supabase.from("user_skills")
-    .select("id,status,skill_md,security_scan_status,security_scan_hash").eq("id", binding.skill_id).eq("user_id", auth.user.id).maybeSingle();
+    .select("id,status,skill_md,security_scan_status,security_scan_hash,security_bundle_hash,security_bundle_manifest").eq("id", binding.skill_id).eq("user_id", auth.user.id).maybeSingle();
   if (skillError || !skill || skill.status !== "enabled") return json({ error: "Skill is not enabled" }, 403);
   const currentHash = createHash("sha256").update(skill.skill_md || "").digest("hex");
-  if (skill.security_scan_status !== "safe" || !skill.security_scan_hash || currentHash !== skill.security_scan_hash) {
+  if (skill.security_scan_status !== "safe" || !skill.security_scan_hash || currentHash !== skill.security_scan_hash || !skill.security_bundle_hash || !Array.isArray(skill.security_bundle_manifest) || skill.security_bundle_manifest.length < 1) {
     return json({ error: "Skill security scan is missing, stale, or not SAFE. Execution blocked." }, 403);
   }
 

@@ -25,7 +25,6 @@ export default function SkillLibrary() {
   const [repositoryDetails, setRepositoryDetails] = useState({});
   const [searching, setSearching] = useState(false);
   const [searchMessage, setSearchMessage] = useState("");
-  const [catalogPage, setCatalogPage] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [connections, setConnections] = useState([]);
   const [bindings, setBindings] = useState([]);
@@ -80,7 +79,6 @@ export default function SkillLibrary() {
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || "Skills catalog unavailable");
         if (!active) return;
-        setCatalogPage(0);
         setRepositories((data.items || []).map((item) => ({
           id: item.id, full_name: item.source, description: item.description || item.name,
           html_url: item.installUrl || `https://github.com/${item.source}`,
@@ -99,7 +97,7 @@ export default function SkillLibrary() {
   const categorizedRepositories = selectedCategory === "all"
     ? repositories
     : repositories.filter((item) => (item.catalogSkill?.category || "other") === selectedCategory);
-  const visibleRepositories = categorizedRepositories.slice(catalogPage * 20, (catalogPage + 1) * 20);
+  const visibleRepositories = categorizedRepositories;
 
   async function searchRepositories() {
     setSearching(true); setSearchMessage(""); setError("");
@@ -107,7 +105,6 @@ export default function SkillLibrary() {
       const response = await fetch(`/api/catalog/skills?q=${encodeURIComponent(searchQuery)}`, { cache: "no-store" });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Skills catalog search failed");
-      setCatalogPage(0);
       setSelectedCategory("all");
       setRepositories((data.items || []).map((item) => ({
         id: item.id, full_name: item.source, description: item.description || item.name,
@@ -402,20 +399,20 @@ export default function SkillLibrary() {
         <div>
           <div className="eyebrow"><span className="pulse" /> AGENT WORKFLOW LIBRARY</div>
           <h1>Skills, on your terms.</h1>
-          <p>Find a Skill repository manually, inspect its SKILL.md, then save it to your private library. Nothing is auto-installed or executed.</p>
+          <p>Discover Skills by category or intent, inspect their SKILL.md, then save them to your private library. Nothing is auto-installed or executed.</p>
         </div>
       </div>
 
       <div className="skill-import-panel">
         <div className="skill-import-title">
           <span className="benefit-icon"><Search size={18} /></span>
-          <div><strong>Discover Skill repositories</strong><small>Browse the Skills catalog by category. Each selected bundle is scanned by NVIDIA SkillSpector before import.</small></div>
+          <div><strong>Discover Skill repositories</strong><small>Browse by category or search by what a Skill does. Each selected bundle is scanned by NVIDIA SkillSpector before import.</small></div>
         </div>
         <form className="skill-url-row" onSubmit={(event) => { event.preventDefault(); searchRepositories(); }}>
-          <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search 1,000 Skills by name or topic" aria-label="Search Skills catalog" />
+          <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Smart search: name, capability, topic, provider, or tool…" aria-label="Search Skills catalog" />
           <button type="submit" className="glass-add-button" disabled={searching || searchQuery.trim().length < 2}>
             {searching ? <LoaderCircle className="spin" size={14} /> : <Search size={14} />}
-            <span>Search Skills</span>
+            <span>Search catalog</span>
           </button>
         </form>
         <p className="availability-note">Skills Directory · Categories separate discovery · NVIDIA SkillSpector checks selected bundles</p>
@@ -423,8 +420,8 @@ export default function SkillLibrary() {
         {categoryOptions.length > 1 && (
           <div className="segmented-pills is-full skill-category-filter" role="group" aria-label="Filter Skills by category">
             {categoryOptions.map((category) => (
-              <button key={category} type="button" className={"segmented-pill " + (selectedCategory === category ? "is-active" : "")} onClick={() => { setSelectedCategory(category); setCatalogPage(0); }}>
-                {category === "all" ? "All Skills" : category.replace(/-/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())}
+              <button key={category} type="button" className={"segmented-pill " + (selectedCategory === category ? "is-active" : "")} onClick={() => setSelectedCategory(category)}>
+                {category === "all" ? "All Skills" : category.replace(/[-_/]/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())}
               </button>
             ))}
           </div>
@@ -464,13 +461,7 @@ export default function SkillLibrary() {
             })}
           </div>
         )}
-        {categorizedRepositories.length > 20 && (
-          <div className="load-more-row">
-            <button type="button" className="glass-chip-btn" onClick={() => setCatalogPage((page) => Math.max(0, page - 1))} disabled={catalogPage === 0}>Previous</button>
-            <span>Page {catalogPage + 1} of {Math.ceil(categorizedRepositories.length / 20)} · {categorizedRepositories.length.toLocaleString()} Skills</span>
-            <button type="button" className="glass-add-button" onClick={() => setCatalogPage((page) => Math.min(Math.ceil(categorizedRepositories.length / 20) - 1, page + 1))} disabled={(catalogPage + 1) * 20 >= categorizedRepositories.length}>Next</button>
-          </div>
-        )}
+}
       </div>
 
       <div className="skill-import-panel">

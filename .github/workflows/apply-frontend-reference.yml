@@ -1,0 +1,92 @@
+name: Apply frontend reference ZIP
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/apply-frontend-reference.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Extract supplied frontend files
+        run: |
+          mkdir -p /tmp/drive-frontend
+          unzip -o uploads/drive-mcp-fixed-frontend.zip -d /tmp/drive-frontend
+          test -f /tmp/drive-frontend/app/globals.css
+          test -f /tmp/drive-frontend/app/page.js
+          test -f /tmp/drive-frontend/components/copy-button.jsx
+          test -f /tmp/drive-frontend/components/custom-mcp-form.jsx
+          test -f /tmp/drive-frontend/components/my-mcps.jsx
+          test -f /tmp/drive-frontend/components/workspace-tabs.jsx
+          cp /tmp/drive-frontend/app/globals.css app/globals.css
+          cp /tmp/drive-frontend/app/page.js app/page.js
+          cp /tmp/drive-frontend/components/copy-button.jsx components/copy-button.jsx
+          cp /tmp/drive-frontend/components/custom-mcp-form.jsx components/custom-mcp-form.jsx
+          cp /tmp/drive-frontend/components/my-mcps.jsx components/my-mcps.jsx
+          cp /tmp/drive-frontend/components/workspace-tabs.jsx components/workspace-tabs.jsx
+      - name: Apply React and Next.js lint-safe adjustments
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const pagePath = 'app/page.js';
+          let page = fs.readFileSync(pagePath, 'utf8');
+          if (!page.includes('import Link from "next/link";')) {
+            page = 'import Link from "next/link";\\n' + page;
+          }
+          page = page.replace(/<a className="clear-search-pill" href="\\/#directory">([\\s\\S]*?)<\\/a>/g, '<Link className="clear-search-pill" href="/#directory">$1</Link>');
+          page = page.replace(/<a className="glass-link is-primary" href="\\/#directory">([\\s\\S]*?)<\\/a>/g, '<Link className="glass-link is-primary" href="/#directory">$1</Link>');
+          page = page.replace(/<a className="glass-link" href="\\/#directory">([\\s\\S]*?)<\\/a>/g, '<Link className="glass-link" href="/#directory">$1</Link>');
+          fs.writeFileSync(pagePath, page);
+
+          const mcPath = 'components/my-mcps.jsx';
+          let mc = fs.readFileSync(mcPath, 'utf8');
+          mc = mc.replace(
+            '  useEffect(() => {\\n    load();\\n    const refresh = () => load();',
+            '  useEffect(() => {\\n    const initialLoad = window.setTimeout(() => load(), 0);\\n    const refresh = () => load();'
+          );
+          mc = mc.replace(
+            '    return () => {\\n      window.removeEventListener("drive:connections-changed", refresh);',
+            '    return () => {\\n      window.clearTimeout(initialLoad);\\n      window.removeEventListener("drive:connections-changed", refresh);'
+          );
+          fs.writeFileSync(mcPath, mc);
+
+          const tabsPath = 'components/workspace-tabs.jsx';
+          let tabs = fs.readFileSync(tabsPath, 'utf8');
+          tabs = tabs.replace(
+            '  const [active, setActive] = useState(initialTab);',
+            '  const [active, setActive] = useState(query ? "discover" : initialTab);'
+          );
+          tabs = tabs.replace(
+            /  useEffect\\(\\(\\) => \\{\\n    try \\{\\n      const savedMotion = window\\.localStorage\\.getItem\\("drive:motion-enabled"\\);[\\s\\S]*?\\n  \\}, \\[\\]\\);/,
+            '  useEffect(() => {\\n    const restorePreferences = window.setTimeout(() => {\\n      try {\\n        const savedMotion = window.localStorage.getItem("drive:motion-enabled");\\n        const savedGlass = window.localStorage.getItem("drive:glass-intensity");\\n        const savedSpecular = window.localStorage.getItem("drive:specular");\\n        if (savedMotion !== null) setMotionEnabled(savedMotion === "true");\\n        if (savedGlass) setGlassIntensity(savedGlass);\\n        if (savedSpecular !== null) setSpecularHighlights(savedSpecular === "true");\\n      } catch {}\\n    }, 0);\\n    return () => window.clearTimeout(restorePreferences);\\n  }, []);'
+          );
+          tabs = tabs.replace(
+            /  useEffect\\(\\(\\) => \\{\\n    if \\(query\\) \\{\\n      setActive\\("discover"\\);\\n    \\}\\n  \\}, \\[query\\]\\);\\n\\n/,
+            ''
+          );
+          fs.writeFileSync(tabsPath, tabs);
+          NODE
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Run lint
+        run: npm run lint
+      - name: Run production build
+        run: npm run build
+      - name: Commit extracted frontend
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/globals.css app/page.js components/copy-button.jsx components/custom-mcp-form.jsx components/my-mcps.jsx components/workspace-tabs.jsx
+          git commit -m "feat(frontend): apply supplied liquid glass interface"
+          git push origin main

@@ -31,7 +31,7 @@ function parseFrontmatter(markdown) {
 }
 
 function validRelativePath(path) {
-  if (typeof path !== "string" || !path || path.length > 240 || path.startsWith("/") || path.includes("\\\\") || path.includes("\0")) return false;
+  if (typeof path !== "string" || !path || path.length > 240 || path.startsWith("/") || path.includes("\\") || path.includes("\0")) return false;
   const parts = path.split("/");
   return parts.every((part) => part && part !== "." && part !== ".." && /^[A-Za-z0-9_.@+-]+$/.test(part));
 }

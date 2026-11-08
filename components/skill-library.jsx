@@ -28,6 +28,7 @@ export default function SkillLibrary() {
   const [connections, setConnections] = useState([]);
   const [bindings, setBindings] = useState([]);
   const [bindingChoice, setBindingChoice] = useState({});
+  const [bindingDrafts, setBindingDrafts] = useState({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -154,6 +155,24 @@ export default function SkillLibrary() {
     }, { onConflict: "user_id,skill_id,connection_id" });
     if (saveError) setError(saveError.message);
     else { setNotice("MCP linked to this Skill. Binding remains disabled until tool permissions are configured."); await load(); }
+    setBusy("");
+  }
+
+  async function saveBindingPolicy(binding) {
+    const raw = bindingDrafts[binding.id] ?? (binding.allowed_tools || []).join("\\n");
+    const tools = [...new Set(raw.split(/[\\n,]/).map((name) => name.trim()).filter(Boolean))];
+    if (tools.some((name) => !/^[a-zA-Z0-9_.:-]{1,128}$/.test(name))) {
+      setError("Tool names may only contain letters, numbers, underscore, dot, colon, and hyphen.");
+      return;
+    }
+    if (tools.length > 100) { setError("A binding can contain at most 100 allowed tool names."); return; }
+    const supabase = getSupabase();
+    setBusy(`policy:${binding.id}`); setError(""); setNotice("");
+    const { error: updateError } = await supabase.from("mcp_skill_bindings")
+      .update({ allowed_tools: tools, enabled: false, requires_approval: true, updated_at: new Date().toISOString() })
+      .eq("id", binding.id);
+    if (updateError) setError(updateError.message);
+    else { setNotice("Tool allowlist saved as a staged policy. Runtime execution remains disabled."); await load(); }
     setBusy("");
   }
 
@@ -341,6 +360,14 @@ export default function SkillLibrary() {
                   return <div className="skill-binding-existing" key={binding.id}>
                     <span><strong>{connection?.server?.title || connection?.server?.display_name || connection?.server?.server_name || "Connected MCP"}</strong><small>{binding.enabled ? "Enabled" : "Linked · Disabled"} · {binding.allowed_tools?.length || 0} tools allowed · Approval required</small></span>
                     <button type="button" className="glass-chip-btn" onClick={() => removeBinding(binding)} disabled={busy === `unbind:${binding.id}`}>Unlink</button>
+                    <div className="skill-policy-editor">
+                      <label htmlFor={`tools-${binding.id}`}>Allowed tool names, one per line</label>
+                      <textarea id={`tools-${binding.id}`} rows={3} value={bindingDrafts[binding.id] ?? (binding.allowed_tools || []).join("\\n")} onChange={(event) => setBindingDrafts((current) => ({ ...current, [binding.id]: event.target.value }))} placeholder={"github.search_repositories\\ngithub.get_file"} />
+                      <div className="skill-policy-actions">
+                        <small>Allowlist metadata only · execution disabled · approval required</small>
+                        <button type="button" className="glass-chip-btn" onClick={() => saveBindingPolicy(binding)} disabled={busy === `policy:${binding.id}`}>Save allowlist</button>
+                      </div>
+                    </div>
                   </div>;
                 })}
               </div>

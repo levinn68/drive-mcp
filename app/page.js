@@ -25,49 +25,6 @@ import {
 const REGISTRY = "https://registry.modelcontextprotocol.io";
 
 async function getServers(query, cursor) {
-  const glamaKey = process.env.GLAMA_API_KEY;
-  if (glamaKey) {
-    try {
-      const gp = new URLSearchParams({
-        first: "100",
-        sort: query ? "search-relevance:desc" : "added-at:desc",
-      });
-      if (query.trim()) gp.set("query", query.trim());
-      if (cursor) gp.set("after", cursor);
-      const gr = await fetch("https://glama.ai/api/mcp/v1/servers?" + gp.toString(), {
-        headers: { accept: "application/json", authorization: "Bearer " + glamaKey },
-        next: { revalidate: 900 },
-        signal: AbortSignal.timeout(10000),
-      });
-      if (!gr.ok) throw new Error("Glama HTTP " + gr.status);
-      const gd = await gr.json();
-      return {
-        servers: (gd.servers || []).map((x) => ({
-          server: {
-            name: x.namespace + "/" + x.slug,
-            title: x.name || x.slug,
-            description: x.description || "",
-            version: "Directory listing",
-            repository: x.repository || {},
-            remotes: [],
-            packages: [],
-          },
-          _driveSource: "Glama",
-          _driveSourceUrl: x.url,
-          _driveNamespace: x.namespace,
-          _driveTools: (x.tools || []).length,
-          _driveBoosted: x.isBoosted,
-        })),
-        metadata: {},
-        nextCursor: gd.pageInfo && gd.pageInfo.hasNextPage ? gd.pageInfo.endCursor : null,
-        source: "Glama",
-        unavailable: false,
-      };
-    } catch (error) {
-      console.error("Glama catalog error", error);
-      return { servers: [], metadata: {}, nextCursor: null, source: "Glama", unavailable: true };
-    }
-  }
   const params = new URLSearchParams({ limit: "100", version: "latest" });
   if (query && query.trim().length >= 3) params.set("search", query.trim());
   if (cursor) params.set("cursor", cursor);
@@ -174,17 +131,6 @@ function ServerCard({ entry }) {
             </>
           ) : (
             <span className="availability-note">Registry metadata</span>
-          )}
-          {item.sourceUrl && (
-            <a
-              className="source-credit-link"
-              href={item.sourceUrl}
-              target="_blank"
-              rel="noreferrer"
-            >
-              <span>Glama</span>
-              <ExternalLink size={11} />
-            </a>
           )}
         </div>
         <AddMcpButton
@@ -318,19 +264,7 @@ export default async function Home({ searchParams }) {
 
       <div className="catalog-source-line">
         <span className="source-indicator" />
-        {data.source === "Glama" ? (
-          <>
-            Directory data powered by{" "}
-            <a href="https://glama.ai" target="_blank" rel="noreferrer">
-              Glama
-            </a>
-          </>
-        ) : (
-          <>
-            Official MCP Registry{" "}
-            <span className="setup-needed">Optional: set GLAMA_API_KEY for expanded index</span>
-          </>
-        )}
+        Official MCP Registry · Manual source review
       </div>
 
       <div className="discover-highlights">
@@ -368,7 +302,7 @@ export default async function Home({ searchParams }) {
           <strong>{servers.length}</strong>{" "}
           <span>{query ? `matching results for "${query}"` : "servers on this page"}</span>
           <span className="registry-live">
-            <i /> {data.source === "Glama" ? "Glama Index" : "Official MCP Registry"}
+            <i /> Official MCP Registry
           </span>
         </div>
         {query && (

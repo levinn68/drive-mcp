@@ -81,7 +81,7 @@ export default function WorkspaceTabs({
   serverCount = 0,
   query = "",
 }) {
-  const [active, setActive] = useState(initialTab);
+  const [active, setActive] = useState(query ? "discover" : initialTab);
   const [dragIndex, setDragIndex] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isAnimatingLens, setIsAnimatingLens] = useState(false);
@@ -99,14 +99,17 @@ export default function WorkspaceTabs({
 
   // Load saved UI preferences safely
   useEffect(() => {
-    try {
-      const savedMotion = window.localStorage.getItem("drive:motion-enabled");
-      const savedGlass = window.localStorage.getItem("drive:glass-intensity");
-      const savedSpecular = window.localStorage.getItem("drive:specular");
-      if (savedMotion !== null) setMotionEnabled(savedMotion === "true");
-      if (savedGlass) setGlassIntensity(savedGlass);
-      if (savedSpecular !== null) setSpecularHighlights(savedSpecular === "true");
-    } catch {}
+    const restorePreferences = window.setTimeout(() => {
+      try {
+        const savedMotion = window.localStorage.getItem("drive:motion-enabled");
+        const savedGlass = window.localStorage.getItem("drive:glass-intensity");
+        const savedSpecular = window.localStorage.getItem("drive:specular");
+        if (savedMotion !== null) setMotionEnabled(savedMotion === "true");
+        if (savedGlass) setGlassIntensity(savedGlass);
+        if (savedSpecular !== null) setSpecularHighlights(savedSpecular === "true");
+      } catch {}
+    }, 0);
+    return () => window.clearTimeout(restorePreferences);
   }, []);
 
   // Sync with URL query/hash or custom navigation events
@@ -135,12 +138,6 @@ export default function WorkspaceTabs({
     },
     [triggerLensPulse]
   );
-
-  useEffect(() => {
-    if (query) {
-      setActive("discover");
-    }
-  }, [query]);
 
   useEffect(() => {
     function syncFromHash() {

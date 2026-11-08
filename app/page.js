@@ -1,3 +1,4 @@
+import CustomMcpForm from "../components/custom-mcp-form";
 import { ArrowUpRight, Blocks, Command, Search, ShieldCheck, Sparkles, Zap, Globe2, Package, Server, ExternalLink } from "lucide-react";
 
 const REGISTRY = "https://registry.modelcontextprotocol.io";
@@ -92,7 +93,7 @@ export default async function Home({ searchParams }) {
       <div className="eyebrow">BRING YOUR OWN SERVER</div><h2>Your MCP, your choice.</h2>
       <p className="section-intro">Can’t find a server in the directory? DRIVE will support adding a custom remote MCP endpoint. Local STDIO packages need a hosted, isolated runtime before they can be connected remotely.</p>
       <div className="principle-grid"><article className="principle"><div className="principle-number"><Globe2 size={17}/></div><h3>Remote endpoint</h3><p>Register a Streamable HTTP MCP URL and configure its authentication method.</p></article><article className="principle"><div className="principle-number"><Package size={17}/></div><h3>Local packages</h3><p>Browse package metadata and setup instructions. Execution requires an isolated runtime.</p></article><article className="principle"><div className="principle-number"><Blocks size={17}/></div><h3>Unified directory</h3><p>Search official registry entries alongside your own private connections.</p></article></div>
-      <div className="custom-placeholder"><div><strong>Custom MCP connection</strong><p>Connection form is the next implementation step. No credentials are collected on this page yet.</p></div><span className="status planned">Coming next</span></div>
+      <CustomMcpForm />
     </section>
 
     <section className="security-section" id="security"><div className="security-icon"><ShieldCheck size={25}/></div><div><div className="eyebrow">SECURITY IS THE FOUNDATION</div><h2>Discovery is not trust.</h2><p>Registry metadata is treated as untrusted input. Before a server becomes connectable, DRIVE must verify its source, transport, authentication model, package provenance and tool permissions. Credentials stay server-side and sensitive actions require explicit approval.</p></div></section>

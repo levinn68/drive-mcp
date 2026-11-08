@@ -367,7 +367,7 @@ input:focus-visible {
   height: 70px;
   padding: 6px;
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
   border-radius: 999px;
   background: rgba(14, 17, 24, 0.82);
@@ -410,7 +410,7 @@ input:focus-visible {
   top: 5px;
   bottom: 5px;
   left: 6px;
-  width: calc((100% - 12px) / 6);
+  width: calc((100% - 12px) / 3);
   border-radius: 999px;
   pointer-events: none;
   z-index: 2;

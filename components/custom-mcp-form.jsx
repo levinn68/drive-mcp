@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import { Chrome, LogOut, UserRound } from "lucide-react";
 
@@ -16,6 +16,14 @@ export default function CustomMcpForm() {
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const supabase = getSupabase();
+    if (!supabase) return;
+    supabase.auth.getUser().then(({ data: { user: current } }) => setUser(current));
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setUser(session?.user || null));
+    return () => subscription.unsubscribe();
+  }, []);
 
   async function refreshUser() {
     const supabase = getSupabase();

@@ -4,17 +4,45 @@ export const runtime = "nodejs";
 
 const headers = {
   accept: "application/vnd.github+json",
-  "user-agent": "DRIVE-Manual-Skill-Discovery",
+  "user-agent": "DRIVE-Skill-Catalog",
   "x-github-api-version": "2022-11-28",
 };
+
+function normalize(value) {
+  return String(value || "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function readSkillName(markdown) {
+  const frontmatter = markdown.match(/^---\s*\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/);
+  if (!frontmatter) return "";
+  const field = frontmatter[1].match(/^name:\s*(.*?)\s*$/im);
+  return field ? field[1].replace(/^[\"']|[\"']$/g, "").trim() : "";
+}
+
+async function fetchSkillMetadata(file, signal) {
+  const response = await fetch(file.raw_url, {
+    headers: { accept: "text/plain", "user-agent": "DRIVE-Skill-Catalog" },
+    cache: "no-store",
+    redirect: "error",
+    signal,
+  });
+  if (!response.ok) return { ...file, metadataError: true };
+  const markdown = await response.text();
+  return { ...file, frontmatterName: readSkillName(markdown) };
+}
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const owner = (searchParams.get("owner") || "").trim();
   const repo = (searchParams.get("repo") || "").trim();
   const branch = (searchParams.get("branch") || "").trim();
-  const skill = (searchParams.get("skill") || "").trim().toLowerCase();
-  const skillName = (searchParams.get("skillName") || "").trim().toLowerCase();
+  const skill = (searchParams.get("skill") || "").trim();
+  const skillName = (searchParams.get("skillName") || "").trim();
   if (!/^[a-zA-Z0-9_.-]{1,100}$/.test(owner) || !/^[a-zA-Z0-9_.-]{1,100}$/.test(repo)) {
     return NextResponse.json({ error: "Invalid GitHub owner or repository" }, { status: 400 });
   }
@@ -31,6 +59,10 @@ export async function GET(request) {
     });
     if (!treeResponse.ok) return NextResponse.json({ error: "Could not inspect repository tree. The repository may be too large or its branch unavailable." }, { status: 502 });
     const tree = await treeResponse.json();
+    if (tree.truncated) {
+      return NextResponse.json({ error: "GitHub returned a truncated repository tree. Refusing to select a Skill from incomplete results." }, { status: 409 });
+    }
+
     let skillFiles = (tree.tree || [])
       .filter((entry) => entry.type === "blob" && /(^|\/)SKILL\.md$/i.test(entry.path))
       .slice(0, 200)
@@ -39,17 +71,43 @@ export async function GET(request) {
         raw_url: `https://raw.githubusercontent.com/${owner}/${repo}/${selectedBranch}/${entry.path.split("/").map(encodeURIComponent).join("/")}`,
         size: entry.size || 0,
       }));
+
     if (skill || skillName) {
-      const normalize = (value) => String(value || "").toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-      const wanted = [normalize(skillName), normalize(skill)].filter(Boolean);
-      let matches = skillFiles.filter((file) => {
+      const wanted = [...new Set([normalize(skill), normalize(skillName)].filter(Boolean))];
+      const candidates = await Promise.all(skillFiles.map((file) =>
+        fetchSkillMetadata(file, AbortSignal.timeout(10000)).catch(() => ({ ...file, metadataError: true }))
+      ));
+      const matches = candidates.filter((file) => {
         const folder = normalize(file.path.split("/").at(-2) || "");
-        return wanted.some((candidate) => candidate === folder || candidate.endsWith(`-${folder}`) || folder.endsWith(`-${candidate}`));
+        const metadataName = normalize(file.frontmatterName);
+        const pathSegments = file.path.split("/").slice(0, -1).map(normalize);
+        return wanted.some((candidate) =>
+          candidate === metadataName ||
+          candidate === folder ||
+          pathSegments.includes(candidate)
+        );
       });
-      if (!matches.length && skillFiles.length === 1) matches = skillFiles;
-      if (!matches.length) return NextResponse.json({ error: "This catalog entry could not be matched to a unique SKILL.md folder in its source repository. Open the repository and choose the Skill manually." }, { status: 404 });
-      skillFiles = matches;
+
+      if (!matches.length && candidates.length === 1 && !candidates[0].metadataError) {
+        skillFiles = candidates;
+      } else if (!matches.length) {
+        return NextResponse.json({
+          error: "This catalog Skill could not be matched to a SKILL.md entry by its slug, folder name, or frontmatter name.",
+          requested: { slug: skill || null, name: skillName || null },
+          available: candidates.map(({ path, frontmatterName, metadataError }) => ({
+            path, name: frontmatterName || null, readable: !metadataError,
+          })),
+        }, { status: 404 });
+      } else if (matches.length > 1) {
+        return NextResponse.json({
+          error: "The catalog entry matches more than one SKILL.md file. Select the exact Skill folder.",
+          matches: matches.map(({ path, frontmatterName }) => ({ path, name: frontmatterName || null })),
+        }, { status: 409 });
+      } else {
+        skillFiles = matches;
+      }
     }
+
     return NextResponse.json({
       repository: meta.full_name,
       html_url: meta.html_url,
@@ -57,7 +115,7 @@ export async function GET(request) {
       branch: selectedBranch,
       license: meta.license?.spdx_id || null,
       stars: meta.stargazers_count,
-      truncated: Boolean(tree.truncated),
+      truncated: false,
       skills: skillFiles,
     });
   } catch {

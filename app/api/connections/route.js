@@ -28,9 +28,19 @@ export async function GET(request) {
     .from("user_mcp_connections")
     .select("id,registry_server_id,custom_server_id,enabled,created_at,updated_at")
     .eq("user_id", auth.user.id)
-    .order("created_at", { ascending: false });
+    .order("updated_at", { ascending: false });
   if (error) return json({ error: "Could not load MCP settings" }, 400);
-  return json({ connections: data || [] });
+  const registryIds = (data || []).map((row) => row.registry_server_id).filter(Boolean);
+  const customIds = (data || []).map((row) => row.custom_server_id).filter(Boolean);
+  const [registryResult, customResult] = await Promise.all([
+    registryIds.length ? auth.supabase.from("mcp_servers").select("id,server_name,title,description,version,repository_url,transport_types,remotes").in("id", registryIds) : Promise.resolve({ data: [], error: null }),
+    customIds.length ? auth.supabase.from("user_custom_mcp_servers").select("id,display_name,endpoint_url,status,transport").in("id", customIds) : Promise.resolve({ data: [], error: null }),
+  ]);
+  if (registryResult.error || customResult.error) return json({ error: "Could not load MCP details" }, 400);
+  const registryById = new Map((registryResult.data || []).map((item) => [item.id, item]));
+  const customById = new Map((customResult.data || []).map((item) => [item.id, item]));
+  const connections = (data || []).map((row) => ({ ...row, server: row.registry_server_id ? registryById.get(row.registry_server_id) || null : customById.get(row.custom_server_id) || null, kind: row.registry_server_id ? "registry" : "custom" }));
+  return json({ connections });
 }
 
 export async function POST(request) {

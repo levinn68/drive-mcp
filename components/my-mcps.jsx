@@ -125,11 +125,12 @@ export default function MyMcpPanel() {
   }, []);
 
   useEffect(() => {
-    load();
+    const initialLoad = window.setTimeout(() => load(), 0);
     const refresh = () => load();
     window.addEventListener("drive:connections-changed", refresh);
     window.addEventListener("drive:auth-changed", refresh);
     return () => {
+      window.clearTimeout(initialLoad);
       window.removeEventListener("drive:connections-changed", refresh);
       window.removeEventListener("drive:auth-changed", refresh);
     };

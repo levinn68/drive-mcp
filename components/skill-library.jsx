@@ -35,6 +35,7 @@ export default function SkillLibrary() {
   const [auditLogs, setAuditLogs] = useState([]);
   const [runtimeTasks, setRuntimeTasks] = useState({});
   const [runtimeContexts, setRuntimeContexts] = useState({});
+  const [runtimeToolArgs, setRuntimeToolArgs] = useState({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -166,6 +167,30 @@ export default function SkillLibrary() {
     if (saveError) setError(saveError.message);
     else { setNotice("MCP linked to this Skill. Binding remains disabled until tool permissions are configured."); await load(); }
     setBusy("");
+  }
+
+  async function requestRuntimeToolApproval(bindingId, toolName, skillId) {
+    const key = `${skillId}:${toolName}`;
+    const raw = runtimeToolArgs[key] || "{}";
+    let args;
+    try { args = JSON.parse(raw); } catch { setError(`Arguments for ${toolName} must be valid JSON.`); return; }
+    if (!args || typeof args !== "object" || Array.isArray(args)) { setError("Tool arguments must be a JSON object."); return; }
+    const supabase = getSupabase();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setError("Sign in before requesting approval."); return; }
+    setBusy(`request:${key}`); setError(""); setNotice("");
+    try {
+      const response = await fetch("/api/skills/approvals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ action: "request", bindingId, toolName, arguments: args }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not request tool approval");
+      setNotice(`Approval requested for ${toolName}. Review it in Execution approvals.`);
+      await load();
+    } catch (e) { setError(e.message || "Could not request tool approval"); }
+    finally { setBusy(""); }
   }
 
   async function prepareSkillRuntime(skill) {
@@ -500,7 +525,18 @@ export default function SkillLibrary() {
                       <div className="skill-runtime-meta"><strong>Context prepared</strong><span>{runtimeContexts[skill.id].sources.reduce((n, source) => n + (source.tools?.length || 0), 0)} allowed tools available</span></div>
                       {runtimeContexts[skill.id].sources.map((source) => (
                         <div className="skill-runtime-source" key={source.bindingId}>
-                          {source.unavailable ? <small>{source.unavailable}</small> : <><strong>{source.tools.length} tools · approval required</strong><small>{source.tools.map((tool) => tool.name).join(" · ")}</small></>}
+                          {source.unavailable ? <small>{source.unavailable}</small> : <>
+                            <strong>{source.tools.length} tools · approval required</strong>
+                            {source.tools.map((tool) => {
+                              const key = `${skill.id}:${tool.name}`;
+                              return <div className="skill-runtime-tool" key={tool.name}>
+                                <div><strong>{tool.name}</strong><small>{tool.description || "No description supplied."}</small></div>
+                                <details><summary>Input schema</summary><pre>{JSON.stringify(tool.inputSchema, null, 2)}</pre></details>
+                                <textarea rows={2} value={runtimeToolArgs[key] || "{}"} onChange={(event) => setRuntimeToolArgs((current) => ({ ...current, [key]: event.target.value }))} aria-label={`Arguments for ${tool.name}`} placeholder='{"key":"value"}' />
+                                <button type="button" className="glass-chip-btn" onClick={() => requestRuntimeToolApproval(source.bindingId, tool.name, skill.id)} disabled={busy === `request:${key}`}>{busy === `request:${key}` ? "Requesting…" : "Request approval"}</button>
+                              </div>;
+                            })}
+                          </>}
                         </div>
                       ))}
                       <details><summary>Inspect prepared Skill instructions and policy</summary><pre>{JSON.stringify({ skill: runtimeContexts[skill.id].skill, task: runtimeContexts[skill.id].task, instructionTrust: runtimeContexts[skill.id].instructionTrust, policy: runtimeContexts[skill.id].policy, skillInstructions: runtimeContexts[skill.id].skillInstructions }, null, 2)}</pre></details>

@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { createHash } from "node:crypto";
 import { isIP } from "node:net";
 import { lookup } from "node:dns/promises";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -73,9 +74,13 @@ export async function POST(request) {
     return json({ error: "Provide skillId and a task between 1 and 4000 characters" }, 400);
   }
   const { data: skill, error: skillError } = await auth.supabase.from("user_skills")
-    .select("id,name,description,skill_md,status,version").eq("id", body.skillId).eq("user_id", auth.user.id).maybeSingle();
+    .select("id,name,description,skill_md,status,version,security_scan_status,security_scan_hash").eq("id", body.skillId).eq("user_id", auth.user.id).maybeSingle();
   if (skillError || !skill) return json({ error: "Skill was not found" }, 404);
   if (skill.status !== "enabled") return json({ error: "Review and approve this Skill before preparing a runtime" }, 403);
+  const currentHash = createHash("sha256").update(skill.skill_md || "").digest("hex");
+  if (skill.security_scan_status !== "safe" || !skill.security_scan_hash || currentHash !== skill.security_scan_hash) {
+    return json({ error: "Skill security scan is missing, stale, or not SAFE. Re-scan before runtime preparation." }, 403);
+  }
   if (!skill.skill_md || skill.skill_md.length > 30000) return json({ error: "Skill instructions are empty or exceed the 30 KB runtime limit" }, 400);
 
   const { data: bindings, error: bindingError } = await auth.supabase.from("mcp_skill_bindings")

@@ -3,6 +3,7 @@ import CustomMcpForm from "../components/custom-mcp-form";
 import MyMcpPanel, { AddMcpButton } from "../components/my-mcps";
 import CopyButton from "../components/copy-button";
 import WorkspaceTabs from "../components/workspace-tabs";
+import SkillLibrary from "../components/skill-library";
 import {
   ArrowUpRight,
   Blocks,
@@ -422,6 +423,8 @@ export default async function Home({ searchParams }) {
     </section>
   );
 
+  const skills = <SkillLibrary />;
+
   const security = (
     <section className="security-section security-page glass-surface" id="security">
       <div className="security-heading">
@@ -490,6 +493,7 @@ export default async function Home({ searchParams }) {
       discover={discover}
       add={add}
       security={security}
+      skills={skills}
       initialTab={initialTab}
       serverCount={servers.length}
       query={query}

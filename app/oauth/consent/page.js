@@ -115,15 +115,7 @@ export default function OAuthConsentPage() {
     setBusy(true);
     setError("");
     setNotice("");
-
-    let callbackTab = null;
     try {
-      // Some Android in-app browsers throw when opening a tab. Keep this
-      // inside try/catch so the approval request still runs and errors render.
-      if (allow) {
-        try { callbackTab = window.open("about:blank", "_blank"); } catch { callbackTab = null; }
-      }
-
       const { data, error: decisionError } = allow
         ? await supabase.auth.oauth.approveAuthorization(authorizationId)
         : await supabase.auth.oauth.denyAuthorization(authorizationId);
@@ -132,17 +124,18 @@ export default function OAuthConsentPage() {
       const redirectUrl = data?.redirect_url;
       if (!redirectUrl) throw new Error("Supabase did not return the OAuth callback URL.");
 
-      if (allow && callbackTab && !callbackTab.closed) {
-        callbackTab.location.replace(redirectUrl);
-        window.location.replace("/");
+      if (allow) {
+        // Use a same-origin handoff screen. Android in-app browsers often
+        // suppress window.open(), so asking the user to open the dashboard
+        // and finish the provider callback with explicit links is reliable.
+        const handoff = new URL("/oauth/complete", window.location.origin);
+        handoff.searchParams.set("callback", redirectUrl);
+        window.location.replace(handoff.toString());
         return;
       }
 
-      // If Android blocks popups, complete the OAuth client callback in this
-      // tab instead of silently abandoning the authorization flow.
       window.location.assign(redirectUrl);
     } catch (e) {
-      if (callbackTab && !callbackTab.closed) callbackTab.close();
       setError(e?.message || "Could not complete authorization. Please try again.");
       setBusy(false);
     }

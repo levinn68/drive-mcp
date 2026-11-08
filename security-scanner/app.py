@@ -57,21 +57,24 @@ def scan(payload: ScanRequest, authorization: str | None = Header(default=None))
 
         # Keep the raw report for audit, but derive the gate only from explicit scanner fields.
         summary = report if isinstance(report, dict) else {"report": report}
-        safe = summary.get("safe_to_install") is True
-        recommendation = str(summary.get("recommendation", "INCOMPLETE")).upper()
-        complete = not bool(summary.get("incomplete", False)) and result.returncode == 0
+        assessment = summary.get("risk_assessment") or {}
+        metadata = summary.get("metadata") or {}
+        recommendation = str(assessment.get("recommendation", "INCOMPLETE")).upper()
+        # --fail-on-incomplete makes incomplete coverage a non-zero exit. SAFE is only accepted on exit 0.
+        complete = result.returncode == 0 and recommendation == "SAFE" and not bool(metadata.get("incomplete", False))
+        safe = complete
         return {
             "scanner": "NVIDIA SkillSpector",
             "scanner_version": "2.13.1",
             "content_sha256": hashlib.sha256(raw).hexdigest(),
             "scan_mode": summary.get("scan_mode", "static_only"),
             "llm_used": False,
-            "risk_score": summary.get("risk_score"),
-            "severity": summary.get("severity", "UNKNOWN"),
+            "risk_score": assessment.get("score"),
+            "severity": assessment.get("severity", "UNKNOWN"),
             "recommendation": recommendation,
             "safe_to_install": bool(safe and complete and recommendation == "SAFE"),
             "complete": complete,
             "exit_code": result.returncode,
-            "findings": summary.get("findings", []),
+            "findings": summary.get("issues", []),
             "raw_report": summary,
         }

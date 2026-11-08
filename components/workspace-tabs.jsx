@@ -494,8 +494,8 @@ export default function WorkspaceTabs({
           <button
             type="button"
             className="top-pill-btn is-accent"
-            onClick={() => selectTab("account", true)}
-            title={active === "skills" ? "Open Skills Library" : active === "account" ? "Account Security" : "Add Custom MCP"}
+            onClick={() => active === "skills" ? document.getElementById("my-skills")?.scrollIntoView({ behavior: "smooth", block: "start" }) : selectTab("account", true)}
+            title={active === "skills" ? "Jump to My Skills" : active === "account" ? "Account Security" : "Add Custom MCP"}
           >
             <Sparkles size={12} />
             <span>{active === "skills" ? "My Skills" : active === "account" ? "Security" : "Connect"}</span>

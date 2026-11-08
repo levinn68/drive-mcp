@@ -30,6 +30,8 @@ Set these in Vercel for Production, Preview and Development:
 - `SUPABASE_URL` — server-side Supabase project URL.
 - `SUPABASE_SERVICE_ROLE_KEY` — server-only service role key. Never use a `NEXT_PUBLIC_` prefix.
 - `REGISTRY_SYNC_SECRET` — long random secret used to protect the sync endpoint.
+- `DRIVE_SKILLSPECTOR_URL` — private HTTPS base URL of the separately deployed SkillSpector scanner service.
+- `DRIVE_SKILLSPECTOR_TOKEN` — server-only bearer token shared with the scanner container. Never expose either scanner variable with a `NEXT_PUBLIC_` prefix.
 
 To run a sync, send:
 
@@ -39,6 +41,14 @@ Authorization: Bearer <REGISTRY_SYNC_SECRET>
 ```
 
 The sync endpoint requires both server-only variables `SUPABASE_SERVICE_ROLE_KEY` and `REGISTRY_SYNC_SECRET`. Do not place either in client code or commit them to Git.
+
+## NVIDIA SkillSpector security scanner
+
+Skill imports are gated by NVIDIA SkillSpector. Deploy the container in `security-scanner/` separately from Vercel, behind authenticated TLS ingress, then configure `DRIVE_SKILLSPECTOR_URL` and `DRIVE_SKILLSPECTOR_TOKEN` in Vercel. The scanner uses SkillSpector 2.13.1 with static analysis (`--no-llm`); Skill content is not sent to an LLM provider. SkillSpector may send dependency coordinates to OSV.dev for vulnerability lookups.
+
+A Skill is importable only when the scanner returns a complete `SAFE` verdict for the exact content hash. CAUTION, DO_NOT_INSTALL, scanner errors, incomplete reports, and hash mismatches are blocked. Runtime preparation, approval requests, and tool execution re-check the stored hash so changed content cannot reuse an old scan.
+
+The scanner is defense-in-depth, not an antivirus guarantee or runtime sandbox. Keep the container non-root, unprivileged, resource-limited, ephemeral, and isolated from application secrets and internal networks. See [security-scanner/README.md](security-scanner/README.md) for deployment guidance.
 
 ## Custom remote MCP
 

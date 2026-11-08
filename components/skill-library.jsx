@@ -33,6 +33,8 @@ export default function SkillLibrary() {
   const [discoveringConnection, setDiscoveringConnection] = useState("");
   const [approvals, setApprovals] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
+  const [runtimeTasks, setRuntimeTasks] = useState({});
+  const [runtimeContexts, setRuntimeContexts] = useState({});
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -164,6 +166,27 @@ export default function SkillLibrary() {
     if (saveError) setError(saveError.message);
     else { setNotice("MCP linked to this Skill. Binding remains disabled until tool permissions are configured."); await load(); }
     setBusy("");
+  }
+
+  async function prepareSkillRuntime(skill) {
+    const task = (runtimeTasks[skill.id] || "").trim();
+    if (!task) { setError("Describe the task before preparing the Skill runtime."); return; }
+    const supabase = getSupabase();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setError("Sign in before preparing the runtime."); return; }
+    setBusy(`runtime:${skill.id}`); setError(""); setNotice("");
+    try {
+      const response = await fetch("/api/skills/runtime", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ skillId: skill.id, task }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Could not prepare Skill runtime");
+      setRuntimeContexts((current) => ({ ...current, [skill.id]: data }));
+      setNotice("Skill runtime context prepared. No model has been called and no tool has been executed.");
+    } catch (e) { setError(e.message || "Could not prepare Skill runtime"); }
+    finally { setBusy(""); }
   }
 
   async function executeApproval(approvalId) {
@@ -450,6 +473,27 @@ export default function SkillLibrary() {
                 {skill.status === "enabled" && <button type="button" className="glass-chip-btn" onClick={() => setStatus(skill,"review_required")} disabled={busy === skill.id}>Disable approval</button>}
                 <button type="button" className="glass-chip-btn" onClick={() => remove(skill)} disabled={busy === skill.id}><Trash2 size={13}/>Remove</button>
               </div>
+              {skill.status === "enabled" && (
+                <div className="skill-runtime-panel">
+                  <div className="skill-binding-heading"><strong>Prepare agent runtime</strong><small>Context only · no execution</small></div>
+                  <textarea value={runtimeTasks[skill.id] || ""} onChange={(event) => setRuntimeTasks((current) => ({ ...current, [skill.id]: event.target.value }))} rows={2} maxLength={4000} placeholder="Describe the outcome you want this Skill to help with…" aria-label={`Task for ${skill.name}`} />
+                  <button type="button" className="glass-add-button" onClick={() => prepareSkillRuntime(skill)} disabled={busy === `runtime:${skill.id}` || !runtimeTasks[skill.id]?.trim()}>
+                    {busy === `runtime:${skill.id}` ? <LoaderCircle className="spin" size={13}/> : <Code2 size={13}/>}
+                    Prepare runtime context
+                  </button>
+                  {runtimeContexts[skill.id] && (
+                    <div className="skill-runtime-result">
+                      <div className="skill-runtime-meta"><strong>Context prepared</strong><span>{runtimeContexts[skill.id].sources.reduce((n, source) => n + (source.tools?.length || 0), 0)} allowed tools available</span></div>
+                      {runtimeContexts[skill.id].sources.map((source) => (
+                        <div className="skill-runtime-source" key={source.bindingId}>
+                          {source.unavailable ? <small>{source.unavailable}</small> : <><strong>{source.tools.length} tools · approval required</strong><small>{source.tools.map((tool) => tool.name).join(" · ")}</small></>}
+                        </div>
+                      ))}
+                      <details><summary>Inspect prepared Skill instructions and policy</summary><pre>{JSON.stringify({ skill: runtimeContexts[skill.id].skill, task: runtimeContexts[skill.id].task, instructionTrust: runtimeContexts[skill.id].instructionTrust, policy: runtimeContexts[skill.id].policy, skillInstructions: runtimeContexts[skill.id].skillInstructions }, null, 2)}</pre></details>
+                    </div>
+                  )}
+                </div>
+              )}
               <div className="skill-binding-panel">
                 <div className="skill-binding-heading"><strong>Connect an MCP</strong><small>{bindings.filter((binding) => binding.skill_id === skill.id).length} linked</small></div>
                 {connections.length === 0 ? <p className="availability-note">Add a remote MCP connection in the Add tab before linking it here.</p> : (

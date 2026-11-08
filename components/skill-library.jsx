@@ -253,6 +253,20 @@ export default function SkillLibrary() {
     setBindingDrafts((state) => ({ ...state, [binding.id]: [...selected].join("\n") }));
   }
 
+  async function setBindingEnabled(binding, skill, enabled) {
+    const connection = connections.find((item) => item.id === binding.connection_id);
+    if (enabled && skill.status !== "enabled") { setError("Approve the Skill before enabling its MCP binding."); return; }
+    if (enabled && !connection?.enabled) { setError("Enable this MCP connection in your workspace before enabling the binding."); return; }
+    if (enabled && !(binding.allowed_tools || []).length) { setError("Discover and save at least one allowed tool before enabling this binding."); return; }
+    const supabase = getSupabase();
+    setBusy(`binding-state:${binding.id}`); setError(""); setNotice("");
+    const { error: updateError } = await supabase.from("mcp_skill_bindings")
+      .update({ enabled, requires_approval: true, updated_at: new Date().toISOString() }).eq("id", binding.id);
+    if (updateError) setError(updateError.message);
+    else { setNotice(enabled ? "Skill binding enabled. Every tool call still requires approval." : "Skill binding disabled."); await load(); }
+    setBusy("");
+  }
+
   async function saveBindingPolicy(binding) {
     const raw = bindingDrafts[binding.id] ?? (binding.allowed_tools || []).join("\n");
     const tools = [...new Set(raw.split(/[\n,]/).map((name) => name.trim()).filter(Boolean))];
@@ -509,7 +523,12 @@ export default function SkillLibrary() {
                   const connection = connections.find((item) => item.id === binding.connection_id);
                   return <div className="skill-binding-existing" key={binding.id}>
                     <span><strong>{connection?.server?.title || connection?.server?.display_name || connection?.server?.server_name || "Connected MCP"}</strong><small>{binding.enabled ? "Enabled" : "Linked · Disabled"} · {binding.allowed_tools?.length || 0} tools allowed · Approval required</small></span>
-                    <button type="button" className="glass-chip-btn" onClick={() => removeBinding(binding)} disabled={busy === `unbind:${binding.id}`}>Unlink</button>
+                    <div className="skill-binding-controls">
+                      <button type="button" className={binding.enabled ? "glass-chip-btn" : "glass-add-button"} onClick={() => setBindingEnabled(binding, skill, !binding.enabled)} disabled={busy === `binding-state:${binding.id}`}>
+                        {binding.enabled ? "Disable binding" : "Enable binding"}
+                      </button>
+                      <button type="button" className="glass-chip-btn" onClick={() => removeBinding(binding)} disabled={busy === `unbind:${binding.id}`}>Unlink</button>
+                    </div>
 <div className="skill-policy-editor">
                       <div className="skill-policy-discovery-head">
                         <label>Available MCP tools</label>

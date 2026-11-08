@@ -80,7 +80,7 @@ export default function SkillLibrary() {
         if (!response.ok) throw new Error(data.error || "Skills catalog unavailable");
         if (!active) return;
         setCatalogPage(0);\n      setRepositories((data.items || []).map((item) => ({
-          id: item.id, full_name: item.source, description: item.name,
+          id: item.id, full_name: item.source, description: item.description || item.name,
           html_url: item.installUrl || `https://github.com/${item.source}`,
           default_branch: "main", stars: item.installs || 0,
           license: item.duplicate ? "Possible duplicate" : "Catalog entry",
@@ -116,7 +116,7 @@ export default function SkillLibrary() {
     setError("");
     try {
       const [owner, repo] = repository.full_name.split("/");
-      const response = await fetch(`/api/skills/repository?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}&branch=${encodeURIComponent(repository.default_branch || "")}&skill=${encodeURIComponent(repository.catalogSkill?.slug || "")}`);
+      const response = await fetch(`/api/skills/repository?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}&branch=${encodeURIComponent(repository.default_branch || "")}&skill=${encodeURIComponent(repository.catalogSkill?.slug || "")}&skillName=${encodeURIComponent(repository.catalogSkill?.name || "")}`);
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Could not inspect repository");
       setRepositoryDetails((current) => ({ ...current, [repository.id || repository.full_name]: { ...data, loading: false } }));
@@ -419,7 +419,7 @@ export default function SkillLibrary() {
                   <div className="skill-repository-main">
                     <div className="skill-repository-copy">
                       <strong>{repository.catalogSkill?.name || repository.full_name}</strong>
-                      <p>{repository.catalogSkill ? `Source: ${repository.full_name}` : (repository.description || "No repository description provided.")}</p>
+                      <p>{repository.catalogSkill ? `Source: ${repository.full_name} · ${repository.catalogSkill?.category || "other"}` : (repository.description || "No repository description provided.")}</p>
                       <small>{repository.stars.toLocaleString()} installs · {repository.license || "License not declared"} · {repository.language || "Language not specified"}</small>
                     </div>
                     <button type="button" className="glass-chip-btn" onClick={() => inspectRepository(repository)} disabled={detail?.loading}>

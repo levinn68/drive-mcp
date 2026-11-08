@@ -1,3 +1,4 @@
+import Link from "next/link";
 import CustomMcpForm from "../components/custom-mcp-form";
 import MyMcpPanel, { AddMcpButton } from "../components/my-mcps";
 import CopyButton from "../components/copy-button";
@@ -371,10 +372,10 @@ export default async function Home({ searchParams }) {
           </span>
         </div>
         {query && (
-          <a className="clear-search-pill" href="/#directory">
+          <Link className="clear-search-pill" href="/#directory">
             <span>Clear search</span>
             <span aria-hidden="true">×</span>
-          </a>
+          </Link>
         )}
       </div>
 
@@ -385,10 +386,10 @@ export default async function Home({ searchParams }) {
           </div>
           <h3>Registry is taking a moment</h3>
           <p>We couldn&apos;t reach the upstream MCP directory right now. Check connectivity or retry shortly.</p>
-          <a className="glass-link is-primary" href="/#directory">
+          <Link className="glass-link is-primary" href="/#directory">
             <span>Retry connection</span>
             <ArrowUpRight size={13} />
-          </a>
+          </Link>
         </div>
       ) : servers.length ? (
         <div className="integration-grid">
@@ -413,9 +414,9 @@ export default async function Home({ searchParams }) {
               : "The registry returned an empty page. Try refreshing shortly."}
           </p>
           {query && (
-            <a className="glass-link" href="/#directory">
+            <Link className="glass-link" href="/#directory">
               Reset search
-            </a>
+            </Link>
           )}
         </div>
       )}

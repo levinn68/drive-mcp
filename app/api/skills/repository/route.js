@@ -13,7 +13,7 @@ export async function GET(request) {
   const owner = (searchParams.get("owner") || "").trim();
   const repo = (searchParams.get("repo") || "").trim();
   const branch = (searchParams.get("branch") || "").trim();
-  const skill = (searchParams.get("skill") || "").trim().toLowerCase();
+  const skill = (searchParams.get("skill") || "").trim().toLowerCase();\n  const skillName = (searchParams.get("skillName") || "").trim().toLowerCase();
   if (!/^[a-zA-Z0-9_.-]{1,100}$/.test(owner) || !/^[a-zA-Z0-9_.-]{1,100}$/.test(repo)) {
     return NextResponse.json({ error: "Invalid GitHub owner or repository" }, { status: 400 });
   }

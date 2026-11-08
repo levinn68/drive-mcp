@@ -36,7 +36,13 @@ export default function OAuthConsentPage() {
   }, [supabase]);
 
   useEffect(() => {
-    if (!session || !authorizationId) return;
+    if (!session) return;
+    // Normal DRIVE login should return to the workspace. OAuth client logins
+    // carry authorization_id and must remain here to complete the consent flow.
+    if (!authorizationId) {
+      window.location.replace("/");
+      return;
+    }
     let cancelled = false;
     supabase.auth.oauth.getAuthorizationDetails(authorizationId).then(({ data, error: authError }) => {
       if (cancelled) return;

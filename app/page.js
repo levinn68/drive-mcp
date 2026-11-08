@@ -69,23 +69,23 @@ export default async function Home({ searchParams }) {
   return <main className="shell">
     <nav className="nav">
       <a className="brand" href="/"><span className="brand-mark"><Command size={19}/></span><span>DRIVE</span></a>
-      <div className="nav-links"><a href="#directory">Directory</a><a href="#security">Security</a><a href="#custom">Custom MCP</a></div>
-      <a className="nav-cta" href="#directory">Explore directory <ArrowUpRight size={15}/></a>
+      <div className="nav-links"><a href="#my-mcps">Connections</a><a href="#directory">Browse</a><a href="#security">Security</a></div>
+      <a className="nav-cta" href="#custom">Add MCP <ArrowUpRight size={15}/></a>
     </nav>
 
     <section className="hero">
-      <div className="eyebrow"><span className="pulse"/> YOUR MCP WORKSPACE</div>
-      <h1>Your MCPs.<br/><span>Under your control.</span></h1>
-      <p className="hero-copy">A cleaner home for the tools you rely on. Keep your connections close, copy setup details in one tap, and switch each MCP on only when you need it.</p>
-      <div className="hero-actions"><a className="primary-btn" href="#my-mcps">My MCPs <ArrowUpRight size={17}/></a><a className="secondary-btn" href="#directory">Discover servers</a></div>
-      <div className="hero-foot"><span><ShieldCheck size={15}/> Source details</span><span><Zap size={15}/> Personal switches</span><span><Globe2 size={15}/> Optional discovery</span></div>
+      <div className="eyebrow"><span className="pulse"/> DRIVE / WORKSPACE</div>
+      <h1>Connections<span>.</span></h1>
+      <p className="hero-copy">Manage the MCP servers linked to your account. Enable only the connections you need.</p>
+      <div className="hero-actions"><a className="primary-btn" href="#my-mcps">View connections <ArrowUpRight size={15}/></a><a className="secondary-btn" href="#directory">Browse registry</a></div>
+      <div className="hero-foot"><span><ShieldCheck size={13}/> Account-scoped</span><span><Zap size={13}/> Manual enable</span></div>
       <div className="orb orb-one"/><div className="orb orb-two"/>
     </section>
 
     <MyMcpPanel />
 
     <section className="catalog-section" id="directory">
-      <div className="section-head"><div><div className="eyebrow">EXPLORE</div><h2>Find your next connection.</h2><p>Search when you need something new. Nothing is added to My MCPs until you choose it.</p></div>
+      <div className="section-head"><div><div className="eyebrow">REGISTRY</div><h2>Browse servers</h2><p>Public listings. Add a server to your workspace only when you choose it.</p></div>
       <form className="catalog-search" action="/" method="get"><Search size={16}/><input name="q" defaultValue={query} placeholder="Search MCP servers (3+ chars)" aria-label="Search MCP servers"/><button type="submit">Search</button></form></div>
       <div className="directory-stats"><span><strong>{servers.length}</strong> matching servers</span><span>Source: registry.modelcontextprotocol.io</span>{query && <a href="/">Clear search</a>}</div>
       {data.unavailable ? <div className="empty-state"><Globe2 size={24}/><h3>Registry temporarily unavailable</h3><p>DRIVE could not reach the official registry. Try again shortly.</p></div> : servers.length ? <div className="integration-grid">{servers.map((entry, index) => <ServerCard key={entry?.server?.name + ":" + entry?.server?.version || index} entry={entry}/>)}</div> : <div className="empty-state"><Search size={24}/><h3>No servers found</h3><p>Try another search term or clear the filter.</p></div>}
@@ -100,7 +100,7 @@ export default async function Home({ searchParams }) {
       <CustomMcpForm />
     </section>
 
-    <section className="security-section" id="security"><div className="security-icon"><ShieldCheck size={25}/></div><div><div className="eyebrow">SECURITY IS THE FOUNDATION</div><h2>Check before connecting.</h2><p>A registry listing is a starting point, not a security review. DRIVE keeps unverified servers separate from connected services. Source checks, transport validation and permission controls are required before a connection can be enabled.</p></div></section>
+    <section className="security-section" id="security"><div className="security-icon"><ShieldCheck size={25}/></div><div><div className="eyebrow">CONNECTION POLICY</div><h2>Verify before enabling.</h2><p>A registry listing is a starting point, not a security review. DRIVE keeps unverified servers separate from connected services. Source checks, transport validation and permission controls are required before a connection can be enabled.</p></div></section>
     <footer><a className="brand" href="/"><span className="brand-mark"><Command size={17}/></span><span>DRIVE</span></a><span>One Hub. Every Connection.</span><span>© 2026 DRIVE</span></footer>
   </main>;
 }

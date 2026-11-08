@@ -564,7 +564,7 @@ export default function SkillLibrary() {
         </article>
       )}
 
-      <div className="skill-library-heading">
+      <div className="skill-library-heading" id="my-skills">
         <div><div className="eyebrow"><span className="pulse" /> PRIVATE COLLECTION</div><h2>My Skills <span className="heading-period">.</span></h2></div>
         <button type="button" className="glass-icon-button" onClick={load} aria-label="Refresh Skills" disabled={loading}><RefreshCw className={loading ? "spin" : ""} size={16}/></button>
       </div>

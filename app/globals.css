@@ -13,3 +13,80 @@
 @media(max-width:560px){.shell{padding:0 15px}.nav{height:56px;top:8px;margin-top:8px;padding:0 12px;border-radius:17px}.nav-cta{padding:8px 10px;font-size:9px}.hero{padding:42px 0 24px}.hero h1{font-size:41px}.hero-copy{font-size:11px}.hero-foot{flex-wrap:wrap;gap:10px 14px;font-size:8px}.my-mcps{padding:19px 15px;margin-top:16px;border-radius:21px}.my-mcps-heading h2{font-size:28px}.connection-summary{gap:15px;padding:11px}.summary-value{font-size:18px}.summary-status{font-size:0;gap:0}.connection-row{gap:9px;padding:13px 0}.connection-symbol{width:34px;height:34px;border-radius:10px}.connection-title{font-size:10px;flex-wrap:wrap;gap:5px}.connection-info p{max-width:43vw;font-size:9px}.connection-meta{font-size:7px}.connection-control{gap:5px}.ios-switch{width:43px;height:25px}.ios-switch span{width:19px;height:19px}.ios-switch.checked span{transform:translateX(18px)}.catalog-section,.platform-section{padding:42px 0}.section-head h2,.platform-section h2{font-size:25px}.integration-grid{grid-template-columns:1fr}.integration-card{min-height:0;padding:16px}.auth-row,.custom-fields{flex-direction:column;align-items:stretch}.auth-row button,.custom-fields button{min-height:40px}.security-section{padding:32px 0;gap:12px}.security-section h2{font-size:20px}footer{padding:22px 0;flex-wrap:wrap}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.nav,.my-mcps{background:rgba(20,28,38,.97)}}
+/* Native-feeling Liquid Glass app shell */
+:root{
+ --glass-fill:rgba(255,255,255,.08);
+ --glass-fill-strong:rgba(255,255,255,.12);
+ --glass-blur:36px;
+ --glass-saturate:210%;
+ --glass-edge:rgba(255,255,255,.22);
+ --glass-specular-top:rgba(255,255,255,.28);
+ --glass-specular-bottom:rgba(255,255,255,.07);
+ --glass-shadow:0 24px 48px -12px rgba(0,0,0,.7);
+ --radius-card:30px;
+ --radius-inset:20px;
+ --apple-blue:#007aff;
+ --apple-green:#34c759;
+ --apple-red:#ff3b30;
+}
+html,body{width:100%;height:100%;overflow:hidden}
+body{background:radial-gradient(ellipse at 50% -20%,rgba(91,139,188,.24),transparent 48%),radial-gradient(ellipse at 100% 100%,rgba(33,91,121,.13),transparent 42%),#070b12}
+.drive-app{height:100dvh;min-height:520px;display:flex;flex-direction:column;overflow:hidden;padding:env(safe-area-inset-top) 22px env(safe-area-inset-bottom);max-width:1440px;margin:0 auto}
+.app-topbar{height:68px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 14px;border-bottom:1px solid rgba(220,238,255,.11)}
+.app-brand{display:flex;align-items:center;gap:10px;color:#f2f7fc;text-decoration:none;font-weight:800;font-size:13px;letter-spacing:.2em}
+.app-brand .brand-mark{width:36px;height:36px;border-radius:13px;background:linear-gradient(145deg,rgba(255,255,255,.2),rgba(255,255,255,.055));border:1px solid rgba(255,255,255,.24);box-shadow:inset 0 1.5px 1px rgba(255,255,255,.28),0 7px 20px #0004}
+.app-context{display:flex;align-items:center;gap:8px;color:#8999aa;font:9px 'DM Mono',monospace;letter-spacing:.13em}
+.context-dot{width:6px;height:6px;border-radius:50%;background:#34c759;box-shadow:0 0 9px #34c75988}
+.app-status{padding:6px 9px;border:1px solid rgba(218,235,250,.14);border-radius:999px;color:#9eb2c5;font:8px 'DM Mono',monospace;letter-spacing:.1em;background:rgba(255,255,255,.045)}
+.app-content{position:relative;flex:1;min-height:0;overflow:hidden;padding:20px 0 14px}
+.app-panel{height:100%;overflow:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:rgba(188,216,241,.22) transparent;animation:panel-in 260ms cubic-bezier(.2,.8,.2,1)}
+.app-panel[hidden]{display:none}
+@keyframes panel-in{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
+.bottom-dock{position:relative;z-index:20;flex:none;align-self:center;display:flex;align-items:center;gap:5px;margin:0 auto max(10px,env(safe-area-inset-bottom));padding:7px;border:1px solid rgba(255,255,255,.24);border-radius:28px;background:rgba(26,35,47,.68);-webkit-backdrop-filter:blur(36px) saturate(210%);backdrop-filter:blur(36px) saturate(210%);box-shadow:inset 0 1.5px 1px rgba(255,255,255,.25),inset 0 -1px 1px rgba(255,255,255,.07),0 24px 48px -12px rgba(0,0,0,.7)}
+.dock-item{min-width:104px;min-height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:1px solid transparent;border-radius:21px;background:transparent;color:#9aaabc;font:9px Manrope,sans-serif;cursor:pointer;transition:background 220ms ease,color 180ms ease,transform 220ms cubic-bezier(.2,.8,.2,1)}
+.dock-icon{height:20px;display:grid;place-items:center}
+.dock-item.active{color:#f0f7ff;background:linear-gradient(145deg,rgba(255,255,255,.18),rgba(255,255,255,.075));border-color:rgba(255,255,255,.14);box-shadow:inset 0 1px rgba(255,255,255,.24),0 5px 16px #0003}
+.dock-item:active{transform:scale(.96)}
+.app-panel .my-mcps{margin:0;min-height:100%;background:linear-gradient(145deg,rgba(255,255,255,.115),rgba(255,255,255,.045));border:1px solid var(--glass-edge);border-radius:var(--radius-card);-webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturate));backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturate));box-shadow:inset 0 1.5px 1.5px var(--glass-specular-top),inset 0 -1px 1px var(--glass-specular-bottom),var(--glass-shadow)}
+.app-panel .catalog-section,.app-panel .platform-section,.app-panel .security-section{padding:24px;border:1px solid var(--glass-edge);border-radius:var(--radius-card);background:rgba(255,255,255,.065);-webkit-backdrop-filter:blur(30px) saturate(190%);backdrop-filter:blur(30px) saturate(190%);box-shadow:inset 0 1.5px 1px rgba(255,255,255,.24),inset 0 -1px rgba(255,255,255,.06),var(--glass-shadow)}
+.app-panel .section-head{align-items:flex-start}
+.app-panel .section-head h1,.app-panel .platform-section h1,.app-panel .security-section h1{margin:10px 0 5px;font-size:clamp(27px,4vw,38px);letter-spacing:-.06em}
+.app-panel .section-head p,.app-panel .section-intro{font-size:11px;color:#aab9c8}
+.app-panel .integration-card{background:rgba(8,15,24,.38);border:1px solid rgba(255,255,255,.14);border-radius:20px;box-shadow:inset 0 1px rgba(255,255,255,.12),0 10px 25px #0002}
+.app-panel .integration-card:hover{transform:translateY(-2px);border-color:rgba(176,215,247,.32)}
+.app-panel .custom-form{background:rgba(7,14,22,.38);border:1px solid rgba(255,255,255,.16);border-radius:22px;box-shadow:inset 0 1px rgba(255,255,255,.15)}
+.google-auth-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:15px;border:1px solid rgba(255,255,255,.15);border-radius:18px;background:rgba(255,255,255,.065);box-shadow:inset 0 1px rgba(255,255,255,.16)}
+.google-user{display:flex;align-items:center;gap:11px;min-width:0}
+.google-avatar{width:38px;height:38px;display:grid;place-items:center;border-radius:14px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);color:#dceeff}
+.google-user strong,.google-user small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.google-user strong{font-size:11px;color:#edf5fc}.google-user small{margin-top:3px;font-size:9px;color:#91a3b5}
+.google-button{min-height:42px;display:flex;align-items:center;justify-content:center;gap:9px;padding:0 15px;border:1px solid rgba(255,255,255,.25);border-radius:999px;background:linear-gradient(145deg,rgba(255,255,255,.19),rgba(255,255,255,.08));color:#f1f7fc;font:600 10px Manrope;cursor:pointer;box-shadow:inset 0 1px rgba(255,255,255,.25),0 6px 16px #0003;white-space:nowrap}
+.google-button:disabled{opacity:.5}.secondary-google{background:rgba(255,255,255,.055)}
+.app-panel .custom-fields{margin-top:14px}
+.app-panel .catalog-search{min-width:min(330px,45%);background:rgba(5,12,20,.45);border:1px solid rgba(255,255,255,.18);border-radius:18px}
+.app-panel .catalog-search button{background:#d8eaff;color:#10243a}
+.app-panel .directory-stats{margin:0 0 14px}
+.app-panel .security-section{min-height:100%;align-items:flex-start}
+.app-panel .security-section p{font-size:12px;line-height:1.8}
+@media(max-width:700px){
+ .drive-app{padding-left:12px;padding-right:12px;min-height:480px}
+ .app-topbar{height:56px;padding:0 5px}
+ .app-context{font-size:7px;letter-spacing:.07em}
+ .app-content{padding:12px 0}
+ .bottom-dock{width:min(100%,420px);justify-content:space-around;border-radius:25px;margin-bottom:max(8px,env(safe-area-inset-bottom))}
+ .dock-item{min-width:0;flex:1;min-height:53px;border-radius:18px;font-size:8px}
+ .app-panel .my-mcps{padding:18px 14px;border-radius:24px}
+ .app-panel .catalog-section,.app-panel .platform-section,.app-panel .security-section{padding:17px;border-radius:24px}
+ .app-panel .section-head{display:flex;flex-direction:column;gap:14px}
+ .app-panel .catalog-search{width:100%;min-width:0;margin:0}
+ .app-panel .integration-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ .app-panel .integration-card{padding:12px;border-radius:17px}
+ .app-panel .integration-card h3{font-size:12px}
+ .app-panel .integration-card p{font-size:9px;min-height:0}
+ .app-panel .card-bottom{align-items:flex-start;flex-direction:column}
+ .google-auth-row{align-items:flex-start;flex-direction:column}
+ .google-button{width:100%}
+}
+@media(max-width:420px){.app-panel .integration-grid{grid-template-columns:1fr}.app-context{display:none}}
+@media(prefers-reduced-motion:reduce){.app-panel{animation:none}.dock-item,.glass-icon-button,.ios-switch span{transition:none}}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){.bottom-dock,.app-panel .my-mcps,.app-panel .catalog-section,.app-panel .platform-section,.app-panel .security-section{background:rgba(24,32,43,.96)}}

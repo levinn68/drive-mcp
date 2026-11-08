@@ -1,8 +1,8 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "NEXORA | One Hub. Every Connection.",
-  description: "A secure, unified hub for discovering and managing MCP integrations.",
+  title: "DRIVE | One Hub. Every Connection.",
+  description: "Discover, evaluate and manage MCP servers from one secure directory.",
 };
 
 export default function RootLayout({ children }) {

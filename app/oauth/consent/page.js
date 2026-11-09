@@ -15,6 +15,7 @@ export default function OAuthConsentPage() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   ), []);
   const [authorizationId, setAuthorizationId] = useState("");
+  const [authContextReady, setAuthContextReady] = useState(false);
   const [session, setSession] = useState(null);
   const [details, setDetails] = useState(null);
   const [email, setEmail] = useState("");
@@ -28,6 +29,7 @@ export default function OAuthConsentPage() {
   useEffect(() => {
     const id = new URLSearchParams(window.location.search).get("authorization_id") || "";
     setAuthorizationId(id);
+    setAuthContextReady(true);
     const callbackError = new URLSearchParams(window.location.search).get("auth_error");
     if (callbackError) setError(callbackError);
     supabase.auth.getSession().then(({ data }) => setSession(data.session || null));
@@ -36,7 +38,7 @@ export default function OAuthConsentPage() {
   }, [supabase]);
 
   useEffect(() => {
-    if (!session) return;
+    if (!authContextReady || !session) return;
     // Normal DRIVE login should return to the workspace. OAuth client logins
     // carry authorization_id and must remain here to complete the consent flow.
     if (!authorizationId) {
@@ -51,7 +53,7 @@ export default function OAuthConsentPage() {
       else setDetails(data);
     }).catch((e) => { if (!cancelled) setError(e.message || "Unable to load authorization details."); });
     return () => { cancelled = true; };
-  }, [session, authorizationId, supabase]);
+  }, [session, authorizationId, authContextReady, supabase]);
 
   function authCallbackUrl() {
     const next = `/oauth/consent?authorization_id=${encodeURIComponent(authorizationId)}`;
@@ -158,11 +160,11 @@ export default function OAuthConsentPage() {
   const scopes = (details?.scope || "").split(/\s+/).filter(Boolean);
 
   return (
-    <main className="oauth-page" style={{background:"radial-gradient(ellipse at 50% -15%, rgba(111,87,255,.28), transparent 48%), radial-gradient(circle at 100% 100%, rgba(48,104,190,.13), transparent 35%), #080a12",color:"#f5f6ff"}}>
+    <main className="oauth-page" style={{background:"radial-gradient(ellipse at 50% -15%, rgba(118,255,90,.12), transparent 48%), radial-gradient(circle at 100% 100%, rgba(40,170,210,.15), transparent 35%), #080d12",color:"#f5f6ff"}}>
       <div className="oauth-grid" style={{backgroundImage:"linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px)",backgroundSize:"42px 42px"}}/>
-      <section className="oauth-card" style={{background:"linear-gradient(145deg,rgba(24,27,44,.96),rgba(13,16,28,.97))",borderColor:"rgba(255,255,255,.12)",boxShadow:"0 30px 100px rgba(0,0,0,.5),inset 0 1px rgba(255,255,255,.07)"}}>
+      <section className="oauth-card" style={{background:"linear-gradient(145deg,rgba(22,35,42,.94),rgba(11,19,25,.97))",borderColor:"rgba(255,255,255,.12)",boxShadow:"0 30px 100px rgba(0,0,0,.5),inset 0 1px rgba(255,255,255,.07)"}}>
         <div className="oauth-brand">
-          <div className="oauth-brand-mark" style={{background:"linear-gradient(145deg,rgba(150,132,255,.25),rgba(94,77,195,.12))",borderColor:"rgba(171,157,255,.3)",color:"#b9adff",boxShadow:"0 8px 30px rgba(126,105,255,.15)"}}><ShieldCheck size={25}/></div>
+          <div className="oauth-brand-mark" style={{background:"linear-gradient(145deg,rgba(194,255,105,.2),rgba(61,145,130,.12))",borderColor:"rgba(194,255,105,.3)",color:"#d5ff8a",boxShadow:"0 8px 30px rgba(157,220,83,.12)"}}><ShieldCheck size={25}/></div>
           <div className="oauth-brand-copy"><div>DRIVE</div><small>One hub. Every connection.</small></div>
           <div className="oauth-secure-pill" style={{borderColor:"rgba(52,211,153,.2)",background:"rgba(16,185,129,.08)"}}><LockKeyhole size={11}/> Secure OAuth</div>
         </div>
@@ -170,7 +172,7 @@ export default function OAuthConsentPage() {
         {!authorizationId ? <div className="rounded-2xl p-4 text-sm" style={{background:"rgba(248,113,113,.1)",color:"#fca5a5"}}>Missing authorization_id. Restart the connection from your MCP client.</div> :
         !session ? <>
           <div className="oauth-intro">
-            <div className="oauth-welcome-pill" style={{background:"rgba(139,124,255,.12)"}}><Sparkles size={13}/> Welcome to DRIVE</div>
+            <div className="oauth-welcome-pill" style={{background:"rgba(194,255,105,.12)"}}><Sparkles size={13}/> Welcome to DRIVE</div>
             <h1 className="oauth-title">{accountMode === "signup" ? "Create your account" : "Sign in to DRIVE"}</h1>
             <p className="oauth-subtitle">Sign in to continue to your DRIVE workspace.</p>
           </div>
@@ -182,7 +184,7 @@ export default function OAuthConsentPage() {
           <div className="oauth-divider"><span className="h-px flex-1 bg-white/10"/><span>or use email</span><span className="h-px flex-1 bg-white/10"/></div>
 
           <div className="oauth-tabs">
-            <button type="button" onClick={()=>{setMode("password");setError("");setNotice("");}} className="oauth-tab" style={mode==="password"?{background:"rgba(155,139,255,.18)",color:"#d5ceff"}:{color:"rgba(255,255,255,.48)"}}>Password</button>
+            <button type="button" onClick={()=>{setMode("password");setError("");setNotice("");}} className="oauth-tab" style={mode==="password"?{background:"rgba(194,255,105,.15)",color:"#e2ffad"}:{color:"rgba(255,255,255,.48)"}}>Password</button>
             <button type="button" onClick={()=>{setMode("magic");setAccountMode("signin");setError("");setNotice("");}} className="oauth-tab" style={mode==="magic"?{background:"rgba(155,139,255,.18)",color:"#d5ceff"}:{color:"rgba(255,255,255,.48)"}}>Magic link</button>
           </div>
 
@@ -201,7 +203,7 @@ export default function OAuthConsentPage() {
                 <input type="password" autoComplete={accountMode==="signup"?"new-password":"current-password"} required minLength={6} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Enter your password" className="oauth-input"/>
               </span>
             </label>}
-            <button disabled={busy} className="oauth-submit-button" style={{background:"linear-gradient(100deg,#b5a8ff,#8c7af0)",color:"#11111c"}}>
+            <button disabled={busy} className="oauth-submit-button" style={{background:"linear-gradient(100deg,#d5ff78,#a8e85b)",color:"#10180b"}}>
               {busy ? <LoaderCircle size={17} className="animate-spin"/> : <Mail size={17}/>}
               {mode==="magic" ? "Send magic link" : accountMode==="signup" ? "Create account" : "Sign in with email"}
             </button>

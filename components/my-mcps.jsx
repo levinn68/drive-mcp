@@ -58,7 +58,7 @@ export function AddMcpButton({ serverName, version, registryEntry, remoteAvailab
         body: JSON.stringify({ serverName, version, registryEntry }),
       });
       const result = await response.json();
-      setState(response.ok ? "Added to My MCPs" : result.error || "Could not add");
+      setState(response.ok ? "Added to My MCPs" : [result.error, result.detail].filter(Boolean).join(": ") || "Could not add");
       if (response.ok) {
         window.dispatchEvent(new Event("drive:connections-changed"));
       }

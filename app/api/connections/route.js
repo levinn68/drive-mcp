@@ -65,19 +65,11 @@ export async function POST(request) {
     if (!remotes.length) return json({ error: "This MCP has no supported remote endpoint. Local STDIO packages cannot be connected from the hosted workspace." }, 409);
 
     const sourceUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const serviceKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!sourceUrl || !serviceKey) return json({ error: "Registry import is not configured on the server" }, 503);
     const admin = createClient(sourceUrl, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
-    const { error: sourceError } = await admin.from("mcp_registry_sources").upsert({
-      id: "official-mcp-registry",
-      name: "Official MCP Registry",
-      base_url: "https://registry.modelcontextprotocol.io",
-      source_type: "official_registry",
-      enabled: true,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "id" });
-    if (sourceError) return json({ error: "Could not initialize the official MCP registry source", detail: sourceError.message }, 500);
-
+    // The official registry source is seeded by the database migration.
+    // Do not rewrite global source metadata for every user's Connect action.
     const officialMeta = entry._meta?.["io.modelcontextprotocol.registry/official"] || {};
     const repository = server.repository?.url || server.repository || null;
     const row = {

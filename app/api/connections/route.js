@@ -99,7 +99,13 @@ export async function POST(request) {
       .upsert(row, { onConflict: "server_name,version" })
       .select("id")
       .single();
-    if (importError || !imported) return json({ error: "Could not import this MCP into the DRIVE registry", detail: importError?.message }, 400);
+    if (importError || !imported) {
+      const detail = importError?.message || "Unknown database error";
+      if (/invalid api key|invalid jwt|jwt expired/i.test(detail)) {
+        return json({ error: "The server-side Supabase key configured in Vercel is invalid or expired. Update SUPABASE_SERVICE_ROLE_KEY in Vercel Production Environment Variables, then redeploy.", code: "SUPABASE_ADMIN_KEY_INVALID" }, 503);
+      }
+      return json({ error: "Could not import this MCP into the DRIVE registry", detail }, 400);
+    }
     registryServerId = imported.id;
   }
 

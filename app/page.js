@@ -143,7 +143,9 @@ async function ServerCard({ entry }) {
 
       <div className="server-meta">
         <span className="transport-pill">{item.transport}</span>
-        <span className="version-pill">v{item.version}</span>\n        {usageRank(entry) <= 50 && <span className="version-pill" title="Ranked by public monthly package downloads">↗ Usage #{usageRank(entry)}</span>}\n        {stars !== null && <span className="version-pill" title="GitHub stars">★ {stars.toLocaleString()}</span>}
+        <span className="version-pill">v{item.version}</span>
+        {usageRank(entry) <= 50 && <span className="version-pill" title="Ranked by public monthly package downloads">↗ Usage #{usageRank(entry)}</span>}
+        {stars !== null && <span className="version-pill" title="GitHub stars">★ {stars.toLocaleString()}</span>}
       </div>
 
       <h3>{item.name}</h3>
@@ -186,7 +188,10 @@ async function ServerCard({ entry }) {
           )}
         </div>
         <AddMcpButton
-          serverName={item.id}\n          version={item.version}\n          registryEntry={entry}\n          remoteAvailable={isRemote}
+          serverName={item.id}
+          version={item.version}
+          registryEntry={entry}
+          remoteAvailable={isRemote}
         />
       </div>
     </article>
@@ -199,7 +204,8 @@ export default async function Home({ searchParams }) {
   const page = Math.max(0, Math.min(41, Number.parseInt(params?.page || "0", 10) || 0));
   const pageSize = 24;
   const data = await getServers(query);
-  const servers = Array.isArray(data.servers) ? [...data.servers] : [];\n  if (!query) servers.sort((a, b) => usageRank(a) - usageRank(b));
+  const servers = Array.isArray(data.servers) ? [...data.servers] : [];
+  if (!query) servers.sort((a, b) => usageRank(a) - usageRank(b));
   const visibleServers = servers.slice(page * pageSize, (page + 1) * pageSize);
   const initialTab = "mcp";
 

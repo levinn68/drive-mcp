@@ -86,9 +86,9 @@ async function ServerCard({ entry }) {
   const item = details(entry);
   let stars = null;
   try {
-    const match = item.repository.match(/github\\.com\\/([^/]+)\\/([^/#?]+)/i);
+    const match = item.repository.match(/github\.com\/([^/]+)\/([^/#?]+)/i);
     if (match) {
-      const response = await fetch(`https://api.github.com/repos/${match[1]}/${match[2].replace(/\\.git$/, "")}`, {
+      const response = await fetch(`https://api.github.com/repos/${match[1]}/${match[2].replace(/\.git$/, "")}`, {
         headers: { accept: "application/vnd.github+json" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(5000),

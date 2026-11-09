@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createBrowserClient } from "@supabase/ssr";
 import {
   Activity,
   BookOpen,
@@ -26,6 +27,79 @@ const NAV_ITEMS = [
   { id: "skills", label: "Skills Marketplace", short: "Skills", hash: "#skills", icon: BookOpen },
   { id: "account", label: "Account & Security", short: "Account", hash: "#account", icon: LockKeyhole },
 ];
+
+function AccountStatusPanel() {
+  const [mcp, setMcp] = useState([]);
+  const [skills, setSkills] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (!url || !key) throw new Error("Account status is not configured.");
+      const supabase = createBrowserClient(url, key);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setMcp([]); setSkills([]); return; }
+      const [connectionResponse, skillResponse] = await Promise.all([
+        fetch("/api/connections", { headers: { Authorization: `Bearer ${session.access_token}` }, cache: "no-store" }),
+        supabase.from("user_skills").select("id,name,status").eq("status", "enabled").order("updated_at", { ascending: false }),
+      ]);
+      const connectionData = await connectionResponse.json();
+      if (!connectionResponse.ok) throw new Error(connectionData.error || "Could not load MCP status.");
+      if (skillResponse.error) throw new Error(skillResponse.error.message);
+      setMcp((connectionData.connections || []).filter((item) => item.enabled));
+      setSkills(skillResponse.data || []);
+    } catch (e) { setError(e.message || "Could not load active status."); }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { refresh(); }, [refresh]);
+
+  return (
+    <section className="account-status-page glass-surface" id="account">
+      <div className="section-head">
+        <div>
+          <div className="eyebrow"><span className="pulse" /> ACCOUNT OVERVIEW</div>
+          <h1>Workspace status.</h1>
+          <p>Ringkasan MCP dan Skills yang sedang aktif di akun ini.</p>
+        </div>
+        <button type="button" className="glass-chip-btn" onClick={refresh} disabled={loading}>
+          <RefreshCw size={14} className={loading ? "spin" : ""}/> Refresh
+        </button>
+      </div>
+      {error && <p className="skill-inline-error">{error}</p>}
+      <div className="account-active-grid">
+        <article className="account-active-card">
+          <span className="account-active-icon"><Cable size={20}/></span>
+          <small>ACTIVE MCPs</small>
+          <strong>{loading ? "—" : mcp.length}</strong>
+          <span>{mcp.length === 1 ? "server enabled" : "servers enabled"}</span>
+          <div className="account-active-list">
+            {mcp.slice(0, 5).map((item) => <div key={item.id}><i/>{item.server?.title || item.server?.display_name || item.server?.server_name || "MCP connection"}</div>)}
+            {!loading && !mcp.length && <p>No active MCP connections yet.</p>}
+            {mcp.length > 5 && <p>+{mcp.length - 5} more active</p>}
+          </div>
+        </article>
+        <article className="account-active-card">
+          <span className="account-active-icon"><BookOpen size={20}/></span>
+          <small>ACTIVE SKILLS</small>
+          <strong>{loading ? "—" : skills.length}</strong>
+          <span>{skills.length === 1 ? "skill enabled" : "skills enabled"}</span>
+          <div className="account-active-list">
+            {skills.slice(0, 5).map((item) => <div key={item.id}><i/>{item.name}</div>)}
+            {!loading && !skills.length && <p>No active Skills yet.</p>}
+            {skills.length > 5 && <p>+{skills.length - 5} more active</p>}
+          </div>
+        </article>
+      </div>
+      <p className="account-status-footnote">Status diambil langsung dari koneksi dan Skill yang tersimpan. Item yang hanya tersimpan atau belum diaktifkan tidak dihitung.</p>
+    </section>
+  );
+}
 
 const HASH_TO_TAB = {
   "#mcp": "mcp", "#home": "mcp", "#my-mcps": "mcp", "#connections": "mcp",
@@ -414,9 +488,9 @@ export default function WorkspaceTabs({
   );
 
   const panels = {
-    mcp: <>{connections}{discover}</>,
+    mcp: <>{connections}{add}{discover}</>,
     skills,
-    account: <>{add}{security}{settingsPanel}</>,
+    account: <AccountStatusPanel />,
   };
 
   return (
@@ -494,11 +568,11 @@ export default function WorkspaceTabs({
           <button
             type="button"
             className="top-pill-btn is-accent"
-            onClick={() => active === "skills" ? document.getElementById("my-skills")?.scrollIntoView({ behavior: "smooth", block: "start" }) : selectTab("account", true)}
-            title={active === "skills" ? "Jump to My Skills" : active === "account" ? "Account Security" : "Add Custom MCP"}
+            onClick={() => active === "skills" ? document.getElementById("my-skills")?.scrollIntoView({ behavior: "smooth", block: "start" }) : active === "account" ? selectTab("mcp", true) : document.getElementById("custom")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+            title={active === "skills" ? "Jump to My Skills" : active === "account" ? "Back to MCP" : "Add Custom MCP"}
           >
             <Sparkles size={12} />
-            <span>{active === "skills" ? "My Skills" : active === "account" ? "Security" : "Connect"}</span>
+            <span>{active === "skills" ? "My Skills" : active === "account" ? "MCPs" : "Connect"}</span>
           </button>
         </div>
       </header>

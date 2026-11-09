@@ -91,13 +91,12 @@ export async function GET(request) {
       if (!matches.length && candidates.length === 1 && !candidates[0].metadataError) {
         skillFiles = candidates;
       } else if (!matches.length) {
-        return NextResponse.json({
-          error: "This catalog Skill could not be matched to a SKILL.md entry by its slug, folder name, or frontmatter name.",
-          requested: { slug: skill || null, name: skillName || null },
-          available: candidates.map(({ path, frontmatterName, metadataError }) => ({
-            path, name: frontmatterName || null, readable: !metadataError,
-          })),
-        }, { status: 404 });
+        // Catalog slugs do not always equal repository folder names. Return the
+        // actual SKILL.md files so the user can select the correct bundle.
+        skillFiles = candidates.map(({ path, frontmatterName, metadataError, raw_url, size }) => ({
+          path, raw_url, size, frontmatterName: frontmatterName || null,
+          metadataError: Boolean(metadataError),
+        }));
       } else if (matches.length > 1) {
         return NextResponse.json({
           error: "The catalog entry matches more than one SKILL.md file. Select the exact Skill folder.",

@@ -2854,3 +2854,38 @@ body {
 .category-chip:hover { transform:translateY(-1px); }
 .skill-category-filter { display:flex; flex-wrap:wrap; gap:8px; }
 .skill-category-filter .segmented-pill { flex:0 0 auto; min-width:unset; }
+
+
+/* DRIVE mobile readability pass: Cupertino Liquid Glass, clearer hierarchy. */
+.account-status-page{padding:clamp(20px,3vw,30px);min-height:240px}
+.account-status-page .section-head{align-items:center}
+.account-active-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.account-active-card{min-width:0;padding:20px;border-radius:26px;border:1px solid rgba(255,255,255,.18);background:linear-gradient(145deg,rgba(255,255,255,.105),rgba(255,255,255,.035));-webkit-backdrop-filter:blur(24px) saturate(190%);backdrop-filter:blur(24px) saturate(190%);box-shadow:inset 0 1px 1px rgba(255,255,255,.22),inset 0 -1px 0 rgba(255,255,255,.05),0 16px 32px rgba(0,0,0,.22)}
+.account-active-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:15px;color:#d7ff8b;background:linear-gradient(145deg,rgba(194,255,105,.2),rgba(90,200,250,.1));border:1px solid rgba(194,255,105,.28);margin-bottom:15px}
+.account-active-card>small{display:block;color:#b9c8d9;font:600 10px 'DM Mono',monospace;letter-spacing:.13em}
+.account-active-card>strong{display:block;margin:5px 0 0;color:#f4f8ff;font-size:42px;line-height:1.1;font-weight:750;letter-spacing:-.04em}
+.account-active-card>span:not(.account-active-icon){display:block;color:#c1ccda;font-size:12px;margin-top:3px}
+.account-active-list{display:grid;gap:9px;margin-top:18px;padding-top:14px;border-top:1px solid rgba(255,255,255,.12)}
+.account-active-list>div{display:flex;align-items:center;gap:8px;color:#e4ebf4;font-size:12px;line-height:1.4;overflow-wrap:anywhere}
+.account-active-list i{width:7px;height:7px;flex:none;border-radius:50%;background:#34c759;box-shadow:0 0 10px rgba(52,199,89,.65)}
+.account-active-list p,.account-status-footnote{color:#aebdce;font-size:12px;line-height:1.55;margin:0}
+.account-status-footnote{margin-top:16px}
+.skill-repository-card{border-radius:22px!important;padding:17px!important;background:linear-gradient(145deg,rgba(29,43,62,.84),rgba(13,22,35,.9))!important;border-color:rgba(255,255,255,.16)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 12px 28px rgba(0,0,0,.18)}
+.skill-repository-copy strong{display:block;color:#f2f6ff!important;font-size:15px!important;line-height:1.35}
+.skill-repository-copy p{color:#c2ccda!important;font-size:13px!important;line-height:1.6!important;margin:8px 0 10px!important}
+.skill-repository-copy small,.skill-repository-meta{color:#b2c0d0!important;font-size:11px!important;line-height:1.5}
+.skill-file-row{min-height:48px;border-radius:14px!important;background:rgba(255,255,255,.07)!important;color:#f0f5ff!important}
+.skill-file-row>span{font-size:12px!important}
+.skill-file-row small{color:#b5c4d5!important;font-size:10px!important}
+.skill-repository-main>.glass-chip-btn{min-height:42px;border-radius:14px}
+.skill-library-section,.skill-directory-section{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
+.app-panel{padding-bottom:calc(100px + env(safe-area-inset-bottom))}
+@media(max-width:560px){
+ .account-active-grid{grid-template-columns:1fr}
+ .account-active-card{padding:18px}
+ .account-active-card>strong{font-size:38px}
+ .skill-repository-card{padding:15px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ .account-active-card,.skill-repository-card{transition:none!important}
+}

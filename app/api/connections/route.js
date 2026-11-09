@@ -68,6 +68,16 @@ export async function POST(request) {
     const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     if (!sourceUrl || !serviceKey) return json({ error: "Registry import is not configured on the server" }, 503);
     const admin = createClient(sourceUrl, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
+    const { error: sourceError } = await admin.from("mcp_registry_sources").upsert({
+      id: "official-mcp-registry",
+      name: "Official MCP Registry",
+      base_url: "https://registry.modelcontextprotocol.io",
+      source_type: "official_registry",
+      enabled: true,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: "id" });
+    if (sourceError) return json({ error: "Could not initialize the official MCP registry source", detail: sourceError.message }, 500);
+
     const officialMeta = entry._meta?.["io.modelcontextprotocol.registry/official"] || {};
     const repository = server.repository?.url || server.repository || null;
     const row = {

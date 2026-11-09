@@ -25,6 +25,29 @@ import {
 
 const REGISTRY = "https://registry.modelcontextprotocol.io";
 
+// Popularity order seeded from public monthly package-download leaderboards.
+// These are matched against official registry names/titles/repository metadata;
+// entries without comparable public download data remain after the ranked set.
+const USAGE_RANK_TERMS = [
+  "playwright-mcp", "firebase-mcp", "storybook", "browser-use", "chrome-devtools-mcp",
+  "color-space", "context7", "snyk", "e2ee", "telnyx", "agent-device", "seleniumbase",
+  "ecs-mcp", "desktop-commander", "scrapling", "edgartools", "gitlab-mcp", "sentry-mcp",
+  "rea", "firecrawl-mcp-server", "hostinger-api-mcp", "supabase", "azure-mcp", "mongodb-mcp-server",
+  "argent", "next-devtools-mcp", "repomix", "ui5", "fiori-mcp-server", "llm-sandbox",
+  "figma-context-mcp", "workspace-mcp", "cap-js", "xcodebuildmcp", "ms-365-mcp-server",
+  "mcp-clickhouse", "ha-mcp", "nx-console", "kordoc", "svelte-mcp", "mobile-mcp",
+  "mcp-graphql-enhanced", "cloudbase-mcp", "metabase-mcp", "sling-cli", "dbhub", "serena",
+  "brave-search-mcp-server", "excel-mcp-server", "appwrite"
+];
+
+function usageRank(entry) {
+  const server = entry?.server || entry || {};
+  const haystack = [server.name, server.title, server.repository?.url || server.repository,
+    ...(server.packages || []).map((pkg) => pkg.identifier || pkg.name || "")].join(" ").toLowerCase();
+  const index = USAGE_RANK_TERMS.findIndex((term) => haystack.includes(term));
+  return index < 0 ? Number.MAX_SAFE_INTEGER : index + 1;
+}
+
 async function getServers(query) {
   const all = [];
   const seen = new Set();
@@ -120,7 +143,7 @@ async function ServerCard({ entry }) {
 
       <div className="server-meta">
         <span className="transport-pill">{item.transport}</span>
-        <span className="version-pill">v{item.version}</span>\n        {stars !== null && <span className="version-pill" title="GitHub stars">★ {stars.toLocaleString()}</span>}
+        <span className="version-pill">v{item.version}</span>\n        {usageRank(entry) <= 50 && <span className="version-pill" title="Ranked by public monthly package downloads">↗ Usage #{usageRank(entry)}</span>}\n        {stars !== null && <span className="version-pill" title="GitHub stars">★ {stars.toLocaleString()}</span>}
       </div>
 
       <h3>{item.name}</h3>
@@ -176,7 +199,7 @@ export default async function Home({ searchParams }) {
   const page = Math.max(0, Math.min(41, Number.parseInt(params?.page || "0", 10) || 0));
   const pageSize = 24;
   const data = await getServers(query);
-  const servers = Array.isArray(data.servers) ? data.servers : [];
+  const servers = Array.isArray(data.servers) ? [...data.servers] : [];\n  if (!query) servers.sort((a, b) => usageRank(a) - usageRank(b));
   const visibleServers = servers.slice(page * pageSize, (page + 1) * pageSize);
   const initialTab = "mcp";
 
@@ -310,7 +333,7 @@ export default async function Home({ searchParams }) {
 
       <div className="catalog-source-line">
         <span className="source-indicator" />
-        Official MCP Registry · Up to 1,000 latest server entries
+        Official MCP Registry · Popular servers ranked by public monthly package downloads, followed by the full directory
       </div>
 
       <div className="discover-highlights">

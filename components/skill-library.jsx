@@ -83,7 +83,7 @@ export default function SkillLibrary() {
           id: item.id, full_name: item.source, description: item.description || item.name,
           html_url: item.installUrl || `https://github.com/${item.source}`,
           default_branch: "", stars: item.stars || 0,
-          license: item.duplicate ? "Possible duplicate" : "Catalog entry",
+          license: item.isDuplicate ? "Possible duplicate" : "Catalog entry",
           language: "Agent Skill", catalogSkill: item,
         })));
         setSearchMessage(`Loaded ${data.count || 0} Skills from the public Skills Directory. Select any entry to inspect its bundle.`);
@@ -436,7 +436,7 @@ export default function SkillLibrary() {
                     <div className="skill-repository-copy">
                       <strong>{repository.catalogSkill?.name || repository.full_name}</strong>
                       <p>{(repository.catalogSkill?.description || repository.description || "No description provided.").length > 150 ? `${(repository.catalogSkill?.description || repository.description).slice(0, 147).trimEnd()}…` : (repository.catalogSkill?.description || repository.description || "No description provided.")}</p>
-                      <small>★ {repository.stars.toLocaleString()} stars · {repository.catalogSkill?.category || "Other"} · {repository.catalogSkill?.verified ? "Verified listing" : "Community listing"}</small>
+                      <small>★ {repository.stars.toLocaleString()} repo stars · {repository.catalogSkill?.category || "Other"} · {repository.catalogSkill?.verified ? "Verified listing" : "Community listing"}</small>
                     </div>
                     <button type="button" className="glass-chip-btn" onClick={() => inspectRepository(repository)} disabled={detail?.loading}>
                       {detail?.loading ? <LoaderCircle className="spin" size={13}/> : <FileSearch size={13}/>}
@@ -449,7 +449,7 @@ export default function SkillLibrary() {
                       <div className="skill-repository-meta">{detail.skills.length} SKILL.md file{detail.skills.length === 1 ? "" : "s"} found · branch {detail.branch}{detail.truncated ? " · tree truncated" : ""}</div>
                       {detail.skills.length === 0 ? <p className="availability-note">No SKILL.md files found in this repository tree.</p> : detail.skills.map((file) => (
                         <button type="button" className="skill-file-row" key={file.path} onClick={() => selectSkillFile(file)} disabled={busy === "inspect"}>
-                          <span><BookOpen size={14}/>{file.path}<small>{file.size.toLocaleString()} bytes</small></span>
+                          <span><BookOpen size={14}/><span>{file.frontmatterName || file.path}</span><small>{file.path} · {file.size.toLocaleString()} bytes</small></span>
                           <ChevronRight size={15}/>
                         </button>
                       ))}

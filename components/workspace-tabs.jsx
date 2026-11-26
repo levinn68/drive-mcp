@@ -3,30 +3,43 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import {
-  Activity,
   BookOpen,
   Cable,
-  CheckCircle2,
   Command,
   Compass,
-  Cpu,
-  Eye,
-  Gauge,
-  Layers,
   LockKeyhole,
   Plus,
   RefreshCw,
-  ShieldCheck,
-  SlidersHorizontal,
   Sparkles,
-  Zap,
 } from "lucide-react";
 
 const NAV_ITEMS = [
-  { id: "mcp", label: "MCP Marketplace", short: "MCP", hash: "#mcp", icon: Cable },
-  { id: "skills", label: "Skills Marketplace", short: "Skills", hash: "#skills", icon: BookOpen },
-  { id: "account", label: "Account & Security", short: "Account", hash: "#account", icon: LockKeyhole },
+  { id: "mcp", label: "MCP Hub", short: "MCP", hash: "#mcp", icon: Cable },
+  { id: "skills", label: "Skills Library", short: "Skills", hash: "#skills", icon: BookOpen },
+  { id: "account", label: "Account Status", short: "Account", hash: "#account", icon: LockKeyhole },
 ];
+
+const MCP_SUBTABS = [
+  { id: "discover", label: "Directory" },
+  { id: "my", label: "My MCPs" },
+  { id: "custom", label: "+ Custom" },
+];
+
+const HASH_TO_TAB = {
+  "#mcp": "mcp",
+  "#home": "mcp",
+  "#my-mcps": "mcp",
+  "#connections": "mcp",
+  "#directory": "mcp",
+  "#discover": "mcp",
+  "#custom": "mcp",
+  "#add": "mcp",
+  "#skills": "skills",
+  "#my-skills": "skills",
+  "#account": "account",
+  "#security": "account",
+  "#settings": "account",
+};
 
 function AccountStatusPanel() {
   const [mcp, setMcp] = useState([]);
@@ -42,558 +55,345 @@ function AccountStatusPanel() {
       const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
       if (!url || !key) throw new Error("Account status is not configured.");
       const supabase = createBrowserClient(url, key);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { setMcp([]); setSkills([]); return; }
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        setMcp([]);
+        setSkills([]);
+        return;
+      }
       const [connectionResponse, skillResponse] = await Promise.all([
-        fetch("/api/connections", { headers: { Authorization: `Bearer ${session.access_token}` }, cache: "no-store" }),
-        supabase.from("user_skills").select("id,name,status").eq("status", "enabled").order("updated_at", { ascending: false }),
+        fetch("/api/connections", {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          cache: "no-store",
+        }),
+        supabase
+          .from("user_skills")
+          .select("id,name,status")
+          .eq("status", "enabled")
+          .order("updated_at", { ascending: false }),
       ]);
       const connectionData = await connectionResponse.json();
-      if (!connectionResponse.ok) throw new Error(connectionData.error || "Could not load MCP status.");
+      if (!connectionResponse.ok) {
+        throw new Error(connectionData.error || "Could not load MCP status.");
+      }
       if (skillResponse.error) throw new Error(skillResponse.error.message);
       setMcp((connectionData.connections || []).filter((item) => item.enabled));
       setSkills(skillResponse.data || []);
-    } catch (e) { setError(e.message || "Could not load active status."); }
-    finally { setLoading(false); }
+    } catch (e) {
+      setError(e?.message || "Could not load active status.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  useEffect(() => { refresh(); }, [refresh]);
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      refresh();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [refresh]);
 
   return (
-    <section className="account-status-page glass-surface" id="account">
+    <section className="account-status-page" id="account">
       <div className="section-head">
         <div>
-          <div className="eyebrow"><span className="pulse" /> ACCOUNT OVERVIEW</div>
+          <div className="eyebrow">
+            <span className="pulse" /> ACCOUNT OVERVIEW
+          </div>
           <h1>Workspace status.</h1>
           <p>Ringkasan MCP dan Skills yang sedang aktif di akun ini.</p>
         </div>
         <button type="button" className="glass-chip-btn" onClick={refresh} disabled={loading}>
-          <RefreshCw size={14} className={loading ? "spin" : ""}/> Refresh
+          <RefreshCw size={14} className={loading ? "spin" : ""} /> Refresh
         </button>
       </div>
       {error && <p className="skill-inline-error">{error}</p>}
       <div className="account-active-grid">
         <article className="account-active-card">
-          <span className="account-active-icon"><Cable size={20}/></span>
+          <span className="account-active-icon">
+            <Cable size={20} />
+          </span>
           <small>ACTIVE MCPs</small>
           <strong>{loading ? "—" : mcp.length}</strong>
           <span>{mcp.length === 1 ? "server enabled" : "servers enabled"}</span>
           <div className="account-active-list">
-            {mcp.slice(0, 5).map((item) => <div key={item.id}><i/>{item.server?.title || item.server?.display_name || item.server?.server_name || "MCP connection"}</div>)}
+            {mcp.slice(0, 5).map((item) => (
+              <div key={item.id}>
+                <i />
+                {item.server?.title ||
+                  item.server?.display_name ||
+                  item.server?.server_name ||
+                  "MCP connection"}
+              </div>
+            ))}
             {!loading && !mcp.length && <p>No active MCP connections yet.</p>}
             {mcp.length > 5 && <p>+{mcp.length - 5} more active</p>}
           </div>
         </article>
         <article className="account-active-card">
-          <span className="account-active-icon"><BookOpen size={20}/></span>
+          <span className="account-active-icon">
+            <BookOpen size={20} />
+          </span>
           <small>ACTIVE SKILLS</small>
           <strong>{loading ? "—" : skills.length}</strong>
           <span>{skills.length === 1 ? "skill enabled" : "skills enabled"}</span>
           <div className="account-active-list">
-            {skills.slice(0, 5).map((item) => <div key={item.id}><i/>{item.name}</div>)}
+            {skills.slice(0, 5).map((item) => (
+              <div key={item.id}>
+                <i />
+                {item.name}
+              </div>
+            ))}
             {!loading && !skills.length && <p>No active Skills yet.</p>}
             {skills.length > 5 && <p>+{skills.length - 5} more active</p>}
           </div>
         </article>
       </div>
-      <p className="account-status-footnote">Status diambil langsung dari koneksi dan Skill yang tersimpan. Item yang hanya tersimpan atau belum diaktifkan tidak dihitung.</p>
+      <p className="account-status-footnote">
+        Status diambil langsung dari koneksi dan Skill yang aktif. Item yang belum diaktifkan tidak dihitung.
+      </p>
     </section>
   );
 }
 
-const HASH_TO_TAB = {
-  "#mcp": "mcp", "#home": "mcp", "#my-mcps": "mcp", "#connections": "mcp",
-  "#directory": "mcp", "#discover": "mcp",
-  "#skills": "skills",
-  "#account": "account", "#custom": "account", "#add": "account",
-  "#security": "account", "#settings": "account", "#control": "account",
-};
+function resolveInitialTab(initialTab, query) {
+  if (query) return "mcp";
+  if (initialTab === "skills" || initialTab === "account" || initialTab === "mcp") {
+    return initialTab;
+  }
+  return "mcp";
+}
 
 export default function WorkspaceTabs({
   connections,
   discover,
   add,
-  security,
   skills,
-  initialTab = "connections",
+  initialTab = "mcp",
   serverCount = 0,
   query = "",
 }) {
-  const [active, setActive] = useState(query ? "mcp" : (["mcp","skills","account"].includes(initialTab) ? initialTab : "mcp"));
+  const [active, setActive] = useState(() => resolveInitialTab(initialTab, query));
+  const [mcpView, setMcpView] = useState("discover");
   const [dragIndex, setDragIndex] = useState(null);
-  const [hoverIndex, setHoverIndex] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isAnimatingLens, setIsAnimatingLens] = useState(false);
-  const [lensGlareX, setLensGlareX] = useState(50);
-  const [motionEnabled, setMotionEnabled] = useState(true);
-  const [glassIntensity, setGlassIntensity] = useState("ultra");
-  const [specularHighlights, setSpecularHighlights] = useState(true);
+
   const dockRef = useRef(null);
-  const lensTimeoutRef = useRef(null);
+  const glideTimerRef = useRef(null);
 
   const activeIndex = Math.max(
     0,
     NAV_ITEMS.findIndex((item) => item.id === active)
   );
-
-  // Load saved UI preferences safely
-  useEffect(() => {
-    const restorePreferences = window.setTimeout(() => {
-      try {
-        const savedMotion = window.localStorage.getItem("drive:motion-enabled");
-        const savedGlass = window.localStorage.getItem("drive:glass-intensity");
-        const savedSpecular = window.localStorage.getItem("drive:specular");
-        if (savedMotion !== null) setMotionEnabled(savedMotion === "true");
-        if (savedGlass) setGlassIntensity(savedGlass);
-        if (savedSpecular !== null) setSpecularHighlights(savedSpecular === "true");
-      } catch {}
-    }, 0);
-    return () => window.clearTimeout(restorePreferences);
-  }, []);
-
-  // Sync with URL query/hash or custom navigation events
-  const triggerLensPulse = useCallback(() => {
-    if (!motionEnabled) return;
-    setIsAnimatingLens(true);
-    if (lensTimeoutRef.current) window.clearTimeout(lensTimeoutRef.current);
-    lensTimeoutRef.current = window.setTimeout(() => {
-      setIsAnimatingLens(false);
-    }, 440);
-  }, [motionEnabled]);
-
-  const selectTab = useCallback(
-    (tabId, updateHash = true) => {
-      const target = NAV_ITEMS.find((item) => item.id === tabId);
-      if (!target) return;
-      setActive((prev) => {
-        if (prev !== tabId) triggerLensPulse();
-        return tabId;
-      });
-      if (updateHash && typeof window !== "undefined") {
-        try {
-          window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}${target.hash}`);
-        } catch {}
-      }
-    },
-    [triggerLensPulse]
+  const subIndex = Math.max(
+    0,
+    MCP_SUBTABS.findIndex((item) => item.id === mcpView)
   );
 
-  useEffect(() => {
-    function syncFromHash() {
-      const hash = window.location.hash.toLowerCase();
-      if (hash && HASH_TO_TAB[hash]) {
-        selectTab(HASH_TO_TAB[hash], false);
+  const selectTab = useCallback((nextTab, updateHash = true) => {
+    setActive((prev) => {
+      if (prev !== nextTab) {
+        setIsAnimatingLens(true);
+        if (glideTimerRef.current) window.clearTimeout(glideTimerRef.current);
+        glideTimerRef.current = window.setTimeout(() => setIsAnimatingLens(false), 340);
+      }
+      return nextTab;
+    });
+    if (updateHash && typeof window !== "undefined") {
+      const target = NAV_ITEMS.find((item) => item.id === nextTab);
+      if (target) {
+        window.history.replaceState(null, "", target.hash);
       }
     }
-    function handleNavigateEvent(event) {
-      const targetTab = event.detail?.tab;
-      if (targetTab) {
-        selectTab(targetTab, true);
-      }
-    }
-    function handleClickDelegate(event) {
-      const anchor = event.target.closest("a[href^='#']");
-      if (!anchor) return;
-      const hash = anchor.getAttribute("href")?.toLowerCase();
-      if (hash && HASH_TO_TAB[hash]) {
-        event.preventDefault();
-        selectTab(HASH_TO_TAB[hash], true);
-      }
-    }
-    syncFromHash();
-    window.addEventListener("hashchange", syncFromHash);
-    window.addEventListener("drive:navigate", handleNavigateEvent);
-    document.addEventListener("click", handleClickDelegate);
-    return () => {
-      window.removeEventListener("hashchange", syncFromHash);
-      window.removeEventListener("drive:navigate", handleNavigateEvent);
-      document.removeEventListener("click", handleClickDelegate);
-    };
-  }, [selectTab]);
+  }, []);
 
-  // Pointer scrubbing along the 3-tab Liquid Glass navbar (matches video gesture)
-  function computeIndexFromClientX(clientX) {
+  useEffect(() => {
+    const syncFromHash = () => {
+      const hash = window.location.hash.toLowerCase();
+      if (!hash) return;
+      const mapped = HASH_TO_TAB[hash];
+      if (mapped) setActive(mapped);
+      if (hash === "#my-mcps" || hash === "#connections") setMcpView("my");
+      else if (hash === "#custom" || hash === "#add") setMcpView("custom");
+      else if (hash === "#directory" || hash === "#discover") setMcpView("discover");
+    };
+    const timer = window.setTimeout(syncFromHash, 0);
+    window.addEventListener("hashchange", syncFromHash);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("hashchange", syncFromHash);
+      if (glideTimerRef.current) window.clearTimeout(glideTimerRef.current);
+    };
+  }, []);
+
+  function getPointerTabIndex(clientX) {
     const dock = dockRef.current;
-    if (!dock) return null;
+    if (!dock) return activeIndex;
     const rect = dock.getBoundingClientRect();
-    const pad = 6;
-    const innerWidth = Math.max(1, rect.width - pad * 2);
-    const relX = Math.min(Math.max(0, clientX - rect.left - pad), innerWidth);
-    const rawIndex = (relX / innerWidth) * NAV_ITEMS.length;
-    const clampedIndex = Math.min(
-      NAV_ITEMS.length - 1,
-      Math.max(0, rawIndex - 0.5)
-    );
-    const glarePercent = Math.round((relX / innerWidth) * 100);
-    setLensGlareX(glarePercent);
-    return clampedIndex;
+    const innerWidth = Math.max(1, rect.width - 12);
+    const ratio = Math.min(0.999, Math.max(0, (clientX - rect.left - 6) / innerWidth));
+    return Math.min(NAV_ITEMS.length - 1, Math.max(0, Math.floor(ratio * NAV_ITEMS.length)));
   }
 
   function handlePointerDown(event) {
-    if (event.button !== undefined && event.button !== 0) return;
-    const idx = computeIndexFromClientX(event.clientX);
-    if (idx === null) return;
+    if (event.button !== 0 && event.pointerType === "mouse") return;
     setIsDragging(true);
-    setDragIndex(idx);
-    try {
-      event.currentTarget.setPointerCapture(event.pointerId);
-    } catch {}
+    setDragIndex(getPointerTabIndex(event.clientX));
   }
 
   function handlePointerMove(event) {
-    if (!isDragging) {
-      // Subtle specular glare tracking on hover
-      const dock = dockRef.current;
-      if (dock) {
-        const rect = dock.getBoundingClientRect();
-        const pct = Math.min(95, Math.max(5, ((event.clientX - rect.left) / Math.max(1, rect.width)) * 100));
-        setLensGlareX(Math.round(pct));
-        const innerX = Math.min(Math.max(0, event.clientX - rect.left - 6), Math.max(1, rect.width - 12));
-        setHoverIndex((innerX / Math.max(1, rect.width - 12)) * NAV_ITEMS.length - 0.5);
-      }
-      return;
-    }
-    const idx = computeIndexFromClientX(event.clientX);
-    if (idx !== null) {
-      setDragIndex(idx);
-      const snapped = Math.round(idx);
-      const item = NAV_ITEMS[snapped];
-      if (item && item.id !== active) {
-        setActive(item.id);
-      }
-    }
-  }
-
-  function handlePointerLeave() {
-    if (!isDragging) setHoverIndex(null);
+    if (!isDragging) return;
+    setDragIndex(getPointerTabIndex(event.clientX));
   }
 
   function finishPointerDrag(event) {
     if (!isDragging) return;
     const finalIdx =
-      dragIndex !== null
-        ? Math.round(dragIndex)
-        : Math.round(computeIndexFromClientX(event.clientX) ?? activeIndex);
-    const target = NAV_ITEMS[Math.min(NAV_ITEMS.length - 1, Math.max(0, finalIdx))];
+      typeof event?.clientX === "number"
+        ? getPointerTabIndex(event.clientX)
+        : dragIndex ?? activeIndex;
     setIsDragging(false);
     setDragIndex(null);
-    setHoverIndex(null);
-    if (target) {
-      selectTab(target.id, true);
-    }
+    const target = NAV_ITEMS[Math.min(NAV_ITEMS.length - 1, Math.max(0, finalIdx))];
+    if (target) selectTab(target.id, true);
   }
 
   function handleKeyDown(event) {
     if (event.key === "ArrowRight") {
       event.preventDefault();
-      const next = NAV_ITEMS[(activeIndex + 1) % NAV_ITEMS.length];
-      selectTab(next.id, true);
+      selectTab(NAV_ITEMS[(activeIndex + 1) % NAV_ITEMS.length].id, true);
     } else if (event.key === "ArrowLeft") {
       event.preventDefault();
-      const prev = NAV_ITEMS[(activeIndex - 1 + NAV_ITEMS.length) % NAV_ITEMS.length];
-      selectTab(prev.id, true);
+      selectTab(NAV_ITEMS[(activeIndex - 1 + NAV_ITEMS.length) % NAV_ITEMS.length].id, true);
     }
   }
 
-  function updateMotionPref(nextValue) {
-    setMotionEnabled(nextValue);
-    try {
-      window.localStorage.setItem("drive:motion-enabled", String(nextValue));
-    } catch {}
-  }
+  const currentLensIndex = isDragging && dragIndex !== null ? dragIndex : activeIndex;
 
-  function updateGlassPref(nextValue) {
-    setGlassIntensity(nextValue);
-    try {
-      window.localStorage.setItem("drive:glass-intensity", nextValue);
-    } catch {}
-  }
-
-  function updateSpecularPref(nextValue) {
-    setSpecularHighlights(nextValue);
-    try {
-      window.localStorage.setItem("drive:specular", String(nextValue));
-    } catch {}
-  }
-
-  const currentLensIndex = isDragging && dragIndex !== null ? dragIndex : hoverIndex ?? activeIndex;
-  const activeMeta = NAV_ITEMS[activeIndex] || NAV_ITEMS[0];
-
-  const settingsPanel = (
-    <section className="settings-section glass-surface" id="settings">
-      <div className="section-head">
-        <div>
-          <div className="eyebrow">
-            <span className="pulse" /> LIQUID GLASS ENGINE & CONTROL
-          </div>
-          <h1>Workspace Control.</h1>
-          <p>
-            Tune Cupertino Liquid Glass refraction, spring physics, and inspect runtime architecture for web and Android WebView APK targets.
-          </p>
-        </div>
-        <div className="settings-QuickActions">
-          <button
-            type="button"
-            className="glass-link is-primary"
-            onClick={() => selectTab("account", true)}
-          >
-            <Plus size={14} />
-            <span>Manage Google Auth</span>
-          </button>
-        </div>
-      </div>
-
-      <div className="settings-grid">
-        <article className="settings-card">
-          <div className="settings-card-top">
-            <span className="settings-icon">
-              <Sparkles size={18} />
-            </span>
-            <div>
-              <small>OPTICAL SURFACE</small>
-              <h3>Liquid Glass Refraction</h3>
-            </div>
-          </div>
-          <p>
-            Adjust translucent backdrop blur saturation and curved lens bevel highlights across cards and the 3-tab navigation dock.
-          </p>
-          <div className="segmented-pills is-full" role="radiogroup" aria-label="Glass blur intensity">
-            {[
-              { id: "balanced", label: "Balanced (24px)" },
-              { id: "ultra", label: "Ultra Glass (40px)" },
-              { id: "low-power", label: "Low Power" },
-            ].map((opt) => (
+  const mcpPanel = (
+    <div className="drive-mcp-workspace">
+      <div className="drive-subtabs-wrap">
+        <div
+          className="drive-subtabs"
+          role="tablist"
+          aria-label="MCP sections"
+          style={{ "--sub-index": subIndex }}
+        >
+          <span className="drive-subtabs-pill" aria-hidden="true" />
+          {MCP_SUBTABS.map((tab) => {
+            const isActive = mcpView === tab.id;
+            return (
               <button
-                key={opt.id}
+                key={tab.id}
                 type="button"
-                role="radio"
-                aria-checked={glassIntensity === opt.id}
-                className={`segmented-pill ${glassIntensity === opt.id ? "is-active" : ""}`}
-                onClick={() => updateGlassPref(opt.id)}
+                role="tab"
+                aria-selected={isActive}
+                className={`drive-subtab-btn ${isActive ? "is-active" : ""}`}
+                onClick={() => setMcpView(tab.id)}
               >
-                {opt.label}
+                {tab.label}
               </button>
-            ))}
-          </div>
-        </article>
-
-        <article className="settings-card">
-          <div className="settings-card-top">
-            <span className="settings-icon">
-              <Gauge size={18} />
-            </span>
-            <div>
-              <small>SMOOTH MOTION ENGINE</small>
-              <h3>Elastic Spring Physics</h3>
-            </div>
-          </div>
-          <p>
-            Enable compositor-driven spring physics (`translate3d` & `scale`) on the sliding navbar lens droplet and panel transitions.
-          </p>
-          <div className="settings-toggle-row">
-            <div>
-              <strong>Spring Droplet & Micro-Motion</strong>
-              <span>60–120 Hz compositor-friendly transitions</span>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={motionEnabled}
-              aria-label="Toggle spring motion"
-              className={`ios-switch ${motionEnabled ? "checked" : ""}`}
-              onClick={() => updateMotionPref(!motionEnabled)}
-            >
-              <span />
-            </button>
-          </div>
-          <div className="settings-toggle-row">
-            <div>
-              <strong>Specular Rim Lighting</strong>
-              <span>Top-edge curved glass bevel reflections</span>
-            </div>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={specularHighlights}
-              aria-label="Toggle specular rim highlights"
-              className={`ios-switch ${specularHighlights ? "checked" : ""}`}
-              onClick={() => updateSpecularPref(!specularHighlights)}
-            >
-              <span />
-            </button>
-          </div>
-        </article>
-
-        <article className="settings-card">
-          <div className="settings-card-top">
-            <span className="settings-icon">
-              <Cpu size={18} />
-            </span>
-            <div>
-              <small>RUNTIME TELEMETRY</small>
-              <h3>Gateway & Registry Status</h3>
-            </div>
-          </div>
-          <div className="telemetry-list">
-            <div className="telemetry-item">
-              <span>Catalog Indexed</span>
-              <strong>{serverCount} MCP servers</strong>
-            </div>
-            <div className="telemetry-item">
-              <span>Transport Guard</span>
-              <strong className="is-ok">
-                <CheckCircle2 size={13} /> HTTPS + DNS SSRF Check
-              </strong>
-            </div>
-            <div className="telemetry-item">
-              <span>Navigation Mode</span>
-              <strong>5-Tab Liquid Lens Pill</strong>
-            </div>
-            <div className="telemetry-item">
-              <span>Safe-Area Adaptation</span>
-              <strong>env(safe-area-inset-*) Active</strong>
-            </div>
-          </div>
-        </article>
-      </div>
-
-      <div className="settings-shortcuts">
-        <div className="shortcut-strip">
-          <div className="shortcut-info">
-            <Layers size={18} />
-            <div>
-              <strong>Quick Workspace Jump</strong>
-              <span>Switch directly to any core module or trigger a fresh connection check.</span>
-            </div>
-          </div>
-          <div className="shortcut-buttons">
-            {NAV_ITEMS.slice(0, 4).map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  className="glass-chip-btn"
-                  onClick={() => selectTab(item.id, true)}
-                >
-                  <Icon size={13} />
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
+            );
+          })}
         </div>
       </div>
-    </section>
+
+      <div key={mcpView} className="drive-subpanel">
+        {mcpView === "discover" ? discover : mcpView === "my" ? connections : add}
+      </div>
+    </div>
   );
 
   const panels = {
-    mcp: <>{connections}{add}{discover}</>,
+    mcp: mcpPanel,
     skills,
     account: <AccountStatusPanel />,
   };
 
   return (
-    <main
-      className={`drive-app glass-mode-${glassIntensity} ${
-        !motionEnabled ? "motion-reduced" : ""
-      } ${!specularHighlights ? "no-specular" : ""}`}
-    >
-      {/* Hidden SVG filter for authentic Liquid Glass chromatic & edge refraction */}
-      <svg className="sr-only" aria-hidden="true" width="0" height="0">
-        <defs>
-          <filter id="liquid-lens-filter" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur in="SourceGraphic" stdDeviation="0.4" result="soft" />
-            <feSpecularLighting
-              in="soft"
-              surfaceScale="3"
-              specularConstant="0.85"
-              specularExponent="28"
-              lightingColor="#ffffff"
-              result="spec"
-            >
-              <fePointLight x="60" y="-30" z="120" />
-            </feSpecularLighting>
-            <feComposite in="spec" in2="SourceAlpha" operator="in" result="specMask" />
-            <feMerge>
-              <feMergeNode in="SourceGraphic" />
-              <feMergeNode in="specMask" />
-            </feMerge>
-          </filter>
-        </defs>
-      </svg>
-
-      {/* Top Dynamic Island & Brand Bar */}
+    <main className="drive-app">
       <header className="app-topbar">
-        <a
+        <button
+          type="button"
           className="app-brand"
-          href="#home"
-          onClick={(e) => {
-            e.preventDefault();
-            selectTab("mcp", true);
-          }}
           aria-label="DRIVE home"
+          onClick={() => {
+            selectTab("mcp", true);
+            setMcpView("discover");
+          }}
         >
           <span className="brand-mark">
             <Command size={17} />
           </span>
-          <span className="brand-text">DRIVE</span>
-          <span className="brand-beta">LIQUID 2.6</span>
-        </a>
-
-        {/* Dynamic Island Activity Capsule */}
-        <div className="dynamic-island-capsule" role="status" aria-live="polite">
-          <span className="context-dot" />
-          <span className="island-section">{activeMeta.label.toUpperCase()}</span>
-          <span className="context-divider">·</span>
-          <span className="island-sub">
-            {active === "mcp"
-              ? `${serverCount} SERVERS`
-              : active === "skills"
-              ? "SKILL LIBRARY"
-              : "ACCOUNT & SECURITY"}
-          </span>
-        </div>
+          <span>DRIVE</span>
+        </button>
 
         <div className="app-top-actions">
           <button
             type="button"
             className="top-pill-btn"
-            onClick={() => selectTab("mcp", true)}
-            title="Open MCP Marketplace"
+            onClick={() => {
+              if (active === "mcp") {
+                setMcpView(mcpView === "discover" ? "my" : "discover");
+              } else {
+                selectTab("mcp", true);
+                setMcpView("discover");
+              }
+            }}
+            title="Browse MCP Directory"
           >
             <Compass size={13} />
-            <span>{active === "skills" ? "Skills" : active === "account" ? "Security" : serverCount ? `${serverCount} MCPs` : "Directory"}</span>
+            <span>
+              {active === "mcp" && mcpView === "discover"
+                ? serverCount
+                  ? `${serverCount} MCPs`
+                  : "Directory"
+                : active === "skills"
+                ? "Skills"
+                : "Directory"}
+            </span>
           </button>
+
           <button
             type="button"
             className="top-pill-btn is-accent"
-            onClick={() => active === "skills" ? document.getElementById("my-skills")?.scrollIntoView({ behavior: "smooth", block: "start" }) : active === "account" ? selectTab("mcp", true) : document.getElementById("custom")?.scrollIntoView({ behavior: "smooth", block: "start" })}
-            title={active === "skills" ? "Jump to My Skills" : active === "account" ? "Back to MCP" : "Add Custom MCP"}
+            onClick={() => {
+              if (active === "skills") {
+                document
+                  .getElementById("my-skills")
+                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
+              } else if (active === "account") {
+                selectTab("mcp", true);
+                setMcpView("discover");
+              } else {
+                setMcpView("custom");
+              }
+            }}
+            title={
+              active === "skills"
+                ? "Jump to My Skills"
+                : active === "account"
+                ? "Open MCP Directory"
+                : "Add Custom MCP"
+            }
           >
-            <Sparkles size={12} />
-            <span>{active === "skills" ? "My Skills" : active === "account" ? "MCPs" : "Connect"}</span>
+            {active === "mcp" ? <Plus size={13} /> : <Sparkles size={12} />}
+            <span>
+              {active === "skills" ? "My Skills" : active === "account" ? "MCPs" : "Connect"}
+            </span>
           </button>
         </div>
       </header>
 
-      {/* Main Scrollable Viewport */}
       <section className="app-content" aria-live="polite">
-        {NAV_ITEMS.map((item) => {
-          const isCurrent = active === item.id;
-          return (
-            <div
-              key={item.id}
-              className={`app-panel ${isCurrent ? "is-active" : ""}`}
-              hidden={!isCurrent}
-            >
-              {panels[item.id]}
-            </div>
-          );
-        })}
+        <div key={active} className="app-panel">
+          {panels[active]}
+        </div>
       </section>
 
-      {/* 3-Tab iOS 26 Liquid Glass Bottom Navbar (Video Reference Match) */}
       <div className="bottom-dock-stage">
         <nav
           ref={dockRef}
@@ -605,50 +405,27 @@ export default function WorkspaceTabs({
           onPointerMove={handlePointerMove}
           onPointerUp={finishPointerDrag}
           onPointerCancel={finishPointerDrag}
-          onPointerLeave={handlePointerLeave}
           onKeyDown={handleKeyDown}
           style={{
             "--lens-index": currentLensIndex,
-            "--glare-x": `${lensGlareX}%`,
           }}
         >
-          {/* Ambient track reflection */}
-          <div className="liquid-navbar-track-glow" aria-hidden="true" />
-
-          {/* Interactive Sliding Liquid Glass Droplet / Lens Pill */}
-          <div className="liquid-lens-pill" aria-hidden="true">
-            <div className="liquid-lens-refraction" />
-            <div className="liquid-lens-rim" />
-            <div className="liquid-lens-shine" />
-          </div>
-
-          {/* 3 Navigation Items */}
-          {NAV_ITEMS.map(({ id, label, short, icon: Icon, isCenterAction }, index) => {
-            const distance = Math.abs(currentLensIndex - index);
-            const isSelected = active === id;
-            const isUnderLens = distance < 0.55;
-
+          <span className="liquid-lens-pill" aria-hidden="true" />
+          {NAV_ITEMS.map(({ id, label, short, icon: Icon }) => {
+            const isActive = active === id;
             return (
               <button
                 key={id}
                 type="button"
-                className={`liquid-nav-item ${isSelected ? "active" : ""} ${
-                  isUnderLens ? "under-lens" : ""
-                } ${isCenterAction ? "is-center-plus" : ""}`}
-                aria-current={isSelected ? "page" : undefined}
+                className={`dock-item ${isActive ? "active is-active" : ""}`}
+                aria-current={isActive ? "page" : undefined}
                 aria-label={label}
                 onClick={() => selectTab(id, true)}
               >
-                <span className="liquid-nav-icon-wrap">
-                  <Icon
-                    size={isCenterAction ? 22 : 20}
-                    strokeWidth={isUnderLens || isSelected ? 2.35 : 1.9}
-                  />
-                  {id === "discover" && serverCount > 0 && (
-                    <span className="liquid-nav-badge">{serverCount > 99 ? "99+" : serverCount}</span>
-                  )}
+                <span className="dock-icon">
+                  <Icon size={17} />
                 </span>
-                <span className="liquid-nav-label">{short}</span>
+                <span className="dock-label">{short}</span>
               </button>
             );
           })}

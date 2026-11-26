@@ -10,36 +10,231 @@ import {
   Globe2,
   Search,
   Server,
+  ShieldCheck,
 } from "lucide-react";
 
 const REGISTRY = "https://registry.modelcontextprotocol.io";
 
+// Curated, widely-used official Remote Streamable HTTP MCP servers that work immediately via URL/OAuth
+const VERIFIED_POPULAR_MCPS = [
+  {
+    verifiedPopular: true,
+    category: "github",
+    server: {
+      name: "com.github/github-mcp-server",
+      title: "GitHub MCP",
+      version: "official",
+      description: "Official remote GitHub MCP — repos, PRs, issues, CI checks, and code search.",
+      repository: { url: "https://github.com/github/github-mcp-server" },
+      remotes: [{ type: "streamable-http", url: "https://api.githubcopilot.com/mcp/" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "cloud",
+    server: {
+      name: "com.vercel/vercel-mcp",
+      title: "Vercel MCP",
+      version: "official",
+      description: "Official Vercel MCP — deployments, build logs, projects, domains, and env vars.",
+      repository: { url: "https://vercel.com/docs/mcp" },
+      remotes: [{ type: "streamable-http", url: "https://mcp.vercel.com/" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "database",
+    server: {
+      name: "com.supabase/supabase-mcp",
+      title: "Supabase MCP",
+      version: "official",
+      description: "Official Supabase MCP — SQL queries, migrations, Edge Functions, logs, and Auth.",
+      repository: { url: "https://github.com/supabase-community/supabase-mcp" },
+      remotes: [{ type: "streamable-http", url: "https://mcp.supabase.com/mcp" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "search",
+    server: {
+      name: "com.upstash/context7-mcp",
+      title: "Context7 Docs MCP",
+      version: "official",
+      description: "Live, version-specific documentation & code examples for any library or framework.",
+      repository: { url: "https://github.com/upstash/context7" },
+      remotes: [{ type: "streamable-http", url: "https://mcp.context7.com/mcp" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "design",
+    server: {
+      name: "com.figma/figma-mcp",
+      title: "Figma Dev Mode MCP",
+      version: "official",
+      description: "Official Figma remote MCP — inspect frames, design tokens, and components.",
+      repository: { url: "https://developers.figma.com/docs/figma-mcp-server/" },
+      remotes: [{ type: "streamable-http", url: "https://mcp.figma.com/mcp" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "productivity",
+    server: {
+      name: "com.notion/notion-mcp",
+      title: "Notion MCP",
+      version: "official",
+      description: "Official Notion remote MCP — search workspace, read pages, and update databases.",
+      repository: { url: "https://developers.notion.com/docs/mcp" },
+      remotes: [{ type: "streamable-http", url: "https://mcp.notion.com/mcp" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "productivity",
+    server: {
+      name: "app.linear/linear-mcp",
+      title: "Linear MCP",
+      version: "official",
+      description: "Official Linear remote MCP — issues, cycles, projects, and team workflows.",
+      repository: { url: "https://linear.app/docs/mcp" },
+      remotes: [{ type: "streamable-http", url: "https://mcp.linear.app/mcp" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "cloud",
+    server: {
+      name: "dev.sentry/sentry-mcp",
+      title: "Sentry MCP",
+      version: "official",
+      description: "Official Sentry remote MCP — live error tracking, stack traces, and issue triage.",
+      repository: { url: "https://docs.sentry.io/product/sentry-mcp/" },
+      remotes: [{ type: "streamable-http", url: "https://mcp.sentry.dev/mcp" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "search",
+    server: {
+      name: "com.deepwiki/deepwiki-mcp",
+      title: "DeepWiki MCP",
+      version: "free",
+      description: "Zero-auth GitHub repo wiki & architecture Q&A powered by Cognition DeepWiki.",
+      repository: { url: "https://deepwiki.com" },
+      remotes: [{ type: "streamable-http", url: "https://mcp.deepwiki.com/mcp" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "search",
+    server: {
+      name: "com.openai/docs-mcp",
+      title: "OpenAI Docs MCP",
+      version: "free",
+      description: "Zero-auth public OpenAI API, Responses, and Agents SDK documentation search.",
+      repository: { url: "https://developers.openai.com/api/docs/guides/tools-connectors-mcp" },
+      remotes: [{ type: "streamable-http", url: "https://developers.openai.com/mcp" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "finance",
+    server: {
+      name: "com.stripe/stripe-mcp",
+      title: "Stripe MCP",
+      version: "official",
+      description: "Official Stripe remote MCP — payments, customers, invoices, and subscriptions.",
+      repository: { url: "https://docs.stripe.com/mcp" },
+      remotes: [{ type: "streamable-http", url: "https://mcp.stripe.com" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "finance",
+    server: {
+      name: "com.paypal/paypal-mcp",
+      title: "PayPal MCP",
+      version: "official",
+      description: "Official PayPal remote MCP — orders, invoices, disputes, and payment links.",
+      repository: { url: "https://developer.paypal.com/tools/mcp-server/" },
+      remotes: [{ type: "streamable-http", url: "https://mcp.paypal.com/mcp" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "search",
+    server: {
+      name: "ai.exa/exa-mcp",
+      title: "Exa AI Search MCP",
+      version: "official",
+      description: "Real-time neural web search, company research, and live code context for AI.",
+      repository: { url: "https://github.com/exa-labs/exa-mcp-server" },
+      remotes: [{ type: "streamable-http", url: "https://mcp.exa.ai/mcp" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "database",
+    server: {
+      name: "tech.neon/neon-mcp",
+      title: "Neon Postgres MCP",
+      version: "official",
+      description: "Official Neon serverless Postgres MCP — branches, SQL queries, and schemas.",
+      repository: { url: "https://neon.tech/docs/ai/neon-mcp-server" },
+      remotes: [{ type: "streamable-http", url: "https://mcp.neon.tech/mcp" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "productivity",
+    server: {
+      name: "com.atlassian/rovo-mcp",
+      title: "Atlassian Jira & Confluence",
+      version: "official",
+      description: "Official Atlassian Rovo remote MCP for Jira tickets and Confluence docs.",
+      repository: { url: "https://www.atlassian.com/platform/remote-mcp-server" },
+      remotes: [{ type: "streamable-http", url: "https://mcp.atlassian.com/v1/mcp/authv2" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "ai",
+    server: {
+      name: "co.hf/huggingface-mcp",
+      title: "Hugging Face MCP",
+      version: "official",
+      description: "Official Hugging Face remote MCP — search models, datasets, papers, and Spaces.",
+      repository: { url: "https://huggingface.co/mcp" },
+      remotes: [{ type: "streamable-http", url: "https://hf.co/mcp" }],
+    },
+  },
+];
+
 const USAGE_RANK_TERMS = [
   "playwright-mcp", "firebase-mcp", "storybook", "browser-use", "chrome-devtools-mcp",
-  "color-space", "context7", "snyk", "e2ee", "telnyx", "agent-device", "seleniumbase",
-  "ecs-mcp", "desktop-commander", "scrapling", "edgartools", "gitlab-mcp", "sentry-mcp",
-  "react-mcp", "firecrawl-mcp-server", "hostinger-api-mcp", "supabase", "azure-mcp",
-  "mongodb-mcp-server", "argent", "next-devtools-mcp", "repomix", "ui5", "fiori-mcp-server",
-  "llm-sandbox", "figma-context-mcp", "workspace-mcp", "cap-js", "xcodebuildmcp",
-  "ms-365-mcp-server", "mcp-clickhouse", "ha-mcp", "nx-console", "kordoc", "svelte-mcp",
-  "mobile-mcp", "mcp-graphql-enhanced", "cloudbase-mcp", "metabase-mcp", "sling-cli",
-  "dbhub", "serena", "brave-search-mcp-server", "excel-mcp-server", "appwrite",
+  "context7", "snyk", "github-mcp", "gitlab-mcp", "sentry-mcp", "firecrawl",
+  "supabase", "azure-mcp", "mongodb-mcp-server", "next-devtools-mcp", "repomix",
+  "figma-context-mcp", "workspace-mcp", "ms-365-mcp-server", "mcp-clickhouse",
+  "brave-search-mcp-server", "appwrite", "cloudflare", "notion", "linear", "stripe",
 ];
 
 const CATEGORIES = [
   { id: "", label: "All" },
+  { id: "remote", label: "Remote Ready" },
   { id: "github", label: "GitHub" },
   { id: "database", label: "Database" },
-  { id: "browser", label: "Browser" },
-  { id: "search", label: "Search" },
+  { id: "search", label: "Search & Docs" },
   { id: "design", label: "Design" },
   { id: "cloud", label: "Cloud" },
-  { id: "slack", label: "Messaging" },
+  { id: "productivity", label: "Productivity" },
   { id: "finance", label: "Finance" },
 ];
 
 function usageRank(entry) {
+  if (entry?.verifiedPopular) return 0;
   const server = entry?.server || entry || {};
+  const isRemote = Array.isArray(server.remotes) && server.remotes.length > 0;
   const haystack = [
     server.name,
     server.title,
@@ -49,20 +244,41 @@ function usageRank(entry) {
     .join(" ")
     .toLowerCase();
   const index = USAGE_RANK_TERMS.findIndex((term) => haystack.includes(term));
-  return index < 0 ? Number.MAX_SAFE_INTEGER : index + 1;
+  if (index >= 0) return (isRemote ? 10 : 100) + index;
+  return isRemote ? 500 : 2000;
 }
 
 async function getServers(query) {
   const all = [];
   const seen = new Set();
-  let cursor = "";
   const trimmed = (query || "").trim();
-  const maxPages = trimmed ? 4 : 10;
+  const lower = trimmed.toLowerCase();
+
+  // 1. Always include matching verified popular remote MCPs first
+  for (const item of VERIFIED_POPULAR_MCPS) {
+    const hay = [
+      item.server.title,
+      item.server.name,
+      item.server.description,
+      item.category,
+    ]
+      .join(" ")
+      .toLowerCase();
+    if (!lower || lower === "remote" || hay.includes(lower)) {
+      seen.add(item.server.name.toLowerCase());
+      all.push(item);
+    }
+  }
+
+  // 2. Fetch live Official MCP Registry entries (up to 1,000)
+  let cursor = "";
+  const apiSearch = lower && lower !== "remote" ? trimmed : "";
+  const maxPages = apiSearch ? 4 : 10;
 
   try {
     for (let i = 0; i < maxPages; i += 1) {
       const params = new URLSearchParams({ limit: "100", version: "latest" });
-      if (trimmed.length >= 2) params.set("search", trimmed);
+      if (apiSearch.length >= 2) params.set("search", apiSearch);
       if (cursor) params.set("cursor", cursor);
 
       const response = await fetch(`${REGISTRY}/v0.1/servers?${params}`, {
@@ -74,8 +290,9 @@ async function getServers(query) {
       const payload = await response.json();
       const batch = Array.isArray(payload?.servers) ? payload.servers : [];
       for (const entry of batch) {
-        const key = entry?.server?.name || entry?.name;
+        const key = String(entry?.server?.name || entry?.name || "").toLowerCase();
         if (!key || seen.has(key)) continue;
+        if (lower === "remote" && !(entry?.server?.remotes?.length > 0)) continue;
         seen.add(key);
         all.push(entry);
       }
@@ -101,7 +318,7 @@ function details(entry) {
     transport: remotes.length ? "Remote HTTP" : packages.length ? "STDIO" : "Registry",
     repository: typeof repo === "string" ? repo : repo?.url || "",
     isRemote: remotes.length > 0,
-    packageCount: packages.length,
+    verifiedPopular: Boolean(entry?.verifiedPopular),
   };
 }
 
@@ -111,14 +328,18 @@ function ServerCard({ entry }) {
     <article className="integration-card server-card">
       <div className="card-top">
         <div className="integration-icon">
-          <Server size={16} />
+          {item.verifiedPopular ? <ShieldCheck size={16} /> : <Server size={16} />}
         </div>
-        <span className="status">{item.isRemote ? "Remote" : "Registry"}</span>
+        <span className={`status ${item.verifiedPopular ? "is-enabled" : ""}`}>
+          {item.verifiedPopular ? "Verified" : item.isRemote ? "Remote" : "STDIO"}
+        </span>
       </div>
 
       <div className="server-meta">
         <span className="transport-pill">{item.transport}</span>
-        <span className="version-pill">v{item.version}</span>
+        <span className="version-pill">
+          {item.version === "official" || item.version === "free" ? item.version : `v${item.version}`}
+        </span>
       </div>
 
       <h3>{item.name}</h3>
@@ -151,9 +372,7 @@ export default async function Home({ searchParams }) {
 
   const data = await getServers(query);
   const servers = Array.isArray(data.servers) ? [...data.servers] : [];
-  if (!query) {
-    servers.sort((a, b) => usageRank(a) - usageRank(b));
-  }
+  servers.sort((a, b) => usageRank(a) - usageRank(b));
 
   const totalPages = Math.max(1, Math.ceil(servers.length / pageSize));
   const safePage = Math.min(page, totalPages - 1);
@@ -176,7 +395,7 @@ export default async function Home({ searchParams }) {
         <input
           name="q"
           defaultValue={query}
-          placeholder="Search MCP servers (GitHub, Supabase, Figma...)"
+          placeholder="Search MCPs (GitHub, Supabase, Vercel, Figma...)"
           aria-label="Search MCP servers"
         />
         <button type="submit">Search</button>
@@ -199,9 +418,9 @@ export default async function Home({ searchParams }) {
 
       <div className="directory-toolbar">
         <div className="directory-stats">
-          <strong>{servers.length}</strong> {query ? `results for "${query}"` : "MCPs indexed"}
+          <strong>{servers.length}</strong> {query ? `results for "${query}"` : "MCPs ready"}
           <span className="registry-live">
-            <i /> Live Registry
+            <i /> Verified Remote First
           </span>
         </div>
         {query ? (

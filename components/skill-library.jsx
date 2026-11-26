@@ -41,7 +41,6 @@ export default function SkillLibrary() {
   const [loadingCatalog, setLoadingCatalog] = useState(true);
   const [loadingMy, setLoadingMy] = useState(false);
   const [installingId, setInstallingId] = useState("");
-  const [togglingId, setTogglingId] = useState("");
   const [toast, setToast] = useState({ type: "", message: "" });
 
   const installedRepoKeys = useMemo(() => {
@@ -80,17 +79,39 @@ export default function SkillLibrary() {
   const loadCatalog = useCallback(async (searchText = "") => {
     setLoadingCatalog(true);
     try {
+      const trimmed = searchText.trim();
       const params = new URLSearchParams();
-      if (searchText.trim()) params.set("q", searchText.trim());
-      const res = await fetch(`/api/skills/discover?${params.toString()}`, {
+      if (trimmed) params.set("q", trimmed);
+      const res = await fetch(`/api/catalog/skills${params.toString() ? `?${params}` : ""}`, {
         cache: "no-store",
       });
       const data = await res.json();
-      const items = Array.isArray(data.skills)
-        ? data.skills
-        : Array.isArray(data.items)
+      let items = Array.isArray(data.items)
         ? data.items
+        : Array.isArray(data.skills)
+        ? data.skills
         : [];
+
+      // Fallback to GitHub repository search when catalog returns empty for a specific query
+      if (items.length === 0 && trimmed.length >= 2) {
+        const ghRes = await fetch(`/api/skills/discover?q=${encodeURIComponent(trimmed)}`, {
+          cache: "no-store",
+        });
+        if (ghRes.ok) {
+          const ghData = await ghRes.json();
+          items = (ghData.items || []).map((repo) => ({
+            id: repo.full_name,
+            name: repo.full_name.split("/")[1] || repo.full_name,
+            slug: repo.full_name.split("/")[1] || repo.full_name,
+            source: repo.full_name,
+            description: repo.description || "GitHub Agent Skill repository",
+            category: "community",
+            stars: Number(repo.stars || 0),
+            verified: false,
+            installUrl: repo.html_url,
+          }));
+        }
+      }
       setCatalog(items);
     } catch {
       setCatalog([]);
@@ -110,16 +131,18 @@ export default function SkillLibrary() {
   const visibleCatalog = useMemo(() => {
     const cat = category.trim().toLowerCase();
     const q = query.trim().toLowerCase();
-    return catalog.filter((item) => {
-      const itemCat = String(item.category || "").toLowerCase();
-      if (cat && !itemCat.includes(cat)) return false;
-      if (!q) return true;
-      const hay = [item.name, item.description, item.source, item.category, item.slug]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return hay.includes(q);
-    });
+    return catalog
+      .filter((item) => {
+        const itemCat = String(item.category || "").toLowerCase();
+        if (cat && !itemCat.includes(cat)) return false;
+        if (!q) return true;
+        const hay = [item.name, item.description, item.source, item.category, item.slug]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return hay.includes(q);
+      })
+      .slice(0, 60);
   }, [catalog, category, query]);
 
   async function quickInstall(item) {
@@ -183,30 +206,33 @@ export default function SkillLibrary() {
   async function toggleSkill(skill) {
     const supabase = getSupabase();
     if (!supabase) return;
-    setTogglingId(skill.id);
-    const nextStatus = skill.status === "enabled" ? "disabled" : "enabled";
-    try {
-      await supabase
-        .from("user_skills")
-        .update({ status: nextStatus, updated_at: new Date().toISOString() })
-        .eq("id", skill.id);
+    const prevStatus = skill.status;
+    const nextStatus = prevStatus === "enabled" ? "disabled" : "enabled";
+    // Optimistic 0ms UI flip
+    setMySkills((prev) =>
+      prev.map((item) => (item.id === skill.id ? { ...item, status: nextStatus } : item))
+    );
+    const { error } = await supabase
+      .from("user_skills")
+      .update({ status: nextStatus, updated_at: new Date().toISOString() })
+      .eq("id", skill.id);
+    if (error) {
       setMySkills((prev) =>
-        prev.map((item) => (item.id === skill.id ? { ...item, status: nextStatus } : item))
+        prev.map((item) => (item.id === skill.id ? { ...item, status: prevStatus } : item))
       );
-    } finally {
-      setTogglingId("");
+      setToast({ type: "error", message: error.message || "Gagal mengubah status Skill." });
     }
   }
 
   async function removeSkill(skill) {
     const supabase = getSupabase();
     if (!supabase) return;
-    setTogglingId(skill.id);
-    try {
-      await supabase.from("user_skills").delete().eq("id", skill.id);
-      setMySkills((prev) => prev.filter((item) => item.id !== skill.id));
-    } finally {
-      setTogglingId("");
+    const snapshot = mySkills;
+    setMySkills((prev) => prev.filter((item) => item.id !== skill.id));
+    const { error } = await supabase.from("user_skills").delete().eq("id", skill.id);
+    if (error) {
+      setMySkills(snapshot);
+      setToast({ type: "error", message: error.message || "Gagal menghapus Skill." });
     }
   }
 
@@ -285,7 +311,7 @@ export default function SkillLibrary() {
 
           <div className="directory-toolbar">
             <div className="directory-stats">
-              <strong>{visibleCatalog.length}</strong> skills available
+              <strong>{catalog.length}</strong> skills indexed
               <span className="registry-live">
                 <i /> 1-Click Install
               </span>
@@ -388,7 +414,6 @@ export default function SkillLibrary() {
             <div className="integration-grid">
               {mySkills.map((skill) => {
                 const enabled = skill.status === "enabled";
-                const busy = togglingId === skill.id;
                 return (
                   <article key={skill.id} className="integration-card server-card">
                     <div className="card-top">
@@ -405,7 +430,6 @@ export default function SkillLibrary() {
                       <div className="server-actions">
                         <button
                           type="button"
-                          disabled={busy}
                           onClick={() => toggleSkill(skill)}
                           className="glass-chip-btn"
                         >
@@ -413,7 +437,6 @@ export default function SkillLibrary() {
                         </button>
                         <button
                           type="button"
-                          disabled={busy}
                           onClick={() => removeSkill(skill)}
                           className="glass-chip-btn is-danger"
                           aria-label={`Remove ${skill.name}`}

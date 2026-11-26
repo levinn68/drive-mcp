@@ -6,9 +6,12 @@ export const maxDuration = 60;
 
 const NPM_SEARCH_API = "https://registry.npmjs.org/-/v1/search";
 const LOBEHUB_AGENTS_INDEX = "https://chat-agents.lobehub.com/index.json";
+const HUGGINGFACE_SPACES_API = "https://huggingface.co/api/spaces";
 
-const TARGET_SKILLS_COUNT = 20500;
-const PER_CATEGORY_PASS1_CAP = 2300;
+const TARGET_SKILLS_COUNT = 21500;
+const PER_CATEGORY_PASS1_CAP = 2400;
+
+const JUNK_SKILL_RX = /^(test|demo|hello[-_]?world|example|sample|foo|bar|tmp)[-_0-9]*$/i;
 
 const CURATED_POPULAR_SKILLS = [
   {
@@ -169,40 +172,40 @@ const CURATED_POPULAR_SKILLS = [
   },
 ];
 
-// Evenly balanced topics across all 16 categories so no single domain dominates
+// 220+ high-signal useful topics evenly distributed across all 16 categories
 const SKILLS_SH_TOPICS = [
   // Frontend & UI
-  "react", "next", "vue", "svelte", "angular", "astro", "tailwind", "shadcn", "radix", "css",
+  "react", "next", "vue", "nuxt", "svelte", "angular", "astro", "remix", "solid", "tailwind", "shadcn", "radix", "css", "vite", "webpack",
   // Backend & API
-  "node", "express", "fastapi", "django", "rails", "laravel", "golang", "rust", "graphql", "stripe", "webhook", "auth",
+  "node", "express", "fastify", "nestjs", "fastapi", "django", "flask", "rails", "laravel", "spring", "golang", "rust", "graphql", "trpc", "grpc", "openapi", "stripe", "webhook", "auth", "oauth",
   // AI & Agents
-  "ai", "agent", "mcp", "llm", "prompt", "rag", "vector", "embedding", "eval", "langchain", "openai", "claude",
+  "ai", "agent", "mcp", "llm", "prompt", "rag", "vector", "embedding", "eval", "langchain", "llamaindex", "crewai", "autogen", "openai", "claude", "gemini", "ollama", "vllm", "huggingface", "pydantic",
   // Database & SQL
-  "sql", "postgres", "supabase", "prisma", "drizzle", "mongodb", "redis", "neon", "clickhouse", "firebase",
+  "sql", "postgres", "mysql", "sqlite", "supabase", "prisma", "drizzle", "mongodb", "redis", "neon", "clickhouse", "firebase", "duckdb", "neo4j", "qdrant", "pinecone", "convex", "turso",
   // DevOps & Cloud
-  "docker", "kubernetes", "aws", "cloudflare", "vercel", "terraform", "linux", "nginx", "ci", "deploy", "grafana", "sentry",
+  "docker", "kubernetes", "helm", "aws", "lambda", "azure", "gcp", "cloudflare", "vercel", "netlify", "terraform", "pulumi", "ansible", "linux", "nginx", "ci", "deploy", "grafana", "prometheus", "sentry", "datadog",
   // Security & Audit
-  "security", "audit", "owasp", "pentest", "oauth", "encryption", "compliance", "vulnerability",
+  "security", "audit", "owasp", "pentest", "encryption", "compliance", "vulnerability", "snyk", "trivy", "semgrep", "vault", "keycloak", "clerk", "auth0",
   // Testing & QA
-  "test", "playwright", "cypress", "vitest", "jest", "pytest", "debug", "tdd", "qa", "benchmark",
+  "test", "playwright", "cypress", "puppeteer", "selenium", "vitest", "jest", "pytest", "debug", "tdd", "qa", "benchmark", "k6", "storybook",
   // Design & UX
-  "design", "ui", "ux", "figma", "accessibility", "typography", "svg", "framer", "branding", "wireframe",
+  "design", "ui", "ux", "figma", "accessibility", "typography", "svg", "framer", "webflow", "branding", "wireframe", "excalidraw", "mermaid", "diagram",
   // Media & 3D
-  "video", "remotion", "animation", "3d", "three", "webgl", "audio", "image", "voice", "ffmpeg", "game", "unity",
+  "video", "remotion", "animation", "3d", "three", "webgl", "blender", "audio", "image", "voice", "whisper", "ffmpeg", "game", "unity", "godot", "shader", "comfyui",
   // Data & Analytics
-  "data", "analytics", "pandas", "dbt", "snowflake", "chart", "dashboard", "excel", "csv", "posthog", "ml",
+  "data", "analytics", "pandas", "dbt", "snowflake", "bigquery", "airflow", "kafka", "chart", "dashboard", "excel", "csv", "posthog", "ml", "pytorch", "jupyter",
   // Mobile & Native
-  "mobile", "ios", "android", "flutter", "expo", "swift", "kotlin", "react-native",
+  "mobile", "ios", "android", "flutter", "expo", "swift", "swiftui", "kotlin", "react-native", "capacitor", "tauri", "electron",
   // Docs & Writing
-  "docs", "pdf", "markdown", "latex", "slides", "writing", "copywriting", "readme", "changelog", "research",
+  "docs", "pdf", "docx", "pptx", "markdown", "mdx", "latex", "slides", "writing", "copywriting", "readme", "changelog", "research", "academic", "translation", "blog",
   // Marketing & SEO
-  "seo", "marketing", "growth", "landing", "saas", "pricing", "onboarding", "newsletter", "ads", "hubspot",
+  "seo", "marketing", "growth", "landing", "saas", "pricing", "onboarding", "newsletter", "ads", "hubspot", "salesforce", "ecommerce", "shopify", "pitch",
   // Web3 & Crypto
-  "web3", "solana", "ethereum", "solidity", "defi", "wallet", "blockchain",
+  "web3", "solana", "ethereum", "solidity", "foundry", "hardhat", "defi", "wallet", "blockchain", "wagmi",
   // Automation & Scraping
-  "workflow", "automation", "scrape", "browser", "cron", "queue", "cli", "n8n", "telegram", "whatsapp",
+  "workflow", "automation", "scrape", "browser", "cron", "queue", "cli", "n8n", "zapier", "telegram", "whatsapp", "twilio", "resend", "apify", "firecrawl",
   // Productivity & Ops
-  "productivity", "notion", "linear", "jira", "slack", "discord", "email", "calendar", "obsidian", "crm", "shopify", "startup",
+  "productivity", "notion", "linear", "jira", "confluence", "asana", "trello", "slack", "discord", "email", "gmail", "calendar", "obsidian", "airtable", "crm", "startup", "finance", "accounting", "interview",
 ];
 
 const AWESOME_README_URLS = [
@@ -215,22 +218,22 @@ const AWESOME_README_URLS = [
 ];
 
 const CATEGORY_RULES = [
-  { id: "frontend", rx: /\b(react|next\.?js|vue|svelte|angular|tailwind|css|html|frontend|ui component|shadcn|vite|astro|radix|framer)\b/i },
-  { id: "media", rx: /\b(remotion|video|audio|animation|motion|three\.?js|webgl|shader|3d|ffmpeg|podcast|image|canvas|music|suno|midjourney|stable diffusion|game|unity|godot)\b/i },
-  { id: "database", rx: /\b(sql|postgres|postgresql|mysql|sqlite|supabase|prisma|drizzle|mongo|mongodb|redis|clickhouse|database|schema|migration|neon|planetscale|firebase)\b/i },
-  { id: "devops", rx: /\b(docker|kubernetes|k8s|terraform|aws|gcp|azure|vercel|cloudflare|ci\/cd|github actions|deploy|linux|nginx|helm|ansible|devops|infra|cloud|sentry|grafana)\b/i },
-  { id: "security", rx: /\b(security|audit|owasp|pentest|vuln|cve|ssrf|xss|csrf|encrypt|secret|compliance|soc2|rbac|rls|hardening|cybersecurity)\b/i },
-  { id: "testing", rx: /\b(test|testing|playwright|cypress|jest|vitest|pytest|qa|e2e|unit test|debug|debugging|tdd|benchmark|lint)\b/i },
-  { id: "design", rx: /\b(design|ux|figma|typography|color|brand|logo|wireframe|prototype|accessibility|a11y|glass|layout|illustration|sketch|ppt|powerpoint)\b/i },
-  { id: "data", rx: /\b(data|analytics|pandas|numpy|dbt|spark|snowflake|bigquery|tableau|chart|visualization|etl|pipeline|ml|machine learning|jupyter|excel|csv|posthog)\b/i },
-  { id: "mobile", rx: /\b(mobile|ios|android|swift|swiftui|kotlin|flutter|react native|expo|apk|xcode|capacitor)\b/i },
-  { id: "web3", rx: /\b(web3|blockchain|solana|ethereum|solidity|smart contract|defi|wallet|nft|crypto)\b/i },
-  { id: "marketing", rx: /\b(seo|marketing|growth|landing page|conversion|ads|social media|newsletter|email campaign|gtm|brand voice|sales|ecommerce|amazon|shopify|pitch)\b/i },
-  { id: "docs", rx: /\b(doc|docs|documentation|readme|markdown|writing|copywriting|blog|changelog|technical writing|pdf|latex|slides|pptx|docx|translation|academic|essay|summary)\b/i },
-  { id: "automation", rx: /\b(automat|workflow|cron|scrape|scraping|crawler|browser|n8n|zapier|make\.com|slack bot|telegram|discord bot|cli|script|webhook)\b/i },
-  { id: "backend", rx: /\b(api|backend|node\.?js|express|fastify|nestjs|django|fastapi|flask|go|golang|rust|graphql|rest|stripe|payment|auth|oauth|jwt|microservice|php|laravel|rails)\b/i },
-  { id: "ai", rx: /\b(ai|llm|agent|mcp|prompt|rag|embedding|vector|openai|claude|gemini|anthropic|langchain|langgraph|crewai|autogen|eval|fine-?tun)\b/i },
-  { id: "productivity", rx: /\b(productivity|notion|linear|jira|calendar|email|gmail|meeting|plan|planning|roadmap|project management|kanban|obsidian|career|interview|finance|accounting|education|tutor)\b/i },
+  { id: "frontend", rx: /\b(react|next\.?js|vue|nuxt|svelte|angular|tailwind|css|html|frontend|ui component|shadcn|vite|astro|radix|framer|remix|solidjs)\b/i },
+  { id: "media", rx: /\b(remotion|video|audio|animation|motion|three\.?js|webgl|shader|3d|ffmpeg|podcast|image|canvas|music|suno|midjourney|stable diffusion|comfyui|game|unity|godot|blender|whisper|tts)\b/i },
+  { id: "database", rx: /\b(sql|postgres|postgresql|mysql|sqlite|supabase|prisma|drizzle|mongo|mongodb|redis|clickhouse|database|schema|migration|neon|planetscale|firebase|duckdb|neo4j|qdrant|pinecone|turso|convex)\b/i },
+  { id: "devops", rx: /\b(docker|kubernetes|k8s|terraform|pulumi|aws|gcp|azure|vercel|cloudflare|ci\/cd|github actions|deploy|linux|nginx|helm|ansible|devops|infra|cloud|sentry|grafana|prometheus|datadog)\b/i },
+  { id: "security", rx: /\b(security|audit|owasp|pentest|vuln|cve|ssrf|xss|csrf|encrypt|secret|compliance|soc2|rbac|rls|hardening|cybersecurity|snyk|trivy|semgrep|vault|keycloak|clerk|auth0)\b/i },
+  { id: "testing", rx: /\b(test|testing|playwright|cypress|puppeteer|selenium|jest|vitest|pytest|qa|e2e|unit test|debug|debugging|tdd|benchmark|lint|k6|storybook)\b/i },
+  { id: "design", rx: /\b(design|ux|figma|typography|color|brand|logo|wireframe|prototype|accessibility|a11y|glass|layout|illustration|sketch|ppt|powerpoint|webflow|excalidraw|mermaid|svg)\b/i },
+  { id: "data", rx: /\b(data|analytics|pandas|numpy|dbt|spark|snowflake|bigquery|tableau|chart|visualization|etl|pipeline|ml|machine learning|pytorch|jupyter|excel|csv|posthog|airflow|kafka)\b/i },
+  { id: "mobile", rx: /\b(mobile|ios|android|swift|swiftui|kotlin|flutter|react native|expo|apk|xcode|capacitor|tauri|electron)\b/i },
+  { id: "web3", rx: /\b(web3|blockchain|solana|ethereum|solidity|smart contract|defi|wallet|nft|crypto|foundry|hardhat|wagmi)\b/i },
+  { id: "marketing", rx: /\b(seo|marketing|growth|landing page|conversion|ads|social media|newsletter|email campaign|gtm|brand voice|sales|ecommerce|amazon|shopify|pitch|hubspot|salesforce)\b/i },
+  { id: "docs", rx: /\b(doc|docs|documentation|readme|markdown|mdx|writing|copywriting|blog|changelog|technical writing|pdf|latex|slides|pptx|docx|translation|academic|essay|summary)\b/i },
+  { id: "automation", rx: /\b(automat|workflow|cron|scrape|scraping|crawler|browser|n8n|zapier|make\.com|slack bot|telegram|discord bot|cli|script|webhook|apify|firecrawl|twilio|resend)\b/i },
+  { id: "backend", rx: /\b(api|backend|node\.?js|express|fastify|nestjs|django|fastapi|flask|go|golang|rust|graphql|trpc|grpc|rest|stripe|payment|auth|oauth|jwt|microservice|php|laravel|rails|spring)\b/i },
+  { id: "ai", rx: /\b(ai|llm|agent|mcp|prompt|rag|embedding|vector|openai|claude|gemini|anthropic|langchain|llamaindex|langgraph|crewai|autogen|eval|fine-?tun|ollama|vllm|huggingface)\b/i },
+  { id: "productivity", rx: /\b(productivity|notion|linear|jira|confluence|asana|trello|calendar|email|gmail|meeting|plan|planning|roadmap|project management|kanban|obsidian|airtable|career|interview|finance|accounting|education|tutor)\b/i },
 ];
 
 const LOBEHUB_CAT_MAP = {
@@ -280,15 +283,15 @@ function formatTitle(raw, fallback) {
   return base.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-// Non-GitHub Source 1: skills.sh search across 150+ balanced topics
+// Non-GitHub Source 1: skills.sh search across 220+ balanced topics
 async function fetchSkillsShSearch(q) {
-  const headers = { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.0" };
+  const headers = { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.1" };
   const queries = q ? [q] : SKILLS_SH_TOPICS;
   const rows = [];
-  const deadline = Date.now() + 16500;
+  const deadline = Date.now() + 17500;
 
-  for (let start = 0; start < queries.length && Date.now() < deadline; start += 32) {
-    const batch = queries.slice(start, start + 32);
+  for (let start = 0; start < queries.length && Date.now() < deadline; start += 40) {
+    const batch = queries.slice(start, start + 40);
     const settled = await Promise.allSettled(
       batch.map(async (term) => {
         const url = new URL("https://skills.sh/api/search");
@@ -297,7 +300,7 @@ async function fetchSkillsShSearch(q) {
         const res = await fetch(url, {
           headers,
           next: { revalidate: q ? 900 : 3600 },
-          signal: AbortSignal.timeout(5000),
+          signal: AbortSignal.timeout(4800),
         });
         if (!res.ok) return [];
         const payload = await res.json();
@@ -311,7 +314,7 @@ async function fetchSkillsShSearch(q) {
     for (const r of settled) {
       if (r.status === "fulfilled" && r.value.length) rows.push(...r.value);
     }
-    if (rows.length >= 34000) break;
+    if (rows.length >= 45000) break;
   }
   return rows;
 }
@@ -331,7 +334,7 @@ async function fetchSkillsDirectory(q) {
         url.searchParams.set("sort", "stars");
         if (q) url.searchParams.set("q", q);
         const res = await fetch(url, {
-          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.0" },
+          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.1" },
           next: { revalidate: q ? 900 : 3600 },
           signal: AbortSignal.timeout(5000),
         });
@@ -347,11 +350,11 @@ async function fetchSkillsDirectory(q) {
   return allRows;
 }
 
-// Non-GitHub Source 3: LobeHub Public Agent Skills Index (multi-domain non-coding + coding!)
+// Non-GitHub Source 3: LobeHub Public Agent Skills Index
 async function fetchLobeHubSkills(q) {
   try {
     const res = await fetch(LOBEHUB_AGENTS_INDEX, {
-      headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.0" },
+      headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.1" },
       next: { revalidate: 3600 },
       signal: AbortSignal.timeout(7000),
     });
@@ -388,29 +391,94 @@ async function fetchLobeHubSkills(q) {
   }
 }
 
-// Non-GitHub Source 4: npm Public Registry across 24 diverse skill/prompt/workflow queries
+// Non-GitHub Source 4: Hugging Face Top AI Spaces & Workflow Skills (sorted by likes!)
+const HF_SPACE_TOPICS = [
+  "agent", "rag", "coding", "image", "video", "audio", "tts", "ocr",
+  "pdf", "sql", "design", "translation", "security", "search", "chat", "finance",
+];
+
+async function fetchHuggingFaceSkills(q) {
+  const queries = q ? [q] : HF_SPACE_TOPICS;
+  const settled = await Promise.allSettled(
+    queries.map(async (term) => {
+      const url = new URL(HUGGINGFACE_SPACES_API);
+      url.searchParams.set("search", term);
+      url.searchParams.set("sort", "likes");
+      url.searchParams.set("direction", "-1");
+      url.searchParams.set("limit", "100");
+      const res = await fetch(url, {
+        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.1" },
+        next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(5500),
+      });
+      if (!res.ok) return [];
+      const arr = await res.json();
+      return Array.isArray(arr) ? arr : [];
+    })
+  );
+
+  const out = [];
+  for (const r of settled) {
+    if (r.status !== "fulfilled") continue;
+    for (const sp of r.value) {
+      const id = String(sp?.id || "").trim();
+      if (!id || !id.includes("/")) continue;
+      const likes = Number(sp.likes || 0);
+      if (likes < 5) continue;
+      const rawName = id.split("/")[1] || id;
+      const tags = Array.isArray(sp.tags) ? sp.tags.slice(0, 6).join(", ") : "";
+      out.push({
+        repository: `huggingface/${id}`,
+        name: rawName,
+        slug: rawName.toLowerCase().replace(/[^a-z0-9-]+/g, "-"),
+        description:
+          sp.cardData?.short_description ||
+          `Popular Hugging Face AI Space & workflow (${likes.toLocaleString()} likes${tags ? ` · ${tags}` : ""}).`,
+        author: id.split("/")[0],
+        stars: likes,
+        installs: likes,
+        verified: likes >= 100,
+        sourceLabel: "HuggingFace",
+        installUrl: `https://huggingface.co/spaces/${id}`,
+      });
+    }
+  }
+  return out;
+}
+
+// Non-GitHub Source 5: npm Public Registry — 64 high-signal useful AI/Agent/Skill/Tool queries!
 const NPM_BALANCED_SKILL_QUERIES = [
   "agent-skill", "claude-skill", "codex-skill", "cursor-rules",
   "ai-agent-skills", "skill-md", "copilot-instructions", "windsurf-rules",
   "cline-rules", "mcp-skill", "prompt-template", "ai-prompt",
-  "agent-workflow", "langchain-tool", "crewai", "mastra",
-  "ai-assistant", "seo-agent", "design-system-tokens", "security-audit-cli",
-  "playwright-agent", "sql-agent", "data-pipeline-agent", "code-review-ai",
+  "agent-workflow", "langchain", "llamaindex", "crewai",
+  "mastra", "vercel-ai", "ai-assistant", "openai-agent",
+  "claude-code", "anthropic-sdk", "gemini-ai", "rag-pipeline",
+  "vector-search", "embeddings-ai", "code-review-ai", "refactor-cli",
+  "eslint-config", "prettier-config", "typescript-template", "nextjs-template",
+  "react-components", "tailwind-plugin", "shadcn-ui", "design-tokens",
+  "figma-plugin", "accessibility-audit", "playwright-test", "vitest-plugin",
+  "cypress-plugin", "security-audit", "owasp-scanner", "vulnerability-scan",
+  "postgres-migration", "supabase-cli", "prisma-generator", "drizzle-kit",
+  "docker-compose", "kubernetes-cli", "terraform-module", "cloudflare-worker",
+  "seo-optimizer", "sitemap-generator", "markdown-parser", "pdf-generator",
+  "docx-generator", "excel-parser", "web-scraper", "crawler-agent",
+  "slack-bot", "discord-bot", "telegram-bot", "stripe-webhook",
 ];
 
 async function fetchNpmSkillPackages(q) {
-  const queries = q ? [`${q} agent skill`] : NPM_BALANCED_SKILL_QUERIES;
+  const queries = q ? [`${q} agent skill`, `${q} ai`] : NPM_BALANCED_SKILL_QUERIES;
   const requests = [];
   for (let idx = 0; idx < queries.length; idx += 1) {
     const text = queries[idx];
-    const offsets = q ? [0] : idx < 8 ? [0, 250, 500] : [0, 250];
+    const offsets = q ? [0, 250] : idx < 16 ? [0, 250, 500] : [0, 250];
     for (const from of offsets) requests.push({ text, from });
   }
 
   const parsed = [];
-  const deadline = Date.now() + 15000;
-  for (let start = 0; start < requests.length && Date.now() < deadline; start += 20) {
-    const batch = requests.slice(start, start + 20);
+  const deadline = Date.now() + 17000;
+  for (let start = 0; start < requests.length && Date.now() < deadline; start += 30) {
+    const batch = requests.slice(start, start + 30);
     const settled = await Promise.allSettled(
       batch.map(async ({ text, from }) => {
         const url = new URL(NPM_SEARCH_API);
@@ -418,9 +486,9 @@ async function fetchNpmSkillPackages(q) {
         url.searchParams.set("size", "250");
         url.searchParams.set("from", String(from));
         const res = await fetch(url, {
-          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.0" },
+          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.1" },
           next: { revalidate: 3600 },
-          signal: AbortSignal.timeout(5500),
+          signal: AbortSignal.timeout(5000),
         });
         if (!res.ok) return [];
         const payload = await res.json();
@@ -432,7 +500,7 @@ async function fetchNpmSkillPackages(q) {
       if (r.status !== "fulfilled") continue;
       for (const obj of r.value) {
         const pkg = obj?.package;
-        if (!pkg?.name) continue;
+        if (!pkg?.name || JUNK_SKILL_RX.test(pkg.name)) continue;
         const popScore = Math.round(Number(obj?.score?.detail?.popularity || 0) * 1400);
         const repoUrl = pkg.links?.repository || "";
         const ghMatch = repoUrl.match(/github\.com\/([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)/i);
@@ -441,7 +509,7 @@ async function fetchNpmSkillPackages(q) {
           repository: cleanSource,
           name: pkg.name.replace(/^@[^/]+\//, ""),
           slug: pkg.name.replace(/^@/, "").replace(/[^a-z0-9-]+/gi, "-").toLowerCase(),
-          description: pkg.description || `Published npm Agent Skill package (${pkg.name}).`,
+          description: pkg.description || `Published npm Agent Skill & workflow package (${pkg.name}).`,
           author: pkg.publisher?.username || "npm",
           stars: popScore,
           installs: popScore,
@@ -455,12 +523,12 @@ async function fetchNpmSkillPackages(q) {
   return parsed;
 }
 
-// Source 5: Curated Awesome Agent Skills Lists
+// Source 6: Curated Awesome Agent Skills Lists
 async function fetchAwesomeReadmes(q) {
   const settled = await Promise.allSettled(
     AWESOME_README_URLS.map(async (readmeUrl) => {
       const res = await fetch(readmeUrl, {
-        headers: { "user-agent": "DRIVE-Skills-Catalog/4.0" },
+        headers: { "user-agent": "DRIVE-Skills-Catalog/4.1" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(6000),
       });
@@ -526,10 +594,11 @@ export async function GET(request) {
   const q = (searchParams.get("q") || "").trim().slice(0, 100).toLowerCase();
 
   try {
-    const [shRes, dirRes, lobeRes, npmRes, awesomeRes] = await Promise.allSettled([
+    const [shRes, dirRes, lobeRes, hfRes, npmRes, awesomeRes] = await Promise.allSettled([
       fetchSkillsShSearch(q),
       fetchSkillsDirectory(q),
       fetchLobeHubSkills(q),
+      fetchHuggingFaceSkills(q),
       fetchNpmSkillPackages(q),
       fetchAwesomeReadmes(q),
     ]);
@@ -537,6 +606,7 @@ export async function GET(request) {
     const shRows = shRes.status === "fulfilled" ? shRes.value : [];
     const dirRows = dirRes.status === "fulfilled" ? dirRes.value : [];
     const lobeRows = lobeRes.status === "fulfilled" ? lobeRes.value : [];
+    const hfRows = hfRes.status === "fulfilled" ? hfRes.value : [];
     const npmRows = npmRes.status === "fulfilled" ? npmRes.value : [];
     const awesomeRows = awesomeRes.status === "fulfilled" ? awesomeRes.value : [];
 
@@ -550,7 +620,7 @@ export async function GET(request) {
         .replace(/\/+$/, "")
         .trim();
       const rawName = String(item.name || item.skillId || "").trim();
-      if (!cleanRepo || !rawName) return;
+      if (!cleanRepo || !rawName || JUNK_SKILL_RX.test(rawName)) return;
 
       totalRawSkills += 1;
       const slug = String(item.slug || item.skillId || rawName)
@@ -573,7 +643,7 @@ export async function GET(request) {
       }
 
       const repoCount = perRepoCount.get(repoKey) || 0;
-      if (!bypassRepoCap && repoCount >= 22) return;
+      if (!bypassRepoCap && repoCount >= 45) return;
       perRepoCount.set(repoKey, repoCount + 1);
 
       const displayName = formatTitle(rawName, cleanRepo.split("/")[1]);
@@ -588,6 +658,8 @@ export async function GET(request) {
         ? `https://www.npmjs.com/package/${cleanRepo.slice(4)}`
         : cleanRepo.startsWith("lobehub/")
         ? `https://lobehub.com/discover/assistant/${cleanRepo.slice(8)}`
+        : cleanRepo.startsWith("huggingface/")
+        ? `https://huggingface.co/spaces/${cleanRepo.slice(12)}`
         : `https://github.com/${cleanRepo}`;
       const targetUrl = item.installUrl || defaultUrl;
 
@@ -602,6 +674,8 @@ export async function GET(request) {
             ? "npm"
             : cleanRepo.startsWith("lobehub/")
             ? "LobeHub"
+            : cleanRepo.startsWith("huggingface/")
+            ? "HuggingFace"
             : "skills.sh"),
         description: desc,
         category,
@@ -615,6 +689,8 @@ export async function GET(request) {
           ? "npm"
           : cleanRepo.startsWith("lobehub/")
           ? "lobehub"
+          : cleanRepo.startsWith("huggingface/")
+          ? "huggingface"
           : "registry",
         skillCount: 1,
       });
@@ -657,6 +733,10 @@ export async function GET(request) {
       upsert(item.repository, item, true);
     }
 
+    for (const item of hfRows) {
+      upsert(item.repository, item, true);
+    }
+
     for (const item of npmRows) {
       upsert(item.repository, item);
     }
@@ -685,7 +765,7 @@ export async function GET(request) {
         totalRawSkills,
         target: 20000,
         categories: categoryCounts,
-        source: "skills.sh + SkillsDirectory + LobeHub + npm + Curated",
+        source: "skills.sh + SkillsDirectory + LobeHub + HuggingFace + npm + Curated",
         query: q || null,
       },
       {

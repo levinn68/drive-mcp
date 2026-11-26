@@ -29,7 +29,7 @@ async function getUserClient(request) {
 function githubHeaders() {
   const headers = {
     accept: "application/vnd.github+json",
-    "user-agent": "DRIVE-MCP/2.0",
+    "user-agent": "DRIVE-MCP/4.0",
   };
   if (process.env.GITHUB_TOKEN) {
     headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
@@ -45,10 +45,102 @@ function parseFrontmatter(markdown) {
     const idx = line.indexOf(":");
     if (idx <= 0) continue;
     const key = line.slice(0, idx).trim();
-    const val = line.slice(idx + 1).trim().replace(/^['"]|['"]$/g, "");
-    if (key && val) meta[key] = val;
+    const val = line
+      .slice(idx + 1)
+      .trim()
+      .replace(/^['"]|['"]$/g, "");
+    if (key && val && !/^[>|][-+]?$/.test(val)) meta[key] = val;
   }
   return meta;
+}
+
+async function resolveLobeHubSkill(identifier, fallbackName, fallbackDesc) {
+  const cleanId = String(identifier || "").replace(/^lobehub\//i, "").trim();
+  if (!cleanId) throw new Error("Invalid LobeHub skill identifier.");
+  let title = fallbackName || cleanId;
+  let description = fallbackDesc || "";
+  let systemRole = "";
+
+  try {
+    const res = await fetch(`https://chat-agents.lobehub.com/${encodeURIComponent(cleanId)}.json`, {
+      headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.0" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(8000),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      title = data?.meta?.title || title;
+      description = data?.meta?.description || description;
+      systemRole = data?.config?.systemRole || "";
+    }
+  } catch {}
+
+  const skillMd = [
+    "---",
+    `name: ${title}`,
+    `description: ${description || `LobeHub AI Agent Skill (${title})`}`,
+    `source: https://lobehub.com/discover/assistant/${cleanId}`,
+    "---",
+    "",
+    `# ${title}`,
+    "",
+    systemRole || description || `Act as ${title}.`,
+  ].join("\n");
+
+  return [
+    {
+      sourceRepo: `lobehub/${cleanId}`,
+      skillPath: "SKILL.md",
+      skillMd: skillMd.slice(0, 120000),
+      license: "MIT",
+      frontmatterName: title,
+      frontmatterDescription: description || null,
+    },
+  ];
+}
+
+async function resolveNpmSkill(pkgPath, fallbackName, fallbackDesc) {
+  const pkgName = String(pkgPath || "").replace(/^npm\//i, "").trim();
+  if (!pkgName) throw new Error("Invalid npm package name.");
+  let title = fallbackName || pkgName;
+  let description = fallbackDesc || "";
+  let readme = "";
+  let license = null;
+
+  try {
+    const res = await fetch(`https://registry.npmjs.org/${encodeURIComponent(pkgName)}`, {
+      headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.0" },
+      cache: "no-store",
+      signal: AbortSignal.timeout(8000),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      description = data.description || description;
+      readme = typeof data.readme === "string" ? data.readme : "";
+      license = typeof data.license === "string" ? data.license : null;
+    }
+  } catch {}
+
+  const skillMd = [
+    "---",
+    `name: ${title}`,
+    `description: ${description || `npm Agent Skill package (${pkgName})`}`,
+    `source: https://www.npmjs.com/package/${pkgName}`,
+    "---",
+    "",
+    readme || `# ${title}\n\n${description || `Agent Skill package ${pkgName} from npm.`}`,
+  ].join("\n");
+
+  return [
+    {
+      sourceRepo: `npm/${pkgName}`,
+      skillPath: "SKILL.md",
+      skillMd: skillMd.slice(0, 120000),
+      license,
+      frontmatterName: title,
+      frontmatterDescription: description || null,
+    },
+  ];
 }
 
 async function resolveSkillsFromGithub(repository, slug, explicitPath, installAll) {
@@ -88,7 +180,6 @@ async function resolveSkillsFromGithub(repository, slug, explicitPath, installAl
     if (!skillFiles.length) throw new Error(`No SKILL.md found in ${cleanRepo}.`);
 
     if (installAll) {
-      // Automatically install all SKILL.md files in this repository pack (capped at 15 for speed)
       targetPaths = skillFiles.slice(0, 15).map((f) => f.path);
     } else {
       const slugLower = String(slug || "").toLowerCase();
@@ -122,10 +213,7 @@ async function resolveSkillsFromGithub(repository, slug, explicitPath, installAl
     })
   );
 
-  const items = downloaded
-    .filter((r) => r.status === "fulfilled" && r.value)
-    .map((r) => r.value);
-
+  const items = downloaded.filter((r) => r.status === "fulfilled" && r.value).map((r) => r.value);
   if (!items.length) {
     throw new Error(`Could not download SKILL.md files from ${cleanRepo}.`);
   }
@@ -189,9 +277,15 @@ export async function POST(request) {
 
   let resolvedList;
   try {
-    resolvedList = await resolveSkillsFromGithub(repository, slug, skillPath, installAll);
+    if (/^lobehub\//i.test(repository)) {
+      resolvedList = await resolveLobeHubSkill(repository, body.name, body.description);
+    } else if (/^npm\//i.test(repository)) {
+      resolvedList = await resolveNpmSkill(repository, body.name, body.description);
+    } else {
+      resolvedList = await resolveSkillsFromGithub(repository, slug, skillPath, installAll);
+    }
   } catch (err) {
-    return json({ error: err?.message || "Could not load SKILL.md from GitHub" }, 400);
+    return json({ error: err?.message || "Could not load Skill content" }, 400);
   }
 
   const saved = [];

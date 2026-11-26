@@ -82,7 +82,7 @@ const CURATED_POPULAR_SKILLS = [
     slug: "remotion-best-practices",
     source: "remotion-dev/skills",
     description: "Build React-driven motion graphics, kinetic typography, and frame-accurate video compositions in Remotion.",
-    category: "frontend",
+    category: "media",
     author: "remotion-dev",
     stars: 11200,
     installs: 54000,
@@ -159,6 +159,10 @@ const SKILLS_SH_TOPICS = [
   "android", "flutter", "expo", "swift", "kotlin", "docs", "pdf", "excel", "slides",
   "data", "analytics", "seo", "marketing", "workflow", "debug", "refactor", "performance",
   "rust", "go", "java", "node", "vue", "svelte", "astro", "scrape", "browser", "cli",
+  "video", "remotion", "animation", "3d", "three", "webgl", "game", "unity", "shader",
+  "notion", "linear", "jira", "slack", "discord", "email", "calendar", "crm", "shopify",
+  "web3", "solana", "ethereum", "terraform", "linux", "bash", "nginx", "ci", "deploy",
+  "architecture", "review", "clean", "plan", "research", "writing", "copywriting", "brand",
 ];
 
 const AWESOME_README_URLS = [
@@ -171,18 +175,20 @@ const AWESOME_README_URLS = [
 ];
 
 const CATEGORY_RULES = [
-  { id: "frontend", rx: /\b(react|next\.?js|vue|svelte|angular|tailwind|css|html|frontend|ui component|shadcn|vite|astro|remotion|three\.?js|webgl)\b/i },
+  { id: "frontend", rx: /\b(react|next\.?js|vue|svelte|angular|tailwind|css|html|frontend|ui component|shadcn|vite|astro)\b/i },
+  { id: "media", rx: /\b(remotion|video|audio|animation|motion|three\.?js|webgl|shader|3d|ffmpeg|podcast|image|canvas)\b/i },
   { id: "backend", rx: /\b(api|backend|node\.?js|express|fastify|nestjs|django|fastapi|flask|go|golang|rust|graphql|rest|webhook|stripe|payment|auth|oauth|jwt|microservice)\b/i },
   { id: "ai", rx: /\b(ai|llm|agent|mcp|prompt|rag|embedding|vector|openai|claude|gemini|anthropic|langchain|langgraph|crewai|autogen|eval|fine-?tun)\b/i },
   { id: "database", rx: /\b(sql|postgres|postgresql|mysql|sqlite|supabase|prisma|drizzle|mongo|mongodb|redis|clickhouse|database|schema|migration|neon|planetscale)\b/i },
   { id: "devops", rx: /\b(docker|kubernetes|k8s|terraform|aws|gcp|azure|vercel|cloudflare|ci\/cd|github actions|deploy|linux|nginx|helm|ansible|devops|infra|cloud)\b/i },
   { id: "security", rx: /\b(security|audit|owasp|pentest|vuln|cve|ssrf|xss|csrf|encrypt|crypto|secret|compliance|soc2|rbac|rls|hardening)\b/i },
   { id: "testing", rx: /\b(test|testing|playwright|cypress|jest|vitest|pytest|qa|e2e|unit test|debug|debugging|tdd|benchmark|lint)\b/i },
-  { id: "design", rx: /\b(design|ux|figma|typography|color|brand|logo|wireframe|prototype|accessibility|a11y|animation|motion|glass|layout|illustration)\b/i },
+  { id: "design", rx: /\b(design|ux|figma|typography|color|brand|logo|wireframe|prototype|accessibility|a11y|glass|layout|illustration)\b/i },
   { id: "data", rx: /\b(data|analytics|pandas|numpy|dbt|spark|snowflake|bigquery|tableau|chart|visualization|etl|pipeline|ml|machine learning|jupyter|excel|csv)\b/i },
   { id: "mobile", rx: /\b(mobile|ios|android|swift|swiftui|kotlin|flutter|react native|expo|apk|xcode|capacitor)\b/i },
   { id: "docs", rx: /\b(doc|docs|documentation|readme|markdown|writing|copywriting|blog|changelog|technical writing|pdf|latex|slides|pptx|docx)\b/i },
-  { id: "marketing", rx: /\b(seo|marketing|growth|landing page|conversion|ads|social media|newsletter|email campaign|analytics|gtm|brand voice)\b/i },
+  { id: "marketing", rx: /\b(seo|marketing|growth|landing page|conversion|ads|social media|newsletter|email campaign|gtm|brand voice)\b/i },
+  { id: "web3", rx: /\b(web3|blockchain|solana|ethereum|solidity|smart contract|defi|wallet|nft)\b/i },
   { id: "automation", rx: /\b(automat|workflow|cron|scrape|scraping|crawler|browser|n8n|zapier|make\.com|slack bot|telegram|discord bot|cli|script)\b/i },
   { id: "productivity", rx: /\b(productivity|notion|linear|jira|calendar|email|gmail|meeting|summary|plan|planning|roadmap|project management|kanban|obsidian)\b/i },
 ];
@@ -216,13 +222,13 @@ function formatTitle(raw, fallback) {
 }
 
 async function fetchSkillsShSearch(q) {
-  const headers = { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/2.6" };
+  const headers = { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/2.7" };
   const queries = q ? [q] : SKILLS_SH_TOPICS;
   const rows = [];
-  const deadline = Date.now() + 8500;
+  const deadline = Date.now() + 10500;
 
-  for (let start = 0; start < queries.length && Date.now() < deadline; start += 18) {
-    const batch = queries.slice(start, start + 18);
+  for (let start = 0; start < queries.length && Date.now() < deadline; start += 22) {
+    const batch = queries.slice(start, start + 22);
     const settled = await Promise.allSettled(
       batch.map(async (term) => {
         const url = new URL("https://skills.sh/api/search");
@@ -247,17 +253,17 @@ async function fetchSkillsShSearch(q) {
         rows.push(...r.value);
       }
     }
-    if (rows.length >= 8500) break;
+    if (rows.length >= 14000) break;
   }
   return rows;
 }
 
 async function fetchSkillsDirectory(q) {
-  const totalPages = q ? 8 : 35;
+  const totalPages = q ? 10 : 45;
   const allRows = [];
-  const deadline = Date.now() + 8000;
-  for (let start = 0; start < totalPages && Date.now() < deadline; start += 12) {
-    const batch = Array.from({ length: Math.min(12, totalPages - start) }, (_, i) => start + i);
+  const deadline = Date.now() + 10000;
+  for (let start = 0; start < totalPages && Date.now() < deadline; start += 15) {
+    const batch = Array.from({ length: Math.min(15, totalPages - start) }, (_, i) => start + i);
     const settled = await Promise.allSettled(
       batch.map(async (page) => {
         const url = new URL("https://www.skillsdirectory.com/api/registry");
@@ -266,7 +272,7 @@ async function fetchSkillsDirectory(q) {
         url.searchParams.set("sort", "stars");
         if (q) url.searchParams.set("q", q);
         const res = await fetch(url, {
-          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/2.6" },
+          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/2.7" },
           next: { revalidate: q ? 900 : 3600 },
           signal: AbortSignal.timeout(5500),
         });
@@ -291,7 +297,7 @@ async function fetchAwesomeReadmes(q) {
   const settled = await Promise.allSettled(
     AWESOME_README_URLS.map(async (readmeUrl) => {
       const res = await fetch(readmeUrl, {
-        headers: { "user-agent": "DRIVE-Skills-Catalog/2.6" },
+        headers: { "user-agent": "DRIVE-Skills-Catalog/2.7" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(6000),
       });
@@ -373,7 +379,7 @@ export async function GET(request) {
       }
 
       const repoCount = perRepoCount.get(repoKey) || 0;
-      if (!bypassRepoCap && repoCount >= 35) return;
+      if (!bypassRepoCap && repoCount >= 50) return;
       perRepoCount.set(repoKey, repoCount + 1);
 
       const displayName = formatTitle(rawName, cleanRepo.split("/")[1]);
@@ -441,11 +447,11 @@ export async function GET(request) {
 
     const items = [...uniqueSkills.values()]
       .sort((a, b) => {
-        const scoreA = (a.verified ? 30000 : 0) + a.installs * 2 + a.stars;
-        const scoreB = (b.verified ? 30000 : 0) + b.installs * 2 + b.stars;
+        const scoreA = a.installs * 2 + a.stars;
+        const scoreB = b.installs * 2 + b.stars;
         return scoreB - scoreA;
       })
-      .slice(0, 5200);
+      .slice(0, 8200);
 
     const categoryCounts = {};
     for (const item of items) {
@@ -457,7 +463,7 @@ export async function GET(request) {
         items,
         count: items.length,
         totalRawSkills,
-        target: 5000,
+        target: 8000,
         categories: categoryCounts,
         source: "skills.sh + Skills Directory + Awesome Agent Skills",
         query: q || null,

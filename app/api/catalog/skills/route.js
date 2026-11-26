@@ -7,21 +7,23 @@ export const maxDuration = 60;
 const NPM_SEARCH_API = "https://registry.npmjs.org/-/v1/search";
 const LOBEHUB_AGENTS_INDEX = "https://chat-agents.lobehub.com/index.json";
 const HUGGINGFACE_SPACES_API = "https://huggingface.co/api/spaces";
+const HUGGINGFACE_DATASETS_API = "https://huggingface.co/api/datasets";
+const CRATES_IO_API = "https://crates.io/api/v1/crates";
+const DOCKER_HUB_API = "https://hub.docker.com/v2/search/repositories/";
 
-const TARGET_SKILLS_COUNT = 21500;
-const PER_CATEGORY_PASS1_CAP = 2400;
+const TARGET_SKILLS_COUNT = 22500;
+const PER_CATEGORY_PASS1_CAP = 2500;
 
-const JUNK_SKILL_RX = /^(test|demo|hello[-_]?world|example|sample|foo|bar|tmp)[-_0-9]*$/i;
+const JUNK_SKILL_RX = /^(test|demo|hello[-_]?world|example|sample|foo|bar|tmp|temp)[-_0-9]*$/i;
 
 const CURATED_POPULAR_SKILLS = [
   {
     id: "vercel-labs/agent-skills/react-best-practices",
-    name: "React & Next.js Best Practices",
+    name: "React Best Practices",
     slug: "react-best-practices",
     source: "vercel-labs/agent-skills",
-    description: "Official Vercel engineering guidelines for React Server Components, App Router caching, and zero-waterfall performance.",
     category: "frontend",
-    author: "vercel-labs",
+    description: "Official Vercel React & Next.js performance, Server Components, and rendering guidelines.",
     stars: 18500,
     installs: 120000,
     verified: true,
@@ -29,12 +31,11 @@ const CURATED_POPULAR_SKILLS = [
   },
   {
     id: "vercel-labs/agent-skills/web-design-guidelines",
-    name: "Web Design & Accessibility Guidelines",
+    name: "Web Design Guidelines",
     slug: "web-design-guidelines",
     source: "vercel-labs/agent-skills",
-    description: "Audits UI hierarchy, keyboard navigation, contrast, responsive spacing, and layout polish across web apps.",
     category: "design",
-    author: "vercel-labs",
+    description: "Audit UI accessibility, spacing, typography, dark mode, and interaction polish.",
     stars: 16200,
     installs: 98000,
     verified: true,
@@ -42,12 +43,11 @@ const CURATED_POPULAR_SKILLS = [
   },
   {
     id: "anthropics/skills/frontend-design",
-    name: "Frontend Design System Architect",
+    name: "Frontend Design",
     slug: "frontend-design",
     source: "anthropics/skills",
-    description: "Official Anthropic skill for crafting distinctive, production-grade UI layouts, typography, and micro-interactions.",
     category: "design",
-    author: "anthropics",
+    description: "Official Anthropic skill for production-grade, distinctive web interfaces and design systems.",
     stars: 24000,
     installs: 145000,
     verified: true,
@@ -55,12 +55,11 @@ const CURATED_POPULAR_SKILLS = [
   },
   {
     id: "anthropics/skills/mcp-builder",
-    name: "MCP Server Builder",
+    name: "MCP Builder",
     slug: "mcp-builder",
     source: "anthropics/skills",
-    description: "Step-by-step workflow to design, build, test, and harden Model Context Protocol servers in TypeScript and Python.",
     category: "ai",
-    author: "anthropics",
+    description: "Build, test, and harden high-quality Model Context Protocol servers in TypeScript or Python.",
     stars: 22400,
     installs: 110000,
     verified: true,
@@ -68,12 +67,11 @@ const CURATED_POPULAR_SKILLS = [
   },
   {
     id: "anthropics/skills/webapp-testing",
-    name: "Playwright WebApp Testing",
+    name: "Webapp Testing",
     slug: "webapp-testing",
     source: "anthropics/skills",
-    description: "Automated end-to-end browser verification, console log capture, and visual regression testing with Playwright.",
     category: "testing",
-    author: "anthropics",
+    description: "Automated Playwright end-to-end verification, visual checks, and regression testing.",
     stars: 19500,
     installs: 88000,
     verified: true,
@@ -81,12 +79,11 @@ const CURATED_POPULAR_SKILLS = [
   },
   {
     id: "supabase/agent-skills/supabase-postgres-best-practices",
-    name: "Supabase & Postgres Best Practices",
+    name: "Supabase Postgres Best Practices",
     slug: "supabase-postgres-best-practices",
     source: "supabase/agent-skills",
-    description: "Official Supabase guide for Row Level Security (RLS), indexing, schema migrations, and Edge Functions.",
     category: "database",
-    author: "supabase",
+    description: "Official Supabase RLS policies, indexing, query optimization, and Edge Functions guide.",
     stars: 14800,
     installs: 76000,
     verified: true,
@@ -94,12 +91,11 @@ const CURATED_POPULAR_SKILLS = [
   },
   {
     id: "remotion-dev/skills/remotion-best-practices",
-    name: "Remotion Programmatic Video",
+    name: "Remotion Best Practices",
     slug: "remotion-best-practices",
     source: "remotion-dev/skills",
-    description: "Build React-driven motion graphics, kinetic typography, and frame-accurate video compositions in Remotion.",
     category: "media",
-    author: "remotion-dev",
+    description: "Official Remotion programmatic video rendering, spring physics, audio, and captions.",
     stars: 11200,
     installs: 54000,
     verified: true,
@@ -107,12 +103,11 @@ const CURATED_POPULAR_SKILLS = [
   },
   {
     id: "expo/skills/building-native-ui",
-    name: "Expo & React Native UI",
+    name: "Expo Native UI",
     slug: "building-native-ui",
     source: "expo/skills",
-    description: "Official Expo Router, native gestures, safe-area layout, and 60fps animations for iOS and Android apps.",
     category: "mobile",
-    author: "expo",
+    description: "Official Expo React Native navigation, gestures, animations, and iOS/Android native UI.",
     stars: 10400,
     installs: 49000,
     verified: true,
@@ -120,12 +115,11 @@ const CURATED_POPULAR_SKILLS = [
   },
   {
     id: "cloudflare/skills/workers-best-practices",
-    name: "Cloudflare Workers & Edge API",
+    name: "Cloudflare Workers Best Practices",
     slug: "workers-best-practices",
     source: "cloudflare/skills",
-    description: "Edge routing, D1/KV/R2 storage patterns, Durable Objects, and zero-cold-start Workers architecture.",
     category: "devops",
-    author: "cloudflare",
+    description: "Official Cloudflare Workers, Durable Objects, R2, D1, and edge caching patterns.",
     stars: 9800,
     installs: 46000,
     verified: true,
@@ -133,12 +127,11 @@ const CURATED_POPULAR_SKILLS = [
   },
   {
     id: "stripe/ai/stripe-best-practices",
-    name: "Stripe Payments & Webhooks",
+    name: "Stripe Payments Best Practices",
     slug: "stripe-best-practices",
     source: "stripe/ai",
-    description: "Secure Checkout, Subscriptions, webhook signature verification, and idempotent billing workflows.",
     category: "backend",
-    author: "stripe",
+    description: "Official Stripe Checkout, webhooks, idempotency, subscriptions, and billing security.",
     stars: 12100,
     installs: 61000,
     verified: true,
@@ -146,12 +139,11 @@ const CURATED_POPULAR_SKILLS = [
   },
   {
     id: "trailofbits/skills/security-audit",
-    name: "Security & Vulnerability Audit",
+    name: "Trail of Bits Security Audit",
     slug: "security-audit",
     source: "trailofbits/skills",
-    description: "Systematic threat modeling, OWASP checks, auth boundary auditing, and SSRF/injection hardening.",
     category: "security",
-    author: "trailofbits",
+    description: "Deep static analysis, OWASP checks, auth bypass auditing, and smart contract security.",
     stars: 13200,
     installs: 52000,
     verified: true,
@@ -159,12 +151,11 @@ const CURATED_POPULAR_SKILLS = [
   },
   {
     id: "obra/superpowers/systematic-debugging",
-    name: "Systematic Debugging & Root Cause",
+    name: "Systematic Debugging",
     slug: "systematic-debugging",
     source: "obra/superpowers",
-    description: "Evidence-first debugging protocol: reproduce, isolate root cause, write regression test, then patch cleanly.",
     category: "testing",
-    author: "obra",
+    description: "Root-cause debugging workflow with hypothesis testing, minimal repros, and regression guards.",
     stars: 15600,
     installs: 74000,
     verified: true,
@@ -172,49 +163,29 @@ const CURATED_POPULAR_SKILLS = [
   },
 ];
 
-// 220+ high-signal useful topics evenly distributed across all 16 categories
 const SKILLS_SH_TOPICS = [
-  // Frontend & UI
   "react", "next", "vue", "nuxt", "svelte", "angular", "astro", "remix", "solid", "tailwind", "shadcn", "radix", "css", "vite", "webpack",
-  // Backend & API
   "node", "express", "fastify", "nestjs", "fastapi", "django", "flask", "rails", "laravel", "spring", "golang", "rust", "graphql", "trpc", "grpc", "openapi", "stripe", "webhook", "auth", "oauth",
-  // AI & Agents
   "ai", "agent", "mcp", "llm", "prompt", "rag", "vector", "embedding", "eval", "langchain", "llamaindex", "crewai", "autogen", "openai", "claude", "gemini", "ollama", "vllm", "huggingface", "pydantic",
-  // Database & SQL
   "sql", "postgres", "mysql", "sqlite", "supabase", "prisma", "drizzle", "mongodb", "redis", "neon", "clickhouse", "firebase", "duckdb", "neo4j", "qdrant", "pinecone", "convex", "turso",
-  // DevOps & Cloud
   "docker", "kubernetes", "helm", "aws", "lambda", "azure", "gcp", "cloudflare", "vercel", "netlify", "terraform", "pulumi", "ansible", "linux", "nginx", "ci", "deploy", "grafana", "prometheus", "sentry", "datadog",
-  // Security & Audit
   "security", "audit", "owasp", "pentest", "encryption", "compliance", "vulnerability", "snyk", "trivy", "semgrep", "vault", "keycloak", "clerk", "auth0",
-  // Testing & QA
   "test", "playwright", "cypress", "puppeteer", "selenium", "vitest", "jest", "pytest", "debug", "tdd", "qa", "benchmark", "k6", "storybook",
-  // Design & UX
   "design", "ui", "ux", "figma", "accessibility", "typography", "svg", "framer", "webflow", "branding", "wireframe", "excalidraw", "mermaid", "diagram",
-  // Media & 3D
   "video", "remotion", "animation", "3d", "three", "webgl", "blender", "audio", "image", "voice", "whisper", "ffmpeg", "game", "unity", "godot", "shader", "comfyui",
-  // Data & Analytics
   "data", "analytics", "pandas", "dbt", "snowflake", "bigquery", "airflow", "kafka", "chart", "dashboard", "excel", "csv", "posthog", "ml", "pytorch", "jupyter",
-  // Mobile & Native
   "mobile", "ios", "android", "flutter", "expo", "swift", "swiftui", "kotlin", "react-native", "capacitor", "tauri", "electron",
-  // Docs & Writing
   "docs", "pdf", "docx", "pptx", "markdown", "mdx", "latex", "slides", "writing", "copywriting", "readme", "changelog", "research", "academic", "translation", "blog",
-  // Marketing & SEO
   "seo", "marketing", "growth", "landing", "saas", "pricing", "onboarding", "newsletter", "ads", "hubspot", "salesforce", "ecommerce", "shopify", "pitch",
-  // Web3 & Crypto
   "web3", "solana", "ethereum", "solidity", "foundry", "hardhat", "defi", "wallet", "blockchain", "wagmi",
-  // Automation & Scraping
   "workflow", "automation", "scrape", "browser", "cron", "queue", "cli", "n8n", "zapier", "telegram", "whatsapp", "twilio", "resend", "apify", "firecrawl",
-  // Productivity & Ops
   "productivity", "notion", "linear", "jira", "confluence", "asana", "trello", "slack", "discord", "email", "gmail", "calendar", "obsidian", "airtable", "crm", "startup", "finance", "accounting", "interview",
 ];
 
 const AWESOME_README_URLS = [
   "https://raw.githubusercontent.com/VoltAgent/awesome-agent-skills/main/README.md",
-  "https://raw.githubusercontent.com/hotskillsdev/awesome-agent-skills/main/README.md",
-  "https://raw.githubusercontent.com/ComposioHQ/awesome-claude-skills/master/README.md",
-  "https://raw.githubusercontent.com/karanb192/awesome-claude-skills/main/README.md",
-  "https://raw.githubusercontent.com/skillmatic-ai/awesome-agent-skills/main/README.md",
   "https://raw.githubusercontent.com/heilcheng/awesome-agent-skills/main/README.md",
+  "https://raw.githubusercontent.com/travisvn/awesome-claude-skills/main/README.md",
 ];
 
 const CATEGORY_RULES = [
@@ -225,7 +196,7 @@ const CATEGORY_RULES = [
   { id: "security", rx: /\b(security|audit|owasp|pentest|vuln|cve|ssrf|xss|csrf|encrypt|secret|compliance|soc2|rbac|rls|hardening|cybersecurity|snyk|trivy|semgrep|vault|keycloak|clerk|auth0)\b/i },
   { id: "testing", rx: /\b(test|testing|playwright|cypress|puppeteer|selenium|jest|vitest|pytest|qa|e2e|unit test|debug|debugging|tdd|benchmark|lint|k6|storybook)\b/i },
   { id: "design", rx: /\b(design|ux|figma|typography|color|brand|logo|wireframe|prototype|accessibility|a11y|glass|layout|illustration|sketch|ppt|powerpoint|webflow|excalidraw|mermaid|svg)\b/i },
-  { id: "data", rx: /\b(data|analytics|pandas|numpy|dbt|spark|snowflake|bigquery|tableau|chart|visualization|etl|pipeline|ml|machine learning|pytorch|jupyter|excel|csv|posthog|airflow|kafka)\b/i },
+  { id: "data", rx: /\b(data|analytics|pandas|numpy|dbt|spark|snowflake|bigquery|tableau|chart|visualization|etl|pipeline|ml|machine learning|pytorch|jupyter|excel|csv|posthog|airflow|kafka|dataset)\b/i },
   { id: "mobile", rx: /\b(mobile|ios|android|swift|swiftui|kotlin|flutter|react native|expo|apk|xcode|capacitor|tauri|electron)\b/i },
   { id: "web3", rx: /\b(web3|blockchain|solana|ethereum|solidity|smart contract|defi|wallet|nft|crypto|foundry|hardhat|wagmi)\b/i },
   { id: "marketing", rx: /\b(seo|marketing|growth|landing page|conversion|ads|social media|newsletter|email campaign|gtm|brand voice|sales|ecommerce|amazon|shopify|pitch|hubspot|salesforce)\b/i },
@@ -264,7 +235,7 @@ function classifySkillCategory(rawCategory, text) {
     if (clean.includes("dev") || clean.includes("code") || clean.includes("eng")) return "backend";
     return clean;
   }
-  return "productivity";
+  return "ai";
 }
 
 function cleanDescription(raw, fallback) {
@@ -278,17 +249,15 @@ function cleanDescription(raw, fallback) {
 
 function formatTitle(raw, fallback) {
   const base = String(raw || fallback || "Agent Skill").trim();
-  if (!base) return "Agent Skill";
-  if (/[A-Z]/.test(base) && base.includes(" ")) return base;
   return base.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 // Non-GitHub Source 1: skills.sh search across 220+ balanced topics
 async function fetchSkillsShSearch(q) {
-  const headers = { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.1" };
+  const headers = { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.2" };
   const queries = q ? [q] : SKILLS_SH_TOPICS;
   const rows = [];
-  const deadline = Date.now() + 17500;
+  const deadline = Date.now() + 18000;
 
   for (let start = 0; start < queries.length && Date.now() < deadline; start += 40) {
     const batch = queries.slice(start, start + 40);
@@ -323,7 +292,7 @@ async function fetchSkillsShSearch(q) {
 async function fetchSkillsDirectory(q) {
   const totalPages = q ? 12 : 95;
   const allRows = [];
-  const deadline = Date.now() + 16000;
+  const deadline = Date.now() + 16500;
   for (let start = 0; start < totalPages && Date.now() < deadline; start += 24) {
     const batch = Array.from({ length: Math.min(24, totalPages - start) }, (_, i) => start + i);
     const settled = await Promise.allSettled(
@@ -334,7 +303,7 @@ async function fetchSkillsDirectory(q) {
         url.searchParams.set("sort", "stars");
         if (q) url.searchParams.set("q", q);
         const res = await fetch(url, {
-          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.1" },
+          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.2" },
           next: { revalidate: q ? 900 : 3600 },
           signal: AbortSignal.timeout(5000),
         });
@@ -354,7 +323,7 @@ async function fetchSkillsDirectory(q) {
 async function fetchLobeHubSkills(q) {
   try {
     const res = await fetch(LOBEHUB_AGENTS_INDEX, {
-      headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.1" },
+      headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.2" },
       next: { revalidate: 3600 },
       signal: AbortSignal.timeout(7000),
     });
@@ -391,10 +360,11 @@ async function fetchLobeHubSkills(q) {
   }
 }
 
-// Non-GitHub Source 4: Hugging Face Top AI Spaces & Workflow Skills (sorted by likes!)
+// Non-GitHub Source 4: Hugging Face Top AI Spaces & Workflow Skills
 const HF_SPACE_TOPICS = [
   "agent", "rag", "coding", "image", "video", "audio", "tts", "ocr",
   "pdf", "sql", "design", "translation", "security", "search", "chat", "finance",
+  "3d", "music", "vision", "markdown", "analytics", "resume", "marketing", "medical",
 ];
 
 async function fetchHuggingFaceSkills(q) {
@@ -407,7 +377,7 @@ async function fetchHuggingFaceSkills(q) {
       url.searchParams.set("direction", "-1");
       url.searchParams.set("limit", "100");
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.1" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.2" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(5500),
       });
@@ -424,7 +394,7 @@ async function fetchHuggingFaceSkills(q) {
       const id = String(sp?.id || "").trim();
       if (!id || !id.includes("/")) continue;
       const likes = Number(sp.likes || 0);
-      if (likes < 5) continue;
+      if (likes < 3) continue;
       const rawName = id.split("/")[1] || id;
       const tags = Array.isArray(sp.tags) ? sp.tags.slice(0, 6).join(", ") : "";
       out.push({
@@ -446,7 +416,170 @@ async function fetchHuggingFaceSkills(q) {
   return out;
 }
 
-// Non-GitHub Source 5: npm Public Registry — 64 high-signal useful AI/Agent/Skill/Tool queries!
+// Non-GitHub Source 5: Hugging Face Top Prompt, Eval & Instruction Datasets
+const HF_DATASET_TOPICS = [
+  "prompt", "instruction", "agent", "code", "sql", "math", "reasoning", "eval",
+  "finance", "security", "medical", "legal", "translation", "vision", "audio", "rag",
+  "function-calling", "benchmark",
+];
+
+async function fetchHuggingFaceDatasets(q) {
+  const queries = q ? [q] : HF_DATASET_TOPICS;
+  const settled = await Promise.allSettled(
+    queries.map(async (term) => {
+      const url = new URL(HUGGINGFACE_DATASETS_API);
+      url.searchParams.set("search", term);
+      url.searchParams.set("sort", "likes");
+      url.searchParams.set("direction", "-1");
+      url.searchParams.set("limit", "100");
+      const res = await fetch(url, {
+        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.2" },
+        next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(5500),
+      });
+      if (!res.ok) return [];
+      const arr = await res.json();
+      return Array.isArray(arr) ? arr : [];
+    })
+  );
+
+  const out = [];
+  for (const r of settled) {
+    if (r.status !== "fulfilled") continue;
+    for (const ds of r.value) {
+      const id = String(ds?.id || "").trim();
+      if (!id) continue;
+      const likes = Number(ds.likes || 0);
+      if (likes < 5) continue;
+      const rawName = id.includes("/") ? id.split("/")[1] : id;
+      const downloads = Number(ds.downloads || 0);
+      out.push({
+        repository: `hf-dataset/${id}`,
+        name: rawName,
+        slug: rawName.toLowerCase().replace(/[^a-z0-9-]+/g, "-"),
+        description:
+          ds.description?.slice(0, 180) ||
+          `Hugging Face AI benchmark & knowledge dataset (${likes.toLocaleString()} likes · ${downloads.toLocaleString()} downloads).`,
+        author: id.includes("/") ? id.split("/")[0] : "huggingface",
+        stars: likes,
+        installs: Math.min(5000, Math.round(Math.sqrt(downloads) * 2) + likes),
+        verified: likes >= 80,
+        sourceLabel: "HF Datasets",
+        installUrl: `https://huggingface.co/datasets/${id}`,
+      });
+    }
+  }
+  return out;
+}
+
+// Non-GitHub Source 6: Crates.io Rust AI, CLI, Security & Automation Workflow Tools
+const CRATES_SKILL_TOPICS = [
+  "ai-agent", "llm", "prompt", "cli-tool", "security-audit", "sql-migrate",
+  "web-scraper", "markdown", "pdf", "docker", "kubernetes", "benchmark",
+  "formatter", "linter",
+];
+
+async function fetchCratesIoSkills(q) {
+  const queries = q ? [q] : CRATES_SKILL_TOPICS;
+  const settled = await Promise.allSettled(
+    queries.map(async (term) => {
+      const url = new URL(CRATES_IO_API);
+      url.searchParams.set("q", term);
+      url.searchParams.set("per_page", "100");
+      url.searchParams.set("sort", "downloads");
+      const res = await fetch(url, {
+        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.2 (https://drive-mcp-five.vercel.app)" },
+        next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(5500),
+      });
+      if (!res.ok) return [];
+      const payload = await res.json();
+      return Array.isArray(payload?.crates) ? payload.crates : [];
+    })
+  );
+
+  const out = [];
+  for (const r of settled) {
+    if (r.status !== "fulfilled") continue;
+    for (const c of r.value) {
+      const name = String(c?.name || "").trim();
+      if (!name || JUNK_SKILL_RX.test(name)) continue;
+      const downloads = Number(c.downloads || 0);
+      if (downloads < 500) continue;
+      const score = Math.min(4000, Math.round(Math.sqrt(downloads) * 2));
+      out.push({
+        repository: `crates/${name}`,
+        name,
+        slug: name.toLowerCase().replace(/[^a-z0-9-]+/g, "-"),
+        description: c.description || `Rust developer workflow & CLI tool (${downloads.toLocaleString()} downloads).`,
+        author: "crates.io",
+        stars: score,
+        installs: score,
+        verified: downloads >= 50000,
+        sourceLabel: "Crates.io",
+        installUrl: c.homepage || c.repository || `https://crates.io/crates/${name}`,
+      });
+    }
+  }
+  return out;
+}
+
+// Non-GitHub Source 7: Docker Hub AI, DevOps & Automation Workflow Images
+const DOCKER_SKILL_TOPICS = [
+  "ai-agent", "llm", "ollama", "n8n", "playwright", "security-scanner",
+  "postgres", "grafana", "prometheus", "terraform", "ffmpeg", "pdf",
+  "airflow", "jupyter",
+];
+
+async function fetchDockerHubSkills(q) {
+  const queries = q ? [q] : DOCKER_SKILL_TOPICS;
+  const settled = await Promise.allSettled(
+    queries.map(async (term) => {
+      const url = new URL(DOCKER_HUB_API);
+      url.searchParams.set("query", term);
+      url.searchParams.set("page_size", "100");
+      const res = await fetch(url, {
+        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.2" },
+        next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(5500),
+      });
+      if (!res.ok) return [];
+      const payload = await res.json();
+      return Array.isArray(payload?.results) ? payload.results : [];
+    })
+  );
+
+  const out = [];
+  for (const r of settled) {
+    if (r.status !== "fulfilled") continue;
+    for (const repo of r.value) {
+      const name = String(repo?.repo_name || "").trim();
+      if (!name) continue;
+      const shortName = name.split("/")[1] || name;
+      if (JUNK_SKILL_RX.test(shortName)) continue;
+      const pulls = Number(repo.pull_count || 0);
+      if (pulls < 500) continue;
+      const score = Math.min(3500, Math.max(Number(repo.star_count || 0) * 5, Math.round(Math.sqrt(pulls))));
+      out.push({
+        repository: `docker/${name}`,
+        name: shortName,
+        slug: name.toLowerCase().replace(/[^a-z0-9-]+/g, "-"),
+        description:
+          repo.short_description ||
+          `Containerized AI/DevOps workflow image on Docker Hub (${pulls.toLocaleString()} pulls).`,
+        author: name.includes("/") ? name.split("/")[0] : "docker",
+        stars: score,
+        installs: score,
+        verified: Boolean(repo.is_official) || pulls >= 100000,
+        sourceLabel: "Docker Hub",
+        installUrl: `https://hub.docker.com/r/${name}`,
+      });
+    }
+  }
+  return out;
+}
+
+// Non-GitHub Source 8: npm Public Registry — 96 high-signal useful AI/Agent/Skill/Workflow queries
 const NPM_BALANCED_SKILL_QUERIES = [
   "agent-skill", "claude-skill", "codex-skill", "cursor-rules",
   "ai-agent-skills", "skill-md", "copilot-instructions", "windsurf-rules",
@@ -464,6 +597,14 @@ const NPM_BALANCED_SKILL_QUERIES = [
   "seo-optimizer", "sitemap-generator", "markdown-parser", "pdf-generator",
   "docx-generator", "excel-parser", "web-scraper", "crawler-agent",
   "slack-bot", "discord-bot", "telegram-bot", "stripe-webhook",
+  "remotion-video", "threejs-component", "ffmpeg-wrapper", "audio-transcribe",
+  "react-native-ui", "expo-plugin", "flutter-cli", "capacitor-plugin",
+  "solidity-audit", "solana-sdk", "wagmi-plugin", "viem-utils",
+  "graphql-codegen", "openapi-generator", "trpc-router", "zod-schema",
+  "analytics-sdk", "posthog-plugin", "opentelemetry-sdk", "sentry-plugin",
+  "notion-sdk", "linear-sdk", "jira-client", "obsidian-plugin",
+  "shopify-app", "hubspot-client", "resend-email", "twilio-sdk",
+  "n8n-nodes", "cron-scheduler", "bullmq-worker", "i18n-translator",
 ];
 
 async function fetchNpmSkillPackages(q) {
@@ -471,14 +612,14 @@ async function fetchNpmSkillPackages(q) {
   const requests = [];
   for (let idx = 0; idx < queries.length; idx += 1) {
     const text = queries[idx];
-    const offsets = q ? [0, 250] : idx < 16 ? [0, 250, 500] : [0, 250];
+    const offsets = q ? [0, 250] : idx < 24 ? [0, 250, 500] : [0, 250];
     for (const from of offsets) requests.push({ text, from });
   }
 
   const parsed = [];
-  const deadline = Date.now() + 17000;
-  for (let start = 0; start < requests.length && Date.now() < deadline; start += 30) {
-    const batch = requests.slice(start, start + 30);
+  const deadline = Date.now() + 18500;
+  for (let start = 0; start < requests.length && Date.now() < deadline; start += 36) {
+    const batch = requests.slice(start, start + 36);
     const settled = await Promise.allSettled(
       batch.map(async ({ text, from }) => {
         const url = new URL(NPM_SEARCH_API);
@@ -486,7 +627,7 @@ async function fetchNpmSkillPackages(q) {
         url.searchParams.set("size", "250");
         url.searchParams.set("from", String(from));
         const res = await fetch(url, {
-          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.1" },
+          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.2" },
           next: { revalidate: 3600 },
           signal: AbortSignal.timeout(5000),
         });
@@ -523,25 +664,25 @@ async function fetchNpmSkillPackages(q) {
   return parsed;
 }
 
-// Source 6: Curated Awesome Agent Skills Lists
+// Source 9: Curated Awesome Agent Skills Lists
 async function fetchAwesomeReadmes(q) {
   const settled = await Promise.allSettled(
     AWESOME_README_URLS.map(async (readmeUrl) => {
       const res = await fetch(readmeUrl, {
-        headers: { "user-agent": "DRIVE-Skills-Catalog/4.1" },
+        headers: { "user-agent": "DRIVE-Skills-Catalog/4.2" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(6000),
       });
       if (!res.ok) return [];
       const md = await res.text();
       const parsed = [];
-      const rx = /\[([^\]]{2,80})\]\((https:\/\/github\.com\/([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)(?:\/[^\s)]*)?)\)\s*(?:[-–—:]\s*([^\n]{5,240}))?/g;
-      let m;
-      while ((m = rx.exec(md)) !== null) {
-        const name = m[1].replace(/[`*_]/g, "").trim();
-        const repo = m[3].trim();
-        const desc = (m[4] || "").replace(/[`*_]/g, "").trim();
-        if (!name || !repo || /^https?:/i.test(name)) continue;
+      const rx = /-\s*\[([^\]]+)\]\(https?:\/\/github\.com\/([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)[^)]*\)\s*(?:[-–—:]\s*(.+))?/g;
+      let match;
+      while ((match = rx.exec(md)) !== null) {
+        const name = match[1].trim();
+        const repo = match[2].replace(/\.git$/i, "").trim();
+        const desc = (match[3] || "").trim();
+        if (!name || !repo) continue;
         if (q && !`${name} ${repo} ${desc}`.toLowerCase().includes(q)) continue;
         parsed.push({
           repository: repo,
@@ -594,19 +735,26 @@ export async function GET(request) {
   const q = (searchParams.get("q") || "").trim().slice(0, 100).toLowerCase();
 
   try {
-    const [shRes, dirRes, lobeRes, hfRes, npmRes, awesomeRes] = await Promise.allSettled([
-      fetchSkillsShSearch(q),
-      fetchSkillsDirectory(q),
-      fetchLobeHubSkills(q),
-      fetchHuggingFaceSkills(q),
-      fetchNpmSkillPackages(q),
-      fetchAwesomeReadmes(q),
-    ]);
+    const [shRes, dirRes, lobeRes, hfRes, hfDsRes, cratesRes, dockerRes, npmRes, awesomeRes] =
+      await Promise.allSettled([
+        fetchSkillsShSearch(q),
+        fetchSkillsDirectory(q),
+        fetchLobeHubSkills(q),
+        fetchHuggingFaceSkills(q),
+        fetchHuggingFaceDatasets(q),
+        fetchCratesIoSkills(q),
+        fetchDockerHubSkills(q),
+        fetchNpmSkillPackages(q),
+        fetchAwesomeReadmes(q),
+      ]);
 
     const shRows = shRes.status === "fulfilled" ? shRes.value : [];
     const dirRows = dirRes.status === "fulfilled" ? dirRes.value : [];
     const lobeRows = lobeRes.status === "fulfilled" ? lobeRes.value : [];
     const hfRows = hfRes.status === "fulfilled" ? hfRes.value : [];
+    const hfDsRows = hfDsRes.status === "fulfilled" ? hfDsRes.value : [];
+    const cratesRows = cratesRes.status === "fulfilled" ? cratesRes.value : [];
+    const dockerRows = dockerRes.status === "fulfilled" ? dockerRes.value : [];
     const npmRows = npmRes.status === "fulfilled" ? npmRes.value : [];
     const awesomeRows = awesomeRes.status === "fulfilled" ? awesomeRes.value : [];
 
@@ -625,13 +773,13 @@ export async function GET(request) {
       totalRawSkills += 1;
       const slug = String(item.slug || item.skillId || rawName)
         .toLowerCase()
-        .replace(/[^a-z0-9-]+/g, "-")
-        .replace(/^-|-$/g, "");
+        .replace(/[^a-z0-9._-]+/g, "-")
+        .replace(/^-+|-+$/g, "");
       const repoKey = cleanRepo.toLowerCase();
       const skillKey = `${repoKey}/${slug || rawName.toLowerCase()}`;
 
-      const existing = uniqueSkills.get(skillKey);
-      if (existing) {
+      if (uniqueSkills.has(skillKey)) {
+        const existing = uniqueSkills.get(skillKey);
         if (Number(item.stars || 0) > existing.stars) existing.stars = Number(item.stars || 0);
         if (Number(item.installs || 0) > existing.installs) existing.installs = Number(item.installs || 0);
         if (item.verified) existing.verified = true;
@@ -643,7 +791,7 @@ export async function GET(request) {
       }
 
       const repoCount = perRepoCount.get(repoKey) || 0;
-      if (!bypassRepoCap && repoCount >= 45) return;
+      if (!bypassRepoCap && repoCount >= 55) return;
       perRepoCount.set(repoKey, repoCount + 1);
 
       const displayName = formatTitle(rawName, cleanRepo.split("/")[1]);
@@ -660,6 +808,12 @@ export async function GET(request) {
         ? `https://lobehub.com/discover/assistant/${cleanRepo.slice(8)}`
         : cleanRepo.startsWith("huggingface/")
         ? `https://huggingface.co/spaces/${cleanRepo.slice(12)}`
+        : cleanRepo.startsWith("hf-dataset/")
+        ? `https://huggingface.co/datasets/${cleanRepo.slice(11)}`
+        : cleanRepo.startsWith("crates/")
+        ? `https://crates.io/crates/${cleanRepo.slice(7)}`
+        : cleanRepo.startsWith("docker/")
+        ? `https://hub.docker.com/r/${cleanRepo.slice(7)}`
         : `https://github.com/${cleanRepo}`;
       const targetUrl = item.installUrl || defaultUrl;
 
@@ -676,6 +830,12 @@ export async function GET(request) {
             ? "LobeHub"
             : cleanRepo.startsWith("huggingface/")
             ? "HuggingFace"
+            : cleanRepo.startsWith("hf-dataset/")
+            ? "HF Datasets"
+            : cleanRepo.startsWith("crates/")
+            ? "Crates.io"
+            : cleanRepo.startsWith("docker/")
+            ? "Docker Hub"
             : "skills.sh"),
         description: desc,
         category,
@@ -689,8 +849,12 @@ export async function GET(request) {
           ? "npm"
           : cleanRepo.startsWith("lobehub/")
           ? "lobehub"
-          : cleanRepo.startsWith("huggingface/")
+          : cleanRepo.startsWith("huggingface/") || cleanRepo.startsWith("hf-dataset/")
           ? "huggingface"
+          : cleanRepo.startsWith("crates/")
+          ? "crates"
+          : cleanRepo.startsWith("docker/")
+          ? "docker"
           : "registry",
         skillCount: 1,
       });
@@ -702,7 +866,8 @@ export async function GET(request) {
     }
 
     for (const item of shRows) {
-      upsert(item.source || item.topSource || item.repository, {
+      const repo = item.source || item.topSource || item.repository || "";
+      upsert(repo, {
         name: item.name || item.skillId,
         slug: item.skillId || item.slug || item.name,
         description: item.description || "",
@@ -715,12 +880,12 @@ export async function GET(request) {
     }
 
     for (const item of dirRows) {
-      upsert(item.repository || item.source, {
-        name: item.name,
-        slug: item.slug,
+      upsert(item.repository || "", {
+        name: item.name || item.slug,
+        slug: item.slug || item.name,
         description: item.description || "",
         category: item.category || "",
-        author: item.author,
+        author: item.author || null,
         stars: item.stars || 0,
         installs: item.installs || 0,
         verified: Boolean(item.verified) || Number(item.stars || 0) >= 300,
@@ -729,21 +894,13 @@ export async function GET(request) {
       });
     }
 
-    for (const item of lobeRows) {
-      upsert(item.repository, item, true);
-    }
-
-    for (const item of hfRows) {
-      upsert(item.repository, item, true);
-    }
-
-    for (const item of npmRows) {
-      upsert(item.repository, item);
-    }
-
-    for (const item of awesomeRows) {
-      upsert(item.repository, item);
-    }
+    for (const item of lobeRows) upsert(item.repository, item, true);
+    for (const item of hfRows) upsert(item.repository, item, true);
+    for (const item of hfDsRows) upsert(item.repository, item, true);
+    for (const item of cratesRows) upsert(item.repository, item, true);
+    for (const item of dockerRows) upsert(item.repository, item, true);
+    for (const item of npmRows) upsert(item.repository, item);
+    for (const item of awesomeRows) upsert(item.repository, item);
 
     const sorted = [...uniqueSkills.values()].sort((a, b) => {
       const scoreA = a.installs * 2 + a.stars;
@@ -765,7 +922,7 @@ export async function GET(request) {
         totalRawSkills,
         target: 20000,
         categories: categoryCounts,
-        source: "skills.sh + SkillsDirectory + LobeHub + HuggingFace + npm + Curated",
+        source: "skills.sh + SkillsDirectory + LobeHub + HuggingFace + HF Datasets + Crates.io + Docker Hub + npm + Curated",
         query: q || null,
       },
       {

@@ -1,47 +1,226 @@
-/* DRIVE MCP — Unified iOS Liquid Glass Theme, Calibrated Lens Bubble & Tactile Motion */
+/* DRIVE MCP — App-First Cupertino Liquid Glass (Zero Landing-Page Bloat, Zero Acid Green) */
 
 :root {
   --drive-glass-bg: #060a12;
   --drive-glass-blue: #0a84ff;
   --drive-glass-ice: #5ac8fa;
   --drive-glass-crystal: rgba(255, 255, 255, 0.14);
-  --drive-glass-border: rgba(255, 255, 255, 0.16);
-  --drive-glass-specular: rgba(255, 255, 255, 0.34);
+  --drive-glass-border: rgba(255, 255, 255, 0.15);
   --drive-spring: cubic-bezier(0.22, 1, 0.36, 1);
   --drive-spring-pop: cubic-bezier(0.22, 1.15, 0.36, 1);
+  --lime: #5ac8fa !important;
+  --accent: #0a84ff !important;
+  --accent-soft: rgba(10, 132, 255, 0.18) !important;
 }
 
 html,
 body {
-  background-color: var(--drive-glass-bg) !important;
+  background: radial-gradient(ellipse at 50% -10%, rgba(10, 132, 255, 0.18), transparent 46%),
+    #060a12 !important;
+  color: #f4f8ff !important;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
 }
 
-/* Unify Dashboard accent colors from acid lime -> Cupertino Liquid Glass Blue/Ice */
+/* ==========================================================================
+   1. ELIMINATE ALL LANDING-PAGE MARKETING BLOAT & STACKED FILLER BOXES
+   ========================================================================== */
+.panel-welcome,
+.welcome-orbit,
+.quick-stats,
+.next-step-strip,
+.discover-highlights,
+.add-benefits,
+.catalog-note,
+.feature-cards,
+.hero-cards,
+.security-callout {
+  display: none !important;
+}
+
+/* ==========================================================================
+   2. APP-FIRST WORKSPACE SHELL & COMPACT HEADER
+   ========================================================================== */
+.drive-app {
+  max-width: 1120px !important;
+  margin: 0 auto !important;
+  min-height: 100svh !important;
+  padding: 10px 12px calc(86px + env(safe-area-inset-bottom)) !important;
+}
+
+.app-topbar {
+  position: sticky !important;
+  top: 8px !important;
+  z-index: 60 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 10px !important;
+  padding: 8px 10px !important;
+  margin-bottom: 12px !important;
+  border-radius: 22px !important;
+  background: rgba(11, 18, 30, 0.78) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  -webkit-backdrop-filter: blur(26px) saturate(190%) !important;
+  backdrop-filter: blur(26px) saturate(190%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 10px 28px rgba(0, 0, 0, 0.34) !important;
+}
+
+.app-brand {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 9px !important;
+  background: transparent !important;
+  border: 0 !important;
+  padding: 0 !important;
+  color: #f4f8ff !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.16em !important;
+  font-size: 13px !important;
+  cursor: pointer !important;
+}
+
+.app-brand .brand-mark,
+.brand-mark {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 12px !important;
+  display: grid !important;
+  place-items: center !important;
+  color: #8cdbff !important;
+  background: linear-gradient(145deg, rgba(10, 132, 255, 0.28), rgba(90, 200, 250, 0.14)) !important;
+  border: 1px solid rgba(124, 212, 255, 0.36) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24) !important;
+}
+
+.app-top-actions {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.top-pill-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  min-height: 34px !important;
+  padding: 0 12px !important;
+  border-radius: 999px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: #dce9f9 !important;
+  background: rgba(255, 255, 255, 0.07) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  cursor: pointer !important;
+  transition: transform 110ms ease-out, background 160ms ease, border-color 160ms ease !important;
+}
+
+.top-pill-btn:active {
+  transform: scale(0.95) !important;
+}
+
+/* ==========================================================================
+   3. iOS LIQUID GLASS SEGMENTED SUB-TABS (Directory | My MCPs | + Custom)
+   ========================================================================== */
+.drive-mcp-workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.drive-subtabs-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.drive-subtabs {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(100%, 400px);
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(11, 18, 30, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  -webkit-backdrop-filter: blur(22px) saturate(185%);
+  backdrop-filter: blur(22px) saturate(185%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.drive-subtabs-pill {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / 3);
+  border-radius: 999px;
+  background: linear-gradient(145deg, rgba(43, 149, 255, 0.34), rgba(90, 200, 250, 0.18));
+  border: 1px solid rgba(124, 212, 255, 0.42);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34), 0 4px 14px rgba(10, 132, 255, 0.22);
+  transform: translateX(calc(var(--sub-index, 0) * 100%));
+  transition: transform 280ms var(--drive-spring);
+  pointer-events: none;
+  will-change: transform;
+}
+
+.drive-subtab-btn {
+  position: relative;
+  z-index: 1;
+  min-height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #9bb0c8;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 180ms ease, transform 110ms ease-out;
+}
+
+.drive-subtab-btn.is-active {
+  color: #f5f9ff;
+}
+
+.drive-subtab-btn:active {
+  transform: scale(0.96);
+}
+
+.drive-subpanel {
+  animation: driveTabIn 200ms var(--drive-spring) both;
+}
+
+/* ==========================================================================
+   4. UNIFIED iOS LIQUID GLASS BLUE/CRYSTAL ACCENTS (0% ACID GREEN)
+   ========================================================================== */
 .top-pill-btn.is-accent,
 .primary-btn,
-.hero-actions .primary-btn {
+.hero-actions .primary-btn,
+.catalog-search button,
+.load-more-button,
+.add-mcp-btn,
+button.add-mcp-btn {
   background: linear-gradient(135deg, #2b95ff, #0a84ff) !important;
   color: #f7fbff !important;
   border: 1px solid rgba(145, 212, 255, 0.55) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.38),
-    0 8px 22px rgba(10, 132, 255, 0.32) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.36),
+    0 6px 18px rgba(10, 132, 255, 0.3) !important;
 }
 
 .eyebrow,
-.pulse,
 .account-active-icon,
-.hero h1 span,
-.workspace-hero h1 span,
-.hero-panel h1 span {
+.panel-welcome h1 span,
+.catalog-section h1 span,
+.platform-section h1 span,
+.glass-link {
   color: #7cd4ff !important;
 }
 
-.pulse {
+.pulse,
+.context-dot,
+.registry-live i {
   background: #5ac8fa !important;
-  box-shadow: 0 0 10px rgba(90, 200, 250, 0.7) !important;
+  box-shadow: 0 0 10px rgba(90, 200, 250, 0.72) !important;
 }
 
 .account-active-icon {
@@ -50,65 +229,129 @@ body {
 }
 
 .category-chip.is-active,
+.category-chip:hover,
 .segmented-pill.is-active {
   background: linear-gradient(135deg, rgba(10, 132, 255, 0.28), rgba(90, 200, 250, 0.16)) !important;
   border-color: rgba(124, 212, 255, 0.45) !important;
   color: #eef7ff !important;
 }
 
-/* Calibrated Liquid Glass Bottom Dock & Sliding Lens Bubble (Proportional & Smooth) */
-.liquid-navbar-3,
-.floating-dock,
-.bottom-dock {
-  height: 60px !important;
-  padding: 5px !important;
-  background: rgba(12, 18, 30, 0.78) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
-  backdrop-filter: blur(28px) saturate(190%) !important;
+/* ==========================================================================
+   5. CALIBRATED BOTTOM DOCK & PROPORTIONAL LIQUID LENS BUBBLE
+   ========================================================================== */
+.bottom-dock-stage {
+  position: fixed !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: calc(10px + env(safe-area-inset-bottom)) !important;
+  z-index: 80 !important;
+  display: flex !important;
+  justify-content: center !important;
+  padding: 0 14px !important;
+  pointer-events: none !important;
+}
+
+.liquid-navbar-3 {
+  pointer-events: auto !important;
+  position: relative !important;
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  align-items: center !important;
+  width: min(312px, calc(100vw - 28px)) !important;
+  height: 58px !important;
+  padding: 6px !important;
+  border-radius: 999px !important;
+  background: rgba(11, 18, 30, 0.8) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(195%) !important;
+  backdrop-filter: blur(28px) saturate(195%) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.24),
-    0 14px 34px rgba(0, 0, 0, 0.42) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 16px 38px rgba(0, 0, 0, 0.48) !important;
+  touch-action: pan-y !important;
+  user-select: none !important;
 }
 
 .liquid-lens-pill {
-  top: 5px !important;
-  bottom: 5px !important;
-  left: 5px !important;
-  width: calc((100% - 10px) / 3) !important;
+  position: absolute !important;
+  top: 6px !important;
+  bottom: 6px !important;
+  left: 6px !important;
+  width: calc((100% - 12px) / 3) !important;
   border-radius: 999px !important;
   background: linear-gradient(
     155deg,
     rgba(255, 255, 255, 0.22),
-    rgba(90, 200, 250, 0.15) 55%,
-    rgba(255, 255, 255, 0.08)
+    rgba(90, 200, 250, 0.16) 55%,
+    rgba(10, 132, 255, 0.12)
   ) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.28) !important;
   box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.42),
+    inset 0 1px 1px rgba(255, 255, 255, 0.44),
     inset 0 -1px 1px rgba(90, 200, 250, 0.18),
-    0 4px 16px rgba(10, 132, 255, 0.2) !important;
-  transition:
-    transform 320ms var(--drive-spring),
-    opacity 200ms ease !important;
-  will-change: transform;
+    0 4px 14px rgba(10, 132, 255, 0.22) !important;
+  transform: translateX(calc(var(--lens-index, 0) * 100%)) !important;
+  transition: transform 320ms var(--drive-spring), filter 180ms ease !important;
+  pointer-events: none !important;
+  will-change: transform !important;
 }
 
-.liquid-navbar-3.is-gliding .liquid-lens-pill {
+.liquid-navbar-3.is-gliding .liquid-lens-pill,
+.liquid-navbar-3.is-dragging .liquid-lens-pill {
+  transform: translateX(calc(var(--lens-index, 0) * 100%)) scaleX(1.04) scaleY(0.96) !important;
   filter: brightness(1.08) !important;
 }
 
-/* Sticky OAuth Return Bar — Cupertino Liquid Glass */
+.liquid-navbar-3 .dock-item {
+  position: relative !important;
+  z-index: 2 !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 2px !important;
+  border: 0 !important;
+  background: transparent !important;
+  color: #8fa4be !important;
+  cursor: pointer !important;
+  transition: color 180ms ease, transform 120ms ease-out !important;
+}
+
+.liquid-navbar-3 .dock-item.active,
+.liquid-navbar-3 .dock-item.is-active {
+  color: #f4f9ff !important;
+}
+
+.liquid-navbar-3 .dock-item.active .dock-icon,
+.liquid-navbar-3 .dock-item.is-active .dock-icon {
+  color: #7cd4ff !important;
+}
+
+.liquid-navbar-3 .dock-item:active {
+  transform: scale(0.94) !important;
+}
+
+.liquid-navbar-3 .dock-label {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.01em !important;
+  line-height: 1 !important;
+}
+
+/* ==========================================================================
+   6. STICKY OAUTH RETURN BAR (ALL AI PROVIDERS)
+   ========================================================================== */
 .oauth-return-bar {
   position: sticky;
   top: 0;
-  z-index: 90;
+  z-index: 95;
   padding: calc(8px + env(safe-area-inset-top)) 12px 8px;
-  background: linear-gradient(135deg, rgba(10, 22, 40, 0.92), rgba(7, 13, 24, 0.96));
+  background: linear-gradient(135deg, rgba(10, 22, 40, 0.94), rgba(7, 13, 24, 0.97));
   border-bottom: 1px solid rgba(124, 212, 255, 0.32);
   -webkit-backdrop-filter: blur(24px) saturate(190%);
   backdrop-filter: blur(24px) saturate(190%);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.42);
   animation: driveToastIn 220ms var(--drive-spring) both;
 }
 
@@ -159,7 +402,7 @@ body {
   cursor: pointer;
   white-space: nowrap;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 18px rgba(10, 132, 255, 0.32);
-  transition: transform 110ms ease-out, filter 160ms ease;
+  transition: transform 110ms ease-out;
 }
 
 .oauth-return-btn:active {
@@ -177,32 +420,57 @@ body {
   background: rgba(255, 255, 255, 0.07);
   color: #c1ccda;
   cursor: pointer;
-  transition: transform 100ms ease-out, background 150ms ease;
 }
 
-.oauth-return-dismiss:active {
-  transform: scale(0.94);
+/* ==========================================================================
+   7. FLAT CANVAS SECTIONS + COMPACT HEADERS + SWIPEABLE CATEGORY RAIL
+   ========================================================================== */
+.catalog-section,
+.platform-section,
+.my-mcps-section,
+.skill-library-section,
+.skill-directory-section,
+.account-status-page {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 4px 0 12px !important;
+  margin-top: 0 !important;
 }
 
-/* Strip generic landing-page filler cards & nested box clutter */
-.discover-highlights,
-.principle-grid,
-.hero-metrics,
-.hero-highlights,
-.workspace-highlights {
-  display: none !important;
+.catalog-section .section-head,
+.platform-section .section-head {
+  gap: 10px !important;
+  margin-bottom: 10px !important;
 }
 
-/* Horizontal swipeable category rail */
+.catalog-section .section-head h1,
+.platform-section h1,
+.account-status-page h1 {
+  font-size: clamp(20px, 4.8vw, 28px) !important;
+  line-height: 1.15 !important;
+  letter-spacing: -0.03em !important;
+  margin: 4px 0 !important;
+}
+
+.catalog-section .section-head p,
+.platform-section .section-intro {
+  font-size: 12.5px !important;
+  line-height: 1.45 !important;
+  color: #9cb0c7 !important;
+  margin: 0 !important;
+}
+
 .mcp-category-filter,
 .skill-category-filter {
   display: flex !important;
   flex-wrap: nowrap !important;
   overflow-x: auto !important;
-  gap: 8px !important;
-  padding: 2px 0 6px !important;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch !important;
+  gap: 7px !important;
+  margin: 10px 0 !important;
+  padding: 2px 0 4px !important;
+  scrollbar-width: none !important;
 }
 
 .mcp-category-filter::-webkit-scrollbar,
@@ -214,15 +482,11 @@ body {
 .skill-category-filter .segmented-pill {
   flex: 0 0 auto !important;
   white-space: nowrap !important;
-  transition: transform 110ms ease-out, background 180ms ease, border-color 180ms ease !important;
 }
 
-.mcp-category-filter .category-chip:active,
-.skill-category-filter .segmented-pill:active {
-  transform: scale(0.96) !important;
-}
-
-/* NO SLOP ENGINE Motion Primitives (MO-069, MO-024, MO-099, MO-031, MO-119, MO-101) */
+/* ==========================================================================
+   8. MOTION PRIMITIVES (MO-069, MO-024, MO-099, MO-031, MO-119)
+   ========================================================================== */
 @keyframes driveTabIn {
   from {
     opacity: 0;
@@ -237,7 +501,7 @@ body {
 @keyframes driveCardIn {
   from {
     opacity: 0;
-    transform: translateY(8px) scale(0.985);
+    transform: translateY(7px) scale(0.985);
   }
   to {
     opacity: 1;
@@ -272,11 +536,10 @@ body {
   animation: driveTabIn 200ms var(--drive-spring) both;
 }
 
-.integration-grid > .integration-card:nth-child(-n+6),
-.mkt-grid > .mkt-card:nth-child(-n+6) {
-  animation: driveCardIn 240ms var(--drive-spring) both;
+.integration-grid > .integration-card:nth-child(-n + 6),
+.mkt-grid > .mkt-card:nth-child(-n + 6) {
+  animation: driveCardIn 220ms var(--drive-spring) both;
 }
-
 .integration-grid > .integration-card:nth-child(2),
 .mkt-grid > .mkt-card:nth-child(2) { animation-delay: 25ms; }
 .integration-grid > .integration-card:nth-child(3),
@@ -288,79 +551,26 @@ body {
 .integration-grid > .integration-card:nth-child(6),
 .mkt-grid > .mkt-card:nth-child(6) { animation-delay: 125ms; }
 
-.integration-card button,
-.server-card button,
-.glass-chip-btn {
-  transition: transform 110ms ease-out, background 170ms ease, border-color 170ms ease !important;
-}
-
-.integration-card button:active,
-.server-card button:active,
-.glass-chip-btn:active {
-  transform: scale(0.96) !important;
-}
-
-/* Desktop: crisp 3-column extension store grid */
-.integration-grid {
-  display: grid !important;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-  gap: 14px !important;
-}
-
-@media (max-width: 960px) {
-  .integration-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+/* ==========================================================================
+   9. EXTENSION STORE 3-COLUMN DESKTOP / 2-COLUMN COMPACT MOBILE GRID
+   ========================================================================== */
+@media (min-width: 721px) {
+  .integration-grid,
+  .server-grid,
+  .directory-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 14px !important;
   }
 }
 
-/* Mobile App-First Layout: flat obsidian canvas, compact hero, 2-column card grid */
 @media (max-width: 720px) {
-  .catalog-section,
-  .platform-section,
-  .my-mcps-section,
-  .skill-library-section,
-  .skill-directory-section {
-    padding-left: 12px !important;
-    padding-right: 12px !important;
-    border-radius: 0 !important;
-    border-left: 0 !important;
-    border-right: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-  }
-
-  .hero,
-  .workspace-hero,
-  .hero-panel {
-    padding: 18px 16px !important;
-    border-radius: 22px !important;
-    margin-bottom: 14px !important;
-  }
-
-  .hero h1,
-  .workspace-hero h1,
-  .hero-panel h1 {
-    font-size: 24px !important;
-    line-height: 1.12 !important;
-    letter-spacing: -0.03em !important;
-    margin-bottom: 8px !important;
-  }
-
-  .hero p,
-  .workspace-hero p,
-  .hero-panel p {
-    font-size: 13px !important;
-    line-height: 1.45 !important;
-    margin-bottom: 14px !important;
-  }
-
   .integration-grid,
   .server-grid,
   .directory-grid,
-  .mcp-grid,
-  .skill-directory-grid,
   .skill-repository-grid,
-  .skill-results-grid {
+  .skill-grid,
+  .mkt-grid {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 10px !important;
@@ -368,40 +578,37 @@ body {
 
   .integration-card,
   .server-card,
-  .mcp-card,
   .skill-repository-card {
-    display: flex !important;
-    flex-direction: column !important;
-    justify-content: space-between !important;
-    padding: 12px !important;
+    padding: 11px !important;
     border-radius: 18px !important;
     min-width: 0 !important;
     border: 1px solid rgba(255, 255, 255, 0.13) !important;
-    background: linear-gradient(155deg, rgba(22, 33, 52, 0.82), rgba(10, 16, 28, 0.92)) !important;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 8px 20px rgba(0, 0, 0, 0.28) !important;
-    transition: transform 140ms ease-out, border-color 180ms ease !important;
+    background: linear-gradient(155deg, rgba(20, 32, 52, 0.84), rgba(9, 15, 27, 0.94)) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 8px 18px rgba(0, 0, 0, 0.28) !important;
+    transition: transform 130ms ease-out !important;
   }
 
-  .integration-card:active {
-    transform: scale(0.985) !important;
+  .integration-card:active,
+  .skill-repository-card:active {
+    transform: scale(0.98) !important;
   }
 
   .integration-card .card-top {
     gap: 6px !important;
-    margin-bottom: 8px !important;
+    margin-bottom: 6px !important;
   }
 
   .integration-card .integration-icon {
-    width: 30px !important;
-    height: 30px !important;
-    border-radius: 10px !important;
+    width: 28px !important;
+    height: 28px !important;
+    border-radius: 9px !important;
     color: #7cd4ff !important;
     background: rgba(10, 132, 255, 0.16) !important;
     border-color: rgba(124, 212, 255, 0.28) !important;
   }
 
   .integration-card .status {
-    font-size: 10px !important;
+    font-size: 9.5px !important;
     padding: 3px 7px !important;
     color: #bfe6ff !important;
     background: rgba(10, 132, 255, 0.16) !important;
@@ -412,38 +619,39 @@ body {
     display: none !important;
   }
 
-  .integration-card h3,
-  .server-card h3,
-  .skill-repository-copy strong {
-    font-size: 13px !important;
-    line-height: 1.28 !important;
-    margin: 4px 0 4px !important;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  .integration-card p,
-  .server-card p,
-  .skill-repository-copy p {
-    font-size: 11px !important;
-    line-height: 1.42 !important;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    margin: 0 0 10px !important;
-  }
-
-  .server-meta {
+  .integration-card .server-meta {
+    font-size: 10px !important;
     gap: 5px !important;
-    margin-bottom: 6px !important;
     flex-wrap: wrap !important;
+    margin-bottom: 4px !important;
   }
 
-  .server-card .transport-pill,
-  .server-card .version-pill {
+  .integration-card h3 {
+    font-size: 13px !important;
+    line-height: 1.25 !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    margin: 2px 0 5px !important;
+  }
+
+  .integration-card p {
+    font-size: 11px !important;
+    line-height: 1.38 !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    margin-bottom: 8px !important;
+  }
+
+  .integration-card .server-tags {
+    gap: 4px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .integration-card .server-tags span {
     font-size: 9.5px !important;
     padding: 2px 6px !important;
   }
@@ -453,41 +661,41 @@ body {
     align-items: stretch !important;
     gap: 6px !important;
     padding-top: 8px !important;
-    margin-top: auto !important;
-    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
   }
 
   .integration-card .server-actions {
-    display: none !important;
+    justify-content: space-between !important;
+    gap: 4px !important;
   }
 
-  .integration-card button,
-  .server-card button,
-  .skill-repository-main > .glass-chip-btn {
+  .integration-card .server-actions a,
+  .integration-card .server-actions button {
+    font-size: 10.5px !important;
+    padding: 4px 7px !important;
+    min-height: 28px !important;
+  }
+
+  .integration-card .card-bottom > button {
     width: 100% !important;
-    min-height: 36px !important;
-    padding: 0 10px !important;
+    min-height: 32px !important;
     font-size: 11.5px !important;
-    font-weight: 650 !important;
-    border-radius: 11px !important;
     justify-content: center !important;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .app-panel,
+  .drive-subpanel,
   .oauth-return-bar,
   .integration-grid > .integration-card,
   .mkt-grid > .mkt-card {
     animation: none !important;
   }
   .liquid-lens-pill,
+  .drive-subtabs-pill,
   .integration-card,
-  .integration-card button,
-  .oauth-return-btn,
-  .oauth-return-dismiss,
-  .mcp-category-filter .category-chip,
-  .skill-category-filter .segmented-pill {
+  .top-pill-btn,
+  .oauth-return-btn {
     transition: none !important;
   }
 }

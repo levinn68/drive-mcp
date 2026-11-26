@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import { Globe, LoaderCircle, LockKeyhole, Plus, Server, ShieldCheck } from "lucide-react";
-import { useDriveLang } from "./lang-context";
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -13,7 +12,6 @@ function getSupabase() {
 }
 
 export default function CustomMcpForm() {
-  const { t } = useDriveLang();
   const [name, setName] = useState("");
   const [endpoint, setEndpoint] = useState("");
   const [status, setStatus] = useState({ type: "", text: "" });
@@ -32,7 +30,7 @@ export default function CustomMcpForm() {
     event.preventDefault();
     const supabase = getSupabase();
     if (!supabase) {
-      setStatus({ type: "error", text: t("Autentikasi belum dikonfigurasi.", "Authentication is not configured yet.") });
+      setStatus({ type: "error", text: "Authentication is not configured yet." });
       return;
     }
     setBusy(true);
@@ -44,10 +42,7 @@ export default function CustomMcpForm() {
       if (!session?.access_token) {
         setStatus({
           type: "auth",
-          text: t(
-            "Masuk di tab Akun dulu untuk menyimpan custom MCP endpoint.",
-            "Sign in on the Account tab first to save a custom MCP endpoint."
-          ),
+          text: "Sign in on the Account tab first to save a custom MCP endpoint.",
         });
         setBusy(false);
         return;
@@ -65,14 +60,11 @@ export default function CustomMcpForm() {
       });
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.error || t("Gagal menyimpan endpoint ini.", "Could not save this endpoint."));
+        throw new Error(result.error || "Could not save this endpoint.");
       }
       setStatus({
         type: "success",
-        text: t(
-          `${name.trim()} berhasil disimpan ke akun DRIVE kamu.`,
-          `${name.trim()} saved to your DRIVE account.`
-        ),
+        text: `${name.trim()} saved to your DRIVE account.`,
       });
       setName("");
       setEndpoint("");
@@ -80,7 +72,7 @@ export default function CustomMcpForm() {
     } catch (err) {
       setStatus({
         type: "error",
-        text: err?.message || t("Gagal menyimpan endpoint ini.", "Could not save this endpoint."),
+        text: err?.message || "Could not save this endpoint.",
       });
     } finally {
       setBusy(false);
@@ -92,12 +84,12 @@ export default function CustomMcpForm() {
       <form className="custom-fields" onSubmit={addServer}>
         <label className="custom-field-label">
           <span>
-            <Server size={13} /> {t("NAMA TAMPILAN SERVER", "SERVER DISPLAY NAME")}
+            <Server size={13} /> SERVER DISPLAY NAME
           </span>
           <input
             value={name}
             onChange={(event) => setName(event.target.value)}
-            placeholder={t("cth. Internal Analytics MCP", "e.g. Internal Analytics MCP")}
+            placeholder="e.g. Internal Analytics MCP"
             minLength={2}
             maxLength={80}
             required
@@ -106,7 +98,7 @@ export default function CustomMcpForm() {
 
         <label className="custom-field-label">
           <span>
-            <Globe size={13} /> {t("ENDPOINT STREAMABLE HTTP (HTTPS)", "STREAMABLE HTTP ENDPOINT (HTTPS)")}
+            <Globe size={13} /> STREAMABLE HTTP ENDPOINT (HTTPS)
           </span>
           <input
             value={endpoint}
@@ -122,18 +114,16 @@ export default function CustomMcpForm() {
             <Globe size={11} /> Streamable HTTP
           </span>
           <span>
-            <LockKeyhole size={11} /> {t("Wajib TLS", "TLS Required")}
+            <LockKeyhole size={11} /> TLS Required
           </span>
           <span>
-            <ShieldCheck size={11} /> {t("Proteksi SSRF", "SSRF Protected")}
+            <ShieldCheck size={11} /> SSRF Protected
           </span>
         </div>
 
         <button type="submit" className="custom-submit-btn" disabled={busy}>
           {busy ? <LoaderCircle size={15} className="spin" /> : <Plus size={15} />}
-          {busy
-            ? t("Menyimpan...", "Saving...")
-            : t("Daftarkan Endpoint", "Register Endpoint")}
+          {busy ? "Saving..." : "Register Endpoint"}
         </button>
       </form>
 
@@ -145,17 +135,15 @@ export default function CustomMcpForm() {
           <span>{status.text}</span>
           {status.type === "auth" && (
             <button type="button" className="glass-chip-btn" onClick={handleSignIn}>
-              {t("Masuk dengan Google", "Sign in with Google")}
+              Sign in with Google
             </button>
           )}
         </div>
       )}
 
       <p className="custom-form-hint">
-        {t(
-          "Hanya endpoint HTTPS publik yang diterima. IP privat, localhost, dan kredensial tertanam otomatis ditolak oleh proteksi SSRF.",
-          "Only public HTTPS endpoints are accepted. Private IPv4/IPv6 ranges, localhost, and embedded credentials are automatically rejected by the SSRF guard."
-        )}
+        Only public HTTPS endpoints are accepted. Private IPv4/IPv6 ranges, localhost, and embedded
+        credentials are automatically rejected by the SSRF guard.
       </p>
     </div>
   );

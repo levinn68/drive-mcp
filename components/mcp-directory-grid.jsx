@@ -6,6 +6,7 @@ import {
   ChevronDown,
   ChevronUp,
   ExternalLink,
+  Globe,
   Globe2,
   KeyRound,
   Lock,
@@ -16,44 +17,39 @@ import {
   Unlock,
 } from "lucide-react";
 import { AddMcpButton } from "./my-mcps";
-import { useDriveLang } from "./lang-context";
+import { explainItem, useDriveLang } from "./lang-context";
 
 export const MCP_CATEGORIES = [
-  { id: "", idLabel: "Semua", enLabel: "All" },
-  { id: "remote", idLabel: "Remote Siap", enLabel: "Remote Ready" },
-  { id: "ai", idLabel: "AI & Agent", enLabel: "AI & Agents" },
-  { id: "coding", idLabel: "Coding & Dev", enLabel: "Coding & Dev" },
-  { id: "github", idLabel: "GitHub & Git", enLabel: "GitHub & Git" },
-  { id: "database", idLabel: "Database", enLabel: "Database" },
-  { id: "cloud", idLabel: "Cloud & DevOps", enLabel: "Cloud & DevOps" },
-  { id: "search", idLabel: "Search & Docs", enLabel: "Search & Docs" },
-  { id: "browser", idLabel: "Browser & Scrape", enLabel: "Browser & Scrape" },
-  { id: "design", idLabel: "Desain & UI", enLabel: "Design & UI" },
-  { id: "media", idLabel: "Media & Video", enLabel: "Media & Video" },
-  { id: "ecommerce", idLabel: "E-Commerce", enLabel: "E-Commerce" },
-  { id: "productivity", idLabel: "Produktivitas", enLabel: "Productivity" },
-  { id: "messaging", idLabel: "Chat & Sosial", enLabel: "Messaging & Social" },
-  { id: "finance", idLabel: "Keuangan", enLabel: "Finance & Pay" },
-  { id: "web3", idLabel: "Web3 & Crypto", enLabel: "Web3 & Crypto" },
-  { id: "crm", idLabel: "CRM & Sales", enLabel: "CRM & Sales" },
-  { id: "maps", idLabel: "Maps & Travel", enLabel: "Maps & Travel" },
-  { id: "automation", idLabel: "Otomatisasi", enLabel: "Automation" },
-  { id: "security", idLabel: "Keamanan", enLabel: "Security & Auth" },
-  { id: "data", idLabel: "Data & Analitik", enLabel: "Data & Analytics" },
+  { id: "", label: "All" },
+  { id: "remote", label: "Remote Ready" },
+  { id: "ai", label: "AI & Agents" },
+  { id: "coding", label: "Coding & Dev" },
+  { id: "github", label: "GitHub & Git" },
+  { id: "database", label: "Database" },
+  { id: "cloud", label: "Cloud & DevOps" },
+  { id: "search", label: "Search & Docs" },
+  { id: "browser", label: "Browser & Scrape" },
+  { id: "design", label: "Design & UI" },
+  { id: "media", label: "Media & Video" },
+  { id: "ecommerce", label: "E-Commerce" },
+  { id: "productivity", label: "Productivity" },
+  { id: "messaging", label: "Messaging & Social" },
+  { id: "finance", label: "Finance & Pay" },
+  { id: "web3", label: "Web3 & Crypto" },
+  { id: "crm", label: "CRM & Sales" },
+  { id: "maps", label: "Maps & Travel" },
+  { id: "automation", label: "Automation" },
+  { id: "security", label: "Security & Auth" },
+  { id: "data", label: "Data & Analytics" },
 ];
 
 const COLLAPSED_CAT_COUNT = 8;
 
 const AUTH_BADGE_MAP = {
-  none: { idLabel: "Tanpa Auth", enLabel: "No Auth", cls: "is-auth-none", Icon: Unlock },
-  oauth: { idLabel: "OAuth 2.1", enLabel: "OAuth 2.1", cls: "is-auth-oauth", Icon: Lock },
-  pat: { idLabel: "PAT / Token", enLabel: "PAT / Token", cls: "is-auth-pat", Icon: KeyRound },
-  oauth_catalog: {
-    idLabel: "OAuth Katalog",
-    enLabel: "OAuth Catalog",
-    cls: "is-auth-pat",
-    Icon: Lock,
-  },
+  none: { label: "No Auth", cls: "is-auth-none", Icon: Unlock },
+  oauth: { label: "OAuth 2.1", cls: "is-auth-oauth", Icon: Lock },
+  pat: { label: "PAT / Token", cls: "is-auth-pat", Icon: KeyRound },
+  oauth_catalog: { label: "OAuth Catalog", cls: "is-auth-pat", Icon: Lock },
 };
 
 function getSupabase() {
@@ -91,7 +87,7 @@ export default function McpDirectoryGrid({
   initialQuery = "",
   unavailable = false,
 }) {
-  const { lang, t } = useDriveLang();
+  const { lang, setLang } = useDriveLang();
   const [query, setQuery] = useState(initialQuery);
   const [category, setCategory] = useState("");
   const [showAllCats, setShowAllCats] = useState(false);
@@ -187,6 +183,7 @@ export default function McpDirectoryGrid({
         entry.category,
         entry.transport,
         entry.authType,
+        entry.sourceLabel,
       ]
         .filter(Boolean)
         .join(" ")
@@ -229,11 +226,8 @@ export default function McpDirectoryGrid({
             setQuery(e.target.value);
             setVisibleLimit(36);
           }}
-          placeholder={t(
-            "Cari 8.000+ MCP (GitHub, Supabase, Vercel, Figma...)",
-            "Search 8,000+ MCPs (GitHub, Supabase, Vercel, Figma...)"
-          )}
-          aria-label={t("Cari server MCP", "Search MCP servers")}
+          placeholder="Search 10,000+ MCPs (GitHub, Supabase, Vercel, npm...)"
+          aria-label="Search MCP servers"
         />
         {query ? (
           <button
@@ -245,17 +239,14 @@ export default function McpDirectoryGrid({
             }}
             style={{ minHeight: 32, padding: "0 10px" }}
           >
-            {t("Hapus", "Clear")}
+            Clear
           </button>
         ) : (
-          <button type="submit">{t("Cari", "Search")}</button>
+          <button type="submit">Search</button>
         )}
       </form>
 
-      <div
-        className="mcp-category-filter"
-        aria-label={t("Kategori MCP", "MCP categories")}
-      >
+      <div className="mcp-category-filter" aria-label="MCP categories">
         {displayedCategories.map((cat) => (
           <button
             key={cat.id || "all"}
@@ -266,7 +257,7 @@ export default function McpDirectoryGrid({
               setVisibleLimit(36);
             }}
           >
-            {lang === "en" ? cat.enLabel : cat.idLabel}
+            {cat.label}
           </button>
         ))}
         {remainingCatCount > 0 && (
@@ -277,11 +268,11 @@ export default function McpDirectoryGrid({
           >
             {showAllCats ? (
               <>
-                <ChevronUp size={12} /> {t("Ringkas", "Less")}
+                <ChevronUp size={12} /> Less
               </>
             ) : (
               <>
-                <ChevronDown size={12} /> +{remainingCatCount} {t("Kategori", "More")}
+                <ChevronDown size={12} /> +{remainingCatCount} More
               </>
             )}
           </button>
@@ -291,20 +282,36 @@ export default function McpDirectoryGrid({
       <div className="directory-toolbar">
         <div className="directory-stats">
           <strong>{filteredServers.length.toLocaleString()}</strong>{" "}
-          {query
-            ? t(`hasil untuk "${query}"`, `results for "${query}"`)
-            : t("MCP tersedia", "MCPs available")}
+          {query ? `results for "${query}"` : "MCPs available"}
           <span className="registry-live">
-            <i /> {t("Urut Terpopuler", "Sorted by Most Used")}
+            <i /> Most Popular First
           </span>
+        </div>
+        <div className="lang-toggle-group is-compact" role="group" aria-label="Explanation language">
+          <button
+            type="button"
+            className={lang === "id" ? "is-active" : ""}
+            onClick={() => setLang("id")}
+            title="Penjelasan dalam Bahasa Indonesia"
+          >
+            <Globe size={10} /> ID
+          </button>
+          <button
+            type="button"
+            className={lang === "en" ? "is-active" : ""}
+            onClick={() => setLang("en")}
+            title="Explanations in English"
+          >
+            EN
+          </button>
         </div>
       </div>
 
       {unavailable ? (
         <div className="empty-state">
           <Globe2 size={22} />
-          <h3>{t("Registri sedang tidak tersedia", "Registry temporarily unavailable")}</h3>
-          <p>{t("Coba muat ulang sebentar lagi.", "Try refreshing in a moment.")}</p>
+          <h3>Registry temporarily unavailable</h3>
+          <p>Try refreshing in a moment.</p>
         </div>
       ) : visibleServers.length ? (
         <>
@@ -329,10 +336,10 @@ export default function McpDirectoryGrid({
                       className={`status ${item.verifiedPopular ? "is-enabled" : ""}`}
                     >
                       {item.verifiedPopular
-                        ? t("Terverifikasi", "Verified")
+                        ? "Verified"
                         : item.isRemote
                         ? "Remote"
-                        : "STDIO"}
+                        : item.sourceLabel || "STDIO"}
                     </span>
                   </div>
 
@@ -343,8 +350,7 @@ export default function McpDirectoryGrid({
                       </span>
                     )}
                     <span className={`transport-pill ${authBadge.cls}`}>
-                      <AuthIcon size={9} />{" "}
-                      {lang === "en" ? authBadge.enLabel : authBadge.idLabel}
+                      <AuthIcon size={9} /> {authBadge.label}
                     </span>
                     {item.category && (
                       <span className="version-pill">{item.category}</span>
@@ -352,13 +358,19 @@ export default function McpDirectoryGrid({
                   </div>
 
                   <h3>{item.name}</h3>
-                  <p>{item.description}</p>
+                  <p>
+                    {explainItem(item.description, lang, {
+                      kind: "mcp",
+                      name: item.name,
+                      category: item.category,
+                    })}
+                  </p>
 
                   <div className="card-bottom">
                     {item.repository ? (
                       <div className="server-actions">
                         <a href={item.repository} target="_blank" rel="noreferrer">
-                          {t("Sumber", "Source")} <ExternalLink size={11} />
+                          {item.sourceLabel || "Source"} <ExternalLink size={11} />
                         </a>
                       </div>
                     ) : null}
@@ -382,10 +394,7 @@ export default function McpDirectoryGrid({
                 className="load-more-button"
                 onClick={() => setVisibleLimit((prev) => prev + 48)}
               >
-                {t(
-                  `Muat lagi (${(filteredServers.length - visibleLimit).toLocaleString()} tersisa)`,
-                  `Load more (${(filteredServers.length - visibleLimit).toLocaleString()} remaining)`
-                )}
+                Load more ({(filteredServers.length - visibleLimit).toLocaleString()} remaining)
               </button>
             </div>
           )}
@@ -393,13 +402,8 @@ export default function McpDirectoryGrid({
       ) : (
         <div className="empty-state">
           <Search size={22} />
-          <h3>{t("Tidak ada MCP yang cocok", "No matching MCPs")}</h3>
-          <p>
-            {t(
-              "Coba kata kunci lain atau pilih kategori berbeda.",
-              "Try a broader keyword or select another category."
-            )}
-          </p>
+          <h3>No matching MCPs</h3>
+          <p>Try a broader keyword or select another category.</p>
         </div>
       )}
     </section>

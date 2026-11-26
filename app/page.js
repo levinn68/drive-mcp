@@ -8,6 +8,8 @@ export const revalidate = 3600;
 
 const REGISTRY = "https://registry.modelcontextprotocol.io";
 const GLAMA_API = "https://glama.ai/api/mcp/v1/servers";
+const NPM_SEARCH_API = "https://registry.npmjs.org/-/v1/search";
+const PULSEMCP_API = "https://api.pulsemcp.com/v0beta/servers";
 
 // Curated, widely-used official Remote Streamable HTTP MCP servers with auth type & popularity stars
 const VERIFIED_POPULAR_MCPS = [
@@ -16,12 +18,13 @@ const VERIFIED_POPULAR_MCPS = [
     category: "search",
     authType: "none",
     stars: 38500,
+    sourceLabel: "Official",
     server: {
       name: "com.upstash/context7-mcp",
       title: "Context7 Docs MCP",
       version: "official",
       description: "Live, version-specific documentation & code examples for any library or framework.",
-      repository: { url: "https://github.com/upstash/context7" },
+      repository: { url: "https://context7.com" },
       remotes: [{ type: "streamable-http", url: "https://mcp.context7.com/mcp" }],
     },
   },
@@ -30,11 +33,12 @@ const VERIFIED_POPULAR_MCPS = [
     category: "github",
     authType: "pat",
     stars: 24800,
+    sourceLabel: "Official",
     server: {
       name: "com.github/github-mcp-server",
       title: "GitHub MCP",
       version: "official",
-      description: "Official remote GitHub MCP — repos, PRs, issues, CI checks, and code search.",
+      description: "Official GitHub remote MCP server for repositories, issues, PRs, code search, and Actions.",
       repository: { url: "https://github.com/github/github-mcp-server" },
       remotes: [{ type: "streamable-http", url: "https://api.githubcopilot.com/mcp/" }],
     },
@@ -44,6 +48,7 @@ const VERIFIED_POPULAR_MCPS = [
     category: "search",
     authType: "none",
     stars: 18200,
+    sourceLabel: "Official",
     server: {
       name: "com.openai/docs-mcp",
       title: "OpenAI Docs MCP",
@@ -58,12 +63,13 @@ const VERIFIED_POPULAR_MCPS = [
     category: "database",
     authType: "oauth",
     stars: 16900,
+    sourceLabel: "Official",
     server: {
       name: "com.supabase/supabase-mcp",
       title: "Supabase MCP",
       version: "official",
-      description: "Official Supabase MCP — SQL queries, migrations, Edge Functions, logs, and Auth.",
-      repository: { url: "https://github.com/supabase-community/supabase-mcp" },
+      description: "Official Supabase remote MCP — Postgres SQL, schema migrations, Edge Functions, and logs.",
+      repository: { url: "https://supabase.com/docs/guides/getting-started/mcp" },
       remotes: [{ type: "streamable-http", url: "https://mcp.supabase.com/mcp" }],
     },
   },
@@ -72,11 +78,12 @@ const VERIFIED_POPULAR_MCPS = [
     category: "search",
     authType: "none",
     stars: 15400,
+    sourceLabel: "Official",
     server: {
       name: "com.deepwiki/deepwiki-mcp",
       title: "DeepWiki MCP",
       version: "free",
-      description: "Zero-auth GitHub repo wiki & architecture Q&A powered by Cognition DeepWiki.",
+      description: "Zero-auth codebase wiki & architecture Q&A powered by Cognition DeepWiki.",
       repository: { url: "https://deepwiki.com" },
       remotes: [{ type: "streamable-http", url: "https://mcp.deepwiki.com/mcp" }],
     },
@@ -86,12 +93,13 @@ const VERIFIED_POPULAR_MCPS = [
     category: "browser",
     authType: "pat",
     stars: 14600,
+    sourceLabel: "Official",
     server: {
       name: "dev.firecrawl/firecrawl-mcp",
       title: "Firecrawl Web Scraper MCP",
       version: "official",
       description: "Turn any website into clean Markdown, structured JSON, or crawled knowledge for AI.",
-      repository: { url: "https://github.com/mendableai/firecrawl-mcp-server" },
+      repository: { url: "https://www.firecrawl.dev/mcp" },
       remotes: [{ type: "streamable-http", url: "https://mcp.firecrawl.dev/mcp" }],
     },
   },
@@ -100,6 +108,7 @@ const VERIFIED_POPULAR_MCPS = [
     category: "cloud",
     authType: "oauth",
     stars: 14200,
+    sourceLabel: "Official",
     server: {
       name: "com.vercel/vercel-mcp",
       title: "Vercel MCP",
@@ -114,6 +123,7 @@ const VERIFIED_POPULAR_MCPS = [
     category: "finance",
     authType: "oauth",
     stars: 13500,
+    sourceLabel: "Official",
     server: {
       name: "com.stripe/stripe-mcp",
       title: "Stripe MCP",
@@ -128,6 +138,7 @@ const VERIFIED_POPULAR_MCPS = [
     category: "design",
     authType: "oauth_catalog",
     stars: 12800,
+    sourceLabel: "Official",
     server: {
       name: "com.figma/figma-mcp",
       title: "Figma Dev Mode MCP",
@@ -142,6 +153,7 @@ const VERIFIED_POPULAR_MCPS = [
     category: "ai",
     authType: "oauth",
     stars: 11900,
+    sourceLabel: "Official",
     server: {
       name: "co.hf/huggingface-mcp",
       title: "Hugging Face MCP",
@@ -156,6 +168,7 @@ const VERIFIED_POPULAR_MCPS = [
     category: "productivity",
     authType: "oauth",
     stars: 11400,
+    sourceLabel: "Official",
     server: {
       name: "com.notion/notion-mcp",
       title: "Notion MCP",
@@ -170,12 +183,13 @@ const VERIFIED_POPULAR_MCPS = [
     category: "cloud",
     authType: "none",
     stars: 10500,
+    sourceLabel: "Official",
     server: {
       name: "com.cloudflare/docs-mcp",
       title: "Cloudflare Docs MCP",
       version: "free",
       description: "Official zero-auth Cloudflare Workers, R2, D1, Pages, and Zero Trust docs search.",
-      repository: { url: "https://github.com/cloudflare/mcp-server-cloudflare" },
+      repository: { url: "https://developers.cloudflare.com/agents/model-context-protocol/" },
       remotes: [{ type: "streamable-http", url: "https://docs.mcp.cloudflare.com/mcp" }],
     },
   },
@@ -184,12 +198,13 @@ const VERIFIED_POPULAR_MCPS = [
     category: "cloud",
     authType: "oauth",
     stars: 10200,
+    sourceLabel: "Official",
     server: {
       name: "com.cloudflare/workers-bindings-mcp",
       title: "Cloudflare Workers MCP",
       version: "official",
       description: "Manage Cloudflare Workers, KV namespaces, R2 buckets, and D1 databases via OAuth.",
-      repository: { url: "https://github.com/cloudflare/mcp-server-cloudflare" },
+      repository: { url: "https://developers.cloudflare.com/agents/model-context-protocol/" },
       remotes: [{ type: "streamable-http", url: "https://bindings.mcp.cloudflare.com/mcp" }],
     },
   },
@@ -198,6 +213,7 @@ const VERIFIED_POPULAR_MCPS = [
     category: "messaging",
     authType: "oauth",
     stars: 9800,
+    sourceLabel: "Official",
     server: {
       name: "com.slack/slack-mcp",
       title: "Slack Workspace MCP",
@@ -212,6 +228,7 @@ const VERIFIED_POPULAR_MCPS = [
     category: "productivity",
     authType: "oauth",
     stars: 9600,
+    sourceLabel: "Official",
     server: {
       name: "app.linear/linear-mcp",
       title: "Linear MCP",
@@ -226,13 +243,14 @@ const VERIFIED_POPULAR_MCPS = [
     category: "productivity",
     authType: "oauth",
     stars: 9200,
+    sourceLabel: "Official",
     server: {
       name: "com.atlassian/rovo-mcp",
       title: "Atlassian Jira & Confluence",
       version: "official",
-      description: "Official Atlassian Rovo remote MCP for Jira tickets and Confluence docs.",
+      description: "Official Atlassian MCP — search Jira issues, Confluence spaces, and sprint boards.",
       repository: { url: "https://www.atlassian.com/platform/remote-mcp-server" },
-      remotes: [{ type: "streamable-http", url: "https://mcp.atlassian.com/v1/mcp/authv2" }],
+      remotes: [{ type: "streamable-http", url: "https://mcp.atlassian.com/v1/sse" }],
     },
   },
   {
@@ -240,6 +258,7 @@ const VERIFIED_POPULAR_MCPS = [
     category: "cloud",
     authType: "oauth",
     stars: 8900,
+    sourceLabel: "Official",
     server: {
       name: "dev.sentry/sentry-mcp",
       title: "Sentry MCP",
@@ -254,6 +273,7 @@ const VERIFIED_POPULAR_MCPS = [
     category: "coding",
     authType: "oauth",
     stars: 8700,
+    sourceLabel: "Official",
     server: {
       name: "com.prisma/prisma-mcp",
       title: "Prisma Postgres MCP",
@@ -268,6 +288,7 @@ const VERIFIED_POPULAR_MCPS = [
     category: "database",
     authType: "oauth",
     stars: 8200,
+    sourceLabel: "Official",
     server: {
       name: "tech.neon/neon-mcp",
       title: "Neon Postgres MCP",
@@ -282,12 +303,13 @@ const VERIFIED_POPULAR_MCPS = [
     category: "search",
     authType: "pat",
     stars: 7800,
+    sourceLabel: "Official",
     server: {
       name: "ai.exa/exa-mcp",
       title: "Exa AI Search MCP",
       version: "official",
       description: "Real-time neural web search, company research, and live code context for AI.",
-      repository: { url: "https://github.com/exa-labs/exa-mcp-server" },
+      repository: { url: "https://exa.ai" },
       remotes: [{ type: "streamable-http", url: "https://mcp.exa.ai/mcp" }],
     },
   },
@@ -296,12 +318,13 @@ const VERIFIED_POPULAR_MCPS = [
     category: "search",
     authType: "pat",
     stars: 7200,
+    sourceLabel: "Official",
     server: {
       name: "com.tavily/tavily-mcp",
       title: "Tavily AI Search MCP",
       version: "official",
       description: "Real-time web search and content extraction optimized for LLM research agents.",
-      repository: { url: "https://github.com/tavily-ai/tavily-mcp" },
+      repository: { url: "https://tavily.com" },
       remotes: [{ type: "streamable-http", url: "https://mcp.tavily.com/mcp/" }],
     },
   },
@@ -310,6 +333,7 @@ const VERIFIED_POPULAR_MCPS = [
     category: "data",
     authType: "oauth",
     stars: 6800,
+    sourceLabel: "Official",
     server: {
       name: "com.posthog/posthog-mcp",
       title: "PostHog Analytics MCP",
@@ -324,6 +348,7 @@ const VERIFIED_POPULAR_MCPS = [
     category: "finance",
     authType: "oauth",
     stars: 6400,
+    sourceLabel: "Official",
     server: {
       name: "com.paypal/paypal-mcp",
       title: "PayPal MCP",
@@ -338,6 +363,7 @@ const VERIFIED_POPULAR_MCPS = [
     category: "data",
     authType: "pat",
     stars: 6300,
+    sourceLabel: "Official",
     server: {
       name: "com.datadog/datadog-mcp",
       title: "Datadog Observability MCP",
@@ -352,6 +378,7 @@ const VERIFIED_POPULAR_MCPS = [
     category: "cloud",
     authType: "oauth",
     stars: 6200,
+    sourceLabel: "Official",
     server: {
       name: "com.netlify/netlify-mcp",
       title: "Netlify Deploy MCP",
@@ -366,12 +393,13 @@ const VERIFIED_POPULAR_MCPS = [
     category: "browser",
     authType: "pat",
     stars: 6100,
+    sourceLabel: "Official",
     server: {
       name: "com.apify/apify-mcp",
       title: "Apify Actors & Scraping MCP",
       version: "official",
       description: "Run 4,000+ Apify web scraping and browser automation Actors directly from AI.",
-      repository: { url: "https://github.com/apify/actors-mcp-server" },
+      repository: { url: "https://apify.com/mcp" },
       remotes: [{ type: "streamable-http", url: "https://mcp.apify.com" }],
     },
   },
@@ -380,6 +408,7 @@ const VERIFIED_POPULAR_MCPS = [
     category: "crm",
     authType: "oauth",
     stars: 5900,
+    sourceLabel: "Official",
     server: {
       name: "com.hubspot/hubspot-mcp",
       title: "HubSpot CRM MCP",
@@ -394,6 +423,7 @@ const VERIFIED_POPULAR_MCPS = [
     category: "security",
     authType: "pat",
     stars: 5600,
+    sourceLabel: "Official",
     server: {
       name: "io.snyk/snyk-mcp",
       title: "Snyk Security MCP",
@@ -408,6 +438,7 @@ const VERIFIED_POPULAR_MCPS = [
     category: "productivity",
     authType: "oauth",
     stars: 5300,
+    sourceLabel: "Official",
     server: {
       name: "com.asana/asana-mcp",
       title: "Asana Tasks MCP",
@@ -422,6 +453,7 @@ const VERIFIED_POPULAR_MCPS = [
     category: "design",
     authType: "oauth",
     stars: 5100,
+    sourceLabel: "Official",
     server: {
       name: "com.webflow/webflow-mcp",
       title: "Webflow Sites & CMS MCP",
@@ -436,6 +468,7 @@ const VERIFIED_POPULAR_MCPS = [
     category: "messaging",
     authType: "oauth",
     stars: 4900,
+    sourceLabel: "Official",
     server: {
       name: "com.intercom/intercom-mcp",
       title: "Intercom Support MCP",
@@ -450,6 +483,7 @@ const VERIFIED_POPULAR_MCPS = [
     category: "ecommerce",
     authType: "oauth",
     stars: 4500,
+    sourceLabel: "Official",
     server: {
       name: "com.squareup/square-mcp",
       title: "Square Commerce MCP",
@@ -500,10 +534,10 @@ function inferAuthType(explicitAuthType, isRemote, text) {
   return "oauth";
 }
 
-async function fetchOfficialRegistry(apiSearch, maxPages = 45) {
+async function fetchOfficialRegistry(apiSearch, maxPages = 50) {
   const results = [];
   let cursor = "";
-  const deadline = Date.now() + 11000;
+  const deadline = Date.now() + 11500;
   for (let i = 0; i < maxPages && Date.now() < deadline; i += 1) {
     const params = new URLSearchParams({ limit: "100", version: "latest" });
     if (apiSearch.length >= 2) params.set("search", apiSearch);
@@ -511,16 +545,18 @@ async function fetchOfficialRegistry(apiSearch, maxPages = 45) {
 
     try {
       const response = await fetch(`${REGISTRY}/v0.1/servers?${params}`, {
-        headers: { accept: "application/json" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/2.8" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(4500),
       });
       if (!response.ok) break;
       const payload = await response.json();
       const batch = Array.isArray(payload?.servers) ? payload.servers : [];
-      results.push(...batch);
+      for (const item of batch) {
+        results.push({ ...item, sourceLabel: "Official Registry" });
+      }
       cursor = payload?.metadata?.nextCursor || "";
-      if (!cursor || results.length >= 4500) break;
+      if (!cursor || results.length >= 5000) break;
     } catch {
       break;
     }
@@ -528,7 +564,7 @@ async function fetchOfficialRegistry(apiSearch, maxPages = 45) {
   return results;
 }
 
-async function fetchGlamaDirectory(apiSearch, maxPages = 30) {
+async function fetchGlamaDirectory(apiSearch, maxPages = 32) {
   const results = [];
   let cursor = "";
   const deadline = Date.now() + 11000;
@@ -539,7 +575,7 @@ async function fetchGlamaDirectory(apiSearch, maxPages = 30) {
 
     try {
       const response = await fetch(`${GLAMA_API}?${params}`, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/2.7" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/2.8" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(4500),
       });
@@ -549,10 +585,11 @@ async function fetchGlamaDirectory(apiSearch, maxPages = 30) {
       for (const item of batch) {
         if (!item?.name) continue;
         const slug = item.slug || item.id || item.name;
-        const repoUrl = item.repository?.url || "";
+        const repoUrl = item.url || item.repository?.url || `https://glama.ai/mcp/servers/${slug}`;
         const stars = Number(item.repository?.stargazersCount || item.stars || 0);
         results.push({
           _stars: stars,
+          sourceLabel: "Glama",
           server: {
             name: `${item.namespace || "glama"}/${slug}`,
             title: item.name,
@@ -568,7 +605,7 @@ async function fetchGlamaDirectory(apiSearch, maxPages = 30) {
         });
       }
       cursor = payload?.pageInfo?.hasNextPage ? payload?.pageInfo?.endCursor || "" : "";
-      if (!cursor || results.length >= 3000) break;
+      if (!cursor || results.length >= 3200) break;
     } catch {
       break;
     }
@@ -576,10 +613,124 @@ async function fetchGlamaDirectory(apiSearch, maxPages = 30) {
   return results;
 }
 
+// Non-GitHub source: npm public package registry for real published MCP servers
+async function fetchNpmMcpServers(apiSearch) {
+  const queries = apiSearch
+    ? [`${apiSearch} mcp`]
+    : [
+        "mcp-server",
+        "modelcontextprotocol",
+        "mcp server",
+        "@modelcontextprotocol",
+        "mcp-tool",
+        "fastmcp",
+      ];
+
+  const requests = [];
+  for (const text of queries) {
+    const offsets = apiSearch ? [0, 250] : [0, 250, 500, 750];
+    for (const from of offsets) {
+      requests.push({ text, from });
+    }
+  }
+
+  const settled = await Promise.allSettled(
+    requests.map(async ({ text, from }) => {
+      const url = new URL(NPM_SEARCH_API);
+      url.searchParams.set("text", text);
+      url.searchParams.set("size", "250");
+      url.searchParams.set("from", String(from));
+      const res = await fetch(url, {
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/2.8" },
+        next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(6000),
+      });
+      if (!res.ok) return [];
+      const payload = await res.json();
+      return Array.isArray(payload?.objects) ? payload.objects : [];
+    })
+  );
+
+  const items = [];
+  for (const r of settled) {
+    if (r.status !== "fulfilled") continue;
+    for (const obj of r.value) {
+      const pkg = obj?.package;
+      if (!pkg?.name) continue;
+      const popScore = Math.round(Number(obj?.score?.detail?.popularity || 0) * 1800);
+      const npmLink = pkg.links?.homepage || pkg.links?.npm || `https://www.npmjs.com/package/${pkg.name}`;
+      const cleanTitle = pkg.name
+        .replace(/^@[^/]+\//, "")
+        .replace(/[-_]+/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+      items.push({
+        _stars: popScore,
+        sourceLabel: "npm",
+        server: {
+          name: `npm/${pkg.name}`,
+          title: cleanTitle,
+          version: pkg.version || "npm",
+          description: pkg.description || `Published npm MCP server package (${pkg.name}).`,
+          repository: { url: npmLink },
+          remotes: [],
+          packages: [{ registryType: "npm", identifier: pkg.name }],
+        },
+      });
+    }
+  }
+  return items;
+}
+
+// Non-GitHub source: PulseMCP public directory API (best-effort)
+async function fetchPulseMcpServers(apiSearch) {
+  const pages = apiSearch ? [0, 1] : [0, 1, 2, 3, 4, 5, 6, 7];
+  const settled = await Promise.allSettled(
+    pages.map(async (page) => {
+      const url = new URL(PULSEMCP_API);
+      url.searchParams.set("count_per_page", "100");
+      url.searchParams.set("offset", String(page * 100));
+      if (apiSearch) url.searchParams.set("query", apiSearch);
+      const res = await fetch(url, {
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/2.8" },
+        next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!res.ok) return [];
+      const payload = await res.json();
+      return Array.isArray(payload?.servers) ? payload.servers : [];
+    })
+  );
+
+  const items = [];
+  for (const r of settled) {
+    if (r.status !== "fulfilled") continue;
+    for (const s of r.value) {
+      if (!s?.name) continue;
+      const stars = Number(s.github_stars || s.estimated_downloads || 0);
+      const targetUrl = s.url || s.source_code_url || "";
+      items.push({
+        _stars: stars,
+        sourceLabel: "PulseMCP",
+        server: {
+          name: `pulsemcp/${s.name.toLowerCase().replace(/[^a-z0-9-]+/g, "-")}`,
+          title: s.name,
+          version: "pulsemcp",
+          description: s.short_description || s.description || "Indexed from PulseMCP Directory.",
+          repository: targetUrl ? { url: targetUrl } : undefined,
+          remotes: Array.isArray(s.remotes) ? s.remotes : [],
+          packages: [],
+        },
+      });
+    }
+  }
+  return items;
+}
+
+// Supplemental open-source MCP repositories
 async function fetchGithubPopularMcps(apiSearch) {
   const headers = {
     accept: "application/vnd.github+json",
-    "user-agent": "DRIVE-MCP/2.7",
+    "user-agent": "DRIVE-MCP/2.8",
   };
   if (process.env.GITHUB_TOKEN) {
     headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
@@ -589,14 +740,12 @@ async function fetchGithubPopularMcps(apiSearch) {
     : [
         "topic:mcp-server stars:>100",
         "topic:mcp-server stars:25..100",
-        "topic:mcp-server stars:8..24",
         "topic:model-context-protocol stars:>20",
-        "mcp-server in:name stars:>20",
       ];
 
   const requests = [];
   for (const qStr of queryList) {
-    const pages = apiSearch ? [1, 2] : [1, 2, 3, 4, 5];
+    const pages = apiSearch ? [1, 2] : [1, 2, 3, 4];
     for (const page of pages) {
       requests.push({ qStr, page });
     }
@@ -613,7 +762,7 @@ async function fetchGithubPopularMcps(apiSearch) {
       const res = await fetch(url, {
         headers,
         next: { revalidate: 3600 },
-        signal: AbortSignal.timeout(6500),
+        signal: AbortSignal.timeout(6000),
       });
       if (!res.ok) return [];
       const payload = await res.json();
@@ -628,6 +777,7 @@ async function fetchGithubPopularMcps(apiSearch) {
       if (!repo?.full_name || repo.archived) continue;
       items.push({
         _stars: Number(repo.stargazers_count || 0),
+        sourceLabel: "GitHub",
         server: {
           name: `github/${repo.full_name}`,
           title: repo.name
@@ -636,8 +786,8 @@ async function fetchGithubPopularMcps(apiSearch) {
           version: "github",
           description:
             repo.description ||
-            `Popular open-source MCP server (${Number(repo.stargazers_count || 0).toLocaleString()} GitHub stars).`,
-          repository: { url: repo.html_url },
+            `Popular open-source MCP server (${Number(repo.stargazers_count || 0).toLocaleString()} stars).`,
+          repository: { url: repo.homepage || repo.html_url },
           remotes:
             repo.homepage && /^https:\/\/.*mcp/i.test(repo.homepage)
               ? [{ type: "streamable-http", url: repo.homepage }]
@@ -671,6 +821,7 @@ function serializeServer(entry) {
     version: server.version || "latest",
     transport: isRemote ? "Remote HTTP" : packages.length ? "STDIO" : "Registry",
     repository: repoStr,
+    sourceLabel: entry?.sourceLabel || "Registry",
     isRemote,
     verifiedPopular: Boolean(entry?.verifiedPopular),
     category,
@@ -690,10 +841,10 @@ function serializeServer(entry) {
 }
 
 async function getServers(query) {
-  const all = [];
-  const seen = new Set();
-  const trimmed = (query || "").trim();
+  const trimmed = (query || "").trim().slice(0, 120);
   const lower = trimmed.toLowerCase();
+  const seen = new Set();
+  const all = [];
   const apiSearch = lower && lower !== "remote" ? trimmed : "";
 
   for (const item of VERIFIED_POPULAR_MCPS) {
@@ -701,15 +852,19 @@ async function getServers(query) {
     all.push(item);
   }
 
-  const [officialRes, glamaRes, githubRes] = await Promise.allSettled([
-    fetchOfficialRegistry(apiSearch, apiSearch ? 8 : 45),
-    fetchGlamaDirectory(apiSearch, apiSearch ? 6 : 30),
+  const [officialRes, glamaRes, npmRes, pulseRes, githubRes] = await Promise.allSettled([
+    fetchOfficialRegistry(apiSearch, apiSearch ? 8 : 50),
+    fetchGlamaDirectory(apiSearch, apiSearch ? 6 : 32),
+    fetchNpmMcpServers(apiSearch),
+    fetchPulseMcpServers(apiSearch),
     fetchGithubPopularMcps(apiSearch),
   ]);
 
   const combined = [
     ...(officialRes.status === "fulfilled" ? officialRes.value : []),
     ...(glamaRes.status === "fulfilled" ? glamaRes.value : []),
+    ...(npmRes.status === "fulfilled" ? npmRes.value : []),
+    ...(pulseRes.status === "fulfilled" ? pulseRes.value : []),
     ...(githubRes.status === "fulfilled" ? githubRes.value : []),
   ];
 
@@ -718,11 +873,10 @@ async function getServers(query) {
     if (!key || seen.has(key)) continue;
     seen.add(key);
     all.push(entry);
-    if (all.length >= 8200) break;
+    if (all.length >= 10500) break;
   }
 
   const serialized = all.map(serializeServer);
-  // Strictly sort by highest popularity / stars first, then verified remote, then remote
   serialized.sort((a, b) => {
     if (b.stars !== a.stars) return b.stars - a.stars;
     if (b.verifiedPopular !== a.verifiedPopular) return Number(b.verifiedPopular) - Number(a.verifiedPopular);
@@ -757,11 +911,10 @@ export default async function Home({ searchParams }) {
     <section className="platform-section" id="custom">
       <div className="section-head">
         <div>
-          <div className="eyebrow">CUSTOM ENDPOINT</div>
-          <h1>Add MCP Server</h1>
-          <p className="section-intro">
-            Connect any remote Streamable HTTP MCP URL directly to your DRIVE account.
-          </p>
+          <div className="eyebrow">
+            <span className="pulse" /> CUSTOM ENDPOINT
+          </div>
+          <h1>Add Custom MCP</h1>
         </div>
       </div>
       <CustomMcpForm />
@@ -776,7 +929,6 @@ export default async function Home({ searchParams }) {
       discover={discover}
       add={add}
       skills={skills}
-      initialTab="mcp"
       serverCount={servers.length}
       query={query}
     />

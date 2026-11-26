@@ -5,18 +5,35 @@ import { createBrowserClient } from "@supabase/ssr";
 import {
   BookOpen,
   Cable,
+  Check,
   Command,
   Compass,
+  Copy,
   Globe,
+  Layers,
+  Link2,
   LockKeyhole,
   LogIn,
   LogOut,
   Plus,
   RefreshCw,
+  ShieldCheck,
   Sparkles,
   User,
 } from "lucide-react";
 import { useDriveLang } from "./lang-context";
+
+const NAV_ITEMS = [
+  { id: "mcp", label: "MCP Hub", short: "MCP", icon: Cable },
+  { id: "skills", label: "Skills Library", short: "Skills", icon: BookOpen },
+  { id: "account", label: "Account", short: "Account", icon: LockKeyhole },
+];
+
+const MCP_SUBTABS = [
+  { id: "discover", label: "Directory" },
+  { id: "my", label: "My MCPs" },
+  { id: "custom", label: "+ Custom" },
+];
 
 const HASH_TO_TAB = {
   "#mcp": "mcp",
@@ -41,14 +58,22 @@ function getSupabaseClient() {
   return createBrowserClient(url, key);
 }
 
-function AccountStatusPanel() {
-  const { t } = useDriveLang();
+function AccountStatusPanel({ onNavigate, serverCount = 0 }) {
+  const { lang, setLang } = useDriveLang();
   const [session, setSession] = useState(null);
   const [mcp, setMcp] = useState([]);
   const [skills, setSkills] = useState([]);
   const [loading, setLoading] = useState(true);
   const [authBusy, setAuthBusy] = useState(false);
+  const [copiedGateway, setCopiedGateway] = useState(false);
+  const [gatewayUrl, setGatewayUrl] = useState("https://drive-mcp-five.vercel.app/api/mcp");
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setGatewayUrl(`${window.location.origin}/api/mcp`);
+    }
+  }, []);
 
   const refresh = useCallback(async () => {
     setLoading(true);
@@ -116,7 +141,7 @@ function AccountStatusPanel() {
         },
       });
     } catch (e) {
-      setError(e?.message || t("Gagal memulai login Google.", "Failed to start Google sign-in."));
+      setError(e?.message || "Failed to start Google sign-in.");
       setAuthBusy(false);
     }
   }
@@ -132,10 +157,16 @@ function AccountStatusPanel() {
       setSkills([]);
       window.dispatchEvent(new Event("drive:auth-changed"));
     } catch (e) {
-      setError(e?.message || t("Gagal keluar akun.", "Failed to sign out."));
+      setError(e?.message || "Failed to sign out.");
     } finally {
       setAuthBusy(false);
     }
+  }
+
+  function copyGateway() {
+    navigator.clipboard?.writeText(gatewayUrl).catch(() => {});
+    setCopiedGateway(true);
+    window.setTimeout(() => setCopiedGateway(false), 1500);
   }
 
   return (
@@ -143,15 +174,16 @@ function AccountStatusPanel() {
       <div className="section-head">
         <div>
           <div className="eyebrow">
-            <span className="pulse" /> {t("AKUN", "ACCOUNT")}
+            <span className="pulse" /> ACCOUNT
           </div>
-          <h1>{t("Akun & Status", "Account & Status")}</h1>
+          <h1>Account &amp; Workspace</h1>
         </div>
         <button type="button" className="glass-chip-btn" onClick={refresh} disabled={loading}>
-          <RefreshCw size={13} className={loading ? "spin" : ""} /> {t("Muat Ulang", "Refresh")}
+          <RefreshCw size={13} className={loading ? "spin" : ""} /> Refresh
         </button>
       </div>
 
+      {/* 1. Profile & Sync Card */}
       <article className="account-profile-card">
         <div className="account-profile-left">
           <span className="account-profile-avatar">
@@ -162,24 +194,14 @@ function AccountStatusPanel() {
               <>
                 <div className="account-profile-email-row">
                   <strong>{session.user.email}</strong>
-                  <span className="account-sync-pill">{t("Tersinkron", "Synced")}</span>
+                  <span className="account-sync-pill">Synced</span>
                 </div>
-                <small>
-                  {t(
-                    "Masuk ke DRIVE · MCP & Skills otomatis tersinkron ke akun kamu",
-                    "Signed in to DRIVE · MCPs & Skills synced to your account"
-                  )}
-                </small>
+                <small>Signed in to DRIVE · MCPs &amp; Skills synced across sessions</small>
               </>
             ) : (
               <>
-                <strong>{t("Belum masuk", "Not signed in")}</strong>
-                <small>
-                  {t(
-                    "Masuk dengan Google untuk menyinkronkan koneksi MCP & Skills",
-                    "Sign in to sync MCP connections & installed Skills"
-                  )}
-                </small>
+                <strong>Not signed in</strong>
+                <small>Sign in with Google to sync MCP connections &amp; installed Skills</small>
               </>
             )}
           </div>
@@ -191,8 +213,7 @@ function AccountStatusPanel() {
             onClick={handleSignOut}
             disabled={authBusy}
           >
-            <LogOut size={13} />{" "}
-            {authBusy ? t("Keluar...", "Signing out...") : t("Keluar", "Sign out")}
+            <LogOut size={13} /> {authBusy ? "Signing out..." : "Sign out"}
           </button>
         ) : (
           <button
@@ -201,28 +222,25 @@ function AccountStatusPanel() {
             onClick={handleSignIn}
             disabled={authBusy}
           >
-            <LogIn size={13} />{" "}
-            {authBusy
-              ? t("Mengalihkan...", "Redirecting...")
-              : t("Masuk dengan Google", "Sign in with Google")}
+            <LogIn size={13} /> {authBusy ? "Redirecting..." : "Sign in with Google"}
           </button>
         )}
       </article>
 
       {error && <p className="skill-inline-error">{error}</p>}
 
+      {/* 2. Active MCPs & Active Skills Overview Grid */}
       <div className="account-active-grid">
-        <article className="account-active-card">
+        <article
+          className="account-active-card is-interactive"
+          onClick={() => onNavigate("mcp", "my")}
+        >
           <span className="account-active-icon">
             <Cable size={18} />
           </span>
-          <small>{t("MCP AKTIF", "ACTIVE MCPs")}</small>
+          <small>ACTIVE MCPs</small>
           <strong>{loading ? "—" : mcp.length}</strong>
-          <span>
-            {mcp.length === 1
-              ? t("server aktif", "server enabled")
-              : t("server aktif", "servers enabled")}
-          </span>
+          <span>{mcp.length === 1 ? "server enabled" : "servers enabled"}</span>
           <div className="account-active-list">
             {mcp.slice(0, 4).map((item) => (
               <div key={item.id}>
@@ -233,28 +251,21 @@ function AccountStatusPanel() {
                   "MCP connection"}
               </div>
             ))}
-            {!loading && !mcp.length && (
-              <p>{t("Belum ada MCP aktif.", "No active MCPs yet.")}</p>
-            )}
-            {mcp.length > 4 && (
-              <p>
-                +{mcp.length - 4} {t("lainnya aktif", "more active")}
-              </p>
-            )}
+            {!loading && !mcp.length && <p>No active MCPs yet.</p>}
+            {mcp.length > 4 && <p>+{mcp.length - 4} more active</p>}
           </div>
         </article>
 
-        <article className="account-active-card">
+        <article
+          className="account-active-card is-interactive"
+          onClick={() => onNavigate("skills", "discover")}
+        >
           <span className="account-active-icon">
             <BookOpen size={18} />
           </span>
-          <small>{t("SKILLS AKTIF", "ACTIVE SKILLS")}</small>
+          <small>ACTIVE SKILLS</small>
           <strong>{loading ? "—" : skills.length}</strong>
-          <span>
-            {skills.length === 1
-              ? t("skill aktif", "skill enabled")
-              : t("skill aktif", "skills enabled")}
-          </span>
+          <span>{skills.length === 1 ? "skill enabled" : "skills enabled"}</span>
           <div className="account-active-list">
             {skills.slice(0, 4).map((item) => (
               <div key={item.id}>
@@ -262,16 +273,135 @@ function AccountStatusPanel() {
                 {item.name}
               </div>
             ))}
-            {!loading && !skills.length && (
-              <p>{t("Belum ada Skill aktif.", "No active Skills yet.")}</p>
-            )}
-            {skills.length > 4 && (
-              <p>
-                +{skills.length - 4} {t("lainnya aktif", "more active")}
-              </p>
-            )}
+            {!loading && !skills.length && <p>No active Skills yet.</p>}
+            {skills.length > 4 && <p>+{skills.length - 4} more active</p>}
           </div>
         </article>
+      </div>
+
+      {/* 3. DRIVE Universal MCP Gateway Card */}
+      <article className="account-glass-panel">
+        <div className="account-panel-head">
+          <div className="account-panel-title">
+            <span className="account-mini-icon">
+              <Link2 size={15} />
+            </span>
+            <div>
+              <h3>DRIVE Universal MCP Gateway</h3>
+              <small>Use one endpoint to connect all your active MCPs &amp; Skills to any AI client</small>
+            </div>
+          </div>
+          <button type="button" className="glass-chip-btn" onClick={copyGateway}>
+            {copiedGateway ? <Check size={12} /> : <Copy size={12} />}
+            {copiedGateway ? "Copied" : "Copy URL"}
+          </button>
+        </div>
+        <div className="account-gateway-box">
+          <code>{gatewayUrl}</code>
+        </div>
+        <div className="custom-policy-pills" style={{ marginTop: 10 }}>
+          <span>Claude</span>
+          <span>ChatGPT</span>
+          <span>Cursor</span>
+          <span>Windsurf</span>
+          <span>Gemini CLI</span>
+        </div>
+      </article>
+
+      {/* 4. iOS Grouped Settings: Explanation Language & Security */}
+      <article className="account-glass-panel">
+        <div className="account-panel-head" style={{ marginBottom: 10 }}>
+          <div className="account-panel-title">
+            <span className="account-mini-icon">
+              <ShieldCheck size={15} />
+            </span>
+            <div>
+              <h3>Preferences &amp; Security</h3>
+              <small>Language applies to MCP &amp; Skill explanations only</small>
+            </div>
+          </div>
+        </div>
+
+        <div className="ios-settings-list">
+          <div className="ios-settings-row">
+            <div>
+              <strong>Explanation Language</strong>
+              <small>Translate MCP &amp; Skill descriptions (ID / EN)</small>
+            </div>
+            <div className="lang-toggle-group" role="group" aria-label="Explanation language">
+              <button
+                type="button"
+                className={lang === "id" ? "is-active" : ""}
+                onClick={() => setLang("id")}
+                aria-pressed={lang === "id"}
+              >
+                <Globe size={11} /> ID
+              </button>
+              <button
+                type="button"
+                className={lang === "en" ? "is-active" : ""}
+                onClick={() => setLang("en")}
+                aria-pressed={lang === "en"}
+              >
+                EN
+              </button>
+            </div>
+          </div>
+
+          <div className="ios-settings-row">
+            <div>
+              <strong>OAuth 2.1 &amp; Token Vault</strong>
+              <small>PKCE S256, CIMD &amp; DCR with HttpOnly cookies</small>
+            </div>
+            <span className="status is-enabled">Protected</span>
+          </div>
+
+          <div className="ios-settings-row">
+            <div>
+              <strong>Multi-Registry Index</strong>
+              <small>Official Registry, Glama, npm, PulseMCP &amp; skills.sh</small>
+            </div>
+            <span className="version-pill">
+              <Layers size={10} /> {serverCount ? `${serverCount.toLocaleString()} MCPs` : "10,000+"}
+            </span>
+          </div>
+        </div>
+      </article>
+
+      {/* 5. Quick Workspace Actions */}
+      <div className="account-quick-grid">
+        <button
+          type="button"
+          className="account-quick-tile"
+          onClick={() => onNavigate("mcp", "discover")}
+        >
+          <Compass size={16} />
+          <span>MCP Directory</span>
+        </button>
+        <button
+          type="button"
+          className="account-quick-tile"
+          onClick={() => onNavigate("mcp", "my")}
+        >
+          <Cable size={16} />
+          <span>My MCPs</span>
+        </button>
+        <button
+          type="button"
+          className="account-quick-tile"
+          onClick={() => onNavigate("skills", "discover")}
+        >
+          <BookOpen size={16} />
+          <span>Skills Library</span>
+        </button>
+        <button
+          type="button"
+          className="account-quick-tile"
+          onClick={() => onNavigate("mcp", "custom")}
+        >
+          <Plus size={16} />
+          <span>Add Custom MCP</span>
+        </button>
       </div>
     </section>
   );
@@ -294,7 +424,6 @@ export default function WorkspaceTabs({
   serverCount = 0,
   query = "",
 }) {
-  const { lang, setLang, t } = useDriveLang();
   const [active, setActive] = useState(() => resolveInitialTab(initialTab, query));
   const [mcpView, setMcpView] = useState("discover");
   const [dragIndex, setDragIndex] = useState(null);
@@ -304,25 +433,13 @@ export default function WorkspaceTabs({
   const dockRef = useRef(null);
   const glideTimerRef = useRef(null);
 
-  const navItems = [
-    { id: "mcp", label: "MCP Hub", short: "MCP", icon: Cable },
-    { id: "skills", label: t("Pustaka Skills", "Skills Library"), short: "Skills", icon: BookOpen },
-    { id: "account", label: t("Status Akun", "Account Status"), short: t("Akun", "Account"), icon: LockKeyhole },
-  ];
-
-  const mcpSubtabs = [
-    { id: "discover", label: t("Direktori", "Directory") },
-    { id: "my", label: t("MCP Saya", "My MCPs") },
-    { id: "custom", label: t("+ Kustom", "+ Custom") },
-  ];
-
   const activeIndex = Math.max(
     0,
-    navItems.findIndex((item) => item.id === active)
+    NAV_ITEMS.findIndex((item) => item.id === active)
   );
   const subIndex = Math.max(
     0,
-    mcpSubtabs.findIndex((item) => item.id === mcpView)
+    MCP_SUBTABS.findIndex((item) => item.id === mcpView)
   );
 
   const selectTab = useCallback((nextTab) => {
@@ -335,6 +452,14 @@ export default function WorkspaceTabs({
       return nextTab;
     });
   }, []);
+
+  const handleAccountNavigate = useCallback(
+    (tab, sub) => {
+      selectTab(tab);
+      if (tab === "mcp" && sub) setMcpView(sub);
+    },
+    [selectTab]
+  );
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -372,7 +497,7 @@ export default function WorkspaceTabs({
     const rect = dock.getBoundingClientRect();
     const innerWidth = Math.max(1, rect.width - 12);
     const ratio = Math.min(0.999, Math.max(0, (clientX - rect.left - 6) / innerWidth));
-    return Math.min(navItems.length - 1, Math.max(0, Math.floor(ratio * navItems.length)));
+    return Math.min(NAV_ITEMS.length - 1, Math.max(0, Math.floor(ratio * NAV_ITEMS.length)));
   }
 
   function handlePointerDown(event) {
@@ -380,7 +505,7 @@ export default function WorkspaceTabs({
     setIsDragging(true);
     const idx = getPointerTabIndex(event.clientX);
     setDragIndex(idx);
-    const target = navItems[idx];
+    const target = NAV_ITEMS[idx];
     if (target && target.id !== active) {
       setActive(target.id);
     }
@@ -390,7 +515,7 @@ export default function WorkspaceTabs({
     if (!isDragging) return;
     const idx = getPointerTabIndex(event.clientX);
     setDragIndex(idx);
-    const target = navItems[idx];
+    const target = NAV_ITEMS[idx];
     if (target && target.id !== active) {
       setActive(target.id);
     }
@@ -404,17 +529,17 @@ export default function WorkspaceTabs({
         : dragIndex ?? activeIndex;
     setIsDragging(false);
     setDragIndex(null);
-    const target = navItems[Math.min(navItems.length - 1, Math.max(0, finalIdx))];
+    const target = NAV_ITEMS[Math.min(NAV_ITEMS.length - 1, Math.max(0, finalIdx))];
     if (target) selectTab(target.id);
   }
 
   function handleKeyDown(event) {
     if (event.key === "ArrowRight") {
       event.preventDefault();
-      selectTab(navItems[(activeIndex + 1) % navItems.length].id);
+      selectTab(NAV_ITEMS[(activeIndex + 1) % NAV_ITEMS.length].id);
     } else if (event.key === "ArrowLeft") {
       event.preventDefault();
-      selectTab(navItems[(activeIndex - 1 + navItems.length) % navItems.length].id);
+      selectTab(NAV_ITEMS[(activeIndex - 1 + NAV_ITEMS.length) % NAV_ITEMS.length].id);
     }
   }
 
@@ -422,6 +547,7 @@ export default function WorkspaceTabs({
 
   return (
     <main className="drive-app">
+      {/* Clean iOS Topbar — zero clutter */}
       <header className="app-topbar">
         <button
           type="button"
@@ -439,25 +565,6 @@ export default function WorkspaceTabs({
         </button>
 
         <div className="app-top-actions">
-          <div className="lang-toggle-group" role="group" aria-label={t("Pilih bahasa", "Language")}>
-            <button
-              type="button"
-              className={lang === "id" ? "is-active" : ""}
-              onClick={() => setLang("id")}
-              aria-pressed={lang === "id"}
-            >
-              <Globe size={11} /> ID
-            </button>
-            <button
-              type="button"
-              className={lang === "en" ? "is-active" : ""}
-              onClick={() => setLang("en")}
-              aria-pressed={lang === "en"}
-            >
-              EN
-            </button>
-          </div>
-
           <button
             type="button"
             className="top-pill-btn"
@@ -469,17 +576,17 @@ export default function WorkspaceTabs({
                 setMcpView("discover");
               }
             }}
-            title={t("Buka Direktori MCP", "Browse MCP Directory")}
+            title="Browse MCP Directory"
           >
             <Compass size={13} />
             <span>
               {active === "mcp" && mcpView === "discover"
                 ? serverCount
-                  ? `${serverCount.toLocaleString()} MCP`
-                  : t("Direktori", "Directory")
+                  ? `${serverCount.toLocaleString()} MCPs`
+                  : "Directory"
                 : active === "skills"
-                ? "MCP"
-                : t("Direktori", "Directory")}
+                ? "MCPs"
+                : "Directory"}
             </span>
           </button>
 
@@ -495,15 +602,15 @@ export default function WorkspaceTabs({
                 setMcpView("custom");
               }
             }}
-            title={t("Tambah MCP Kustom", "Add Custom MCP")}
+            title="Add Custom MCP"
           >
             {active === "account" ? <Sparkles size={12} /> : <Plus size={13} />}
-            <span>{active === "account" ? "MCP" : t("Sambung", "Connect")}</span>
+            <span>{active === "account" ? "MCPs" : "Connect"}</span>
           </button>
         </div>
       </header>
 
-      {/* Persistent mounted panels for 0ms instant switching (no unmount/re-fetch spinners) */}
+      {/* Persistent mounted panels for 0ms instant switching */}
       <section className="app-content" aria-live="polite">
         <div className="app-panel" hidden={active !== "mcp"}>
           <div className="drive-mcp-workspace">
@@ -511,11 +618,11 @@ export default function WorkspaceTabs({
               <div
                 className="drive-subtabs"
                 role="tablist"
-                aria-label={t("Bagian MCP", "MCP sections")}
+                aria-label="MCP sections"
                 style={{ "--sub-index": subIndex }}
               >
                 <span className="drive-subtabs-pill" aria-hidden="true" />
-                {mcpSubtabs.map((tab) => {
+                {MCP_SUBTABS.map((tab) => {
                   const isActive = mcpView === tab.id;
                   return (
                     <button
@@ -550,17 +657,21 @@ export default function WorkspaceTabs({
         </div>
 
         <div className="app-panel" hidden={active !== "account"}>
-          <AccountStatusPanel />
+          <AccountStatusPanel
+            onNavigate={handleAccountNavigate}
+            serverCount={serverCount}
+          />
         </div>
       </section>
 
+      {/* Floating iOS 26 Liquid Glass 3-Tab Dock */}
       <div className="bottom-dock-stage">
         <nav
           ref={dockRef}
           className={`liquid-navbar-3 ${isDragging ? "is-dragging" : ""} ${
             isAnimatingLens ? "is-gliding" : ""
           }`}
-          aria-label={t("Navigasi utama", "Primary navigation")}
+          aria-label="Primary navigation"
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={finishPointerDrag}
@@ -571,7 +682,7 @@ export default function WorkspaceTabs({
           }}
         >
           <span className="liquid-lens-pill" aria-hidden="true" />
-          {navItems.map(({ id, label, short, icon: Icon }) => {
+          {NAV_ITEMS.map(({ id, label, short, icon: Icon }) => {
             const isActive = active === id;
             return (
               <button

@@ -1,0 +1,325 @@
+/* DRIVE Unified MCP & Skills Marketplace — Cupertino Liquid Glass */
+
+.mkt-shell {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: clamp(20px, 4vw, 38px) clamp(16px, 3vw, 28px) calc(110px + env(safe-area-inset-bottom));
+}
+
+.mkt-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.mkt-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 14px;
+  border-radius: 999px;
+  color: #e4ebf4;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  transition: background 160ms ease, border-color 160ms ease;
+}
+
+.mkt-nav-link:hover {
+  background: rgba(255, 255, 255, 0.13);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+.mkt-hero {
+  padding: clamp(22px, 3.5vw, 34px);
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.105), rgba(255, 255, 255, 0.035));
+  -webkit-backdrop-filter: blur(26px) saturate(190%);
+  backdrop-filter: blur(26px) saturate(190%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.22), 0 18px 40px rgba(0, 0, 0, 0.24);
+  margin-bottom: 22px;
+}
+
+.mkt-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 600 11px/1 'DM Mono', ui-monospace, monospace;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: #d7ff8b;
+  margin-bottom: 10px;
+}
+
+.mkt-title {
+  margin: 0 0 8px;
+  font-size: clamp(26px, 4.2vw, 38px);
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+  color: #f4f8ff;
+}
+
+.mkt-desc {
+  margin: 0 0 22px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #c1ccda;
+  max-width: 66ch;
+}
+
+.mkt-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.mkt-segmented {
+  display: inline-flex;
+  padding: 4px;
+  border-radius: 999px;
+  background: rgba(8, 14, 24, 0.52);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.mkt-seg-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #b9c8d9;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.mkt-seg-btn.is-active {
+  background: linear-gradient(135deg, rgba(215, 255, 139, 0.22), rgba(90, 200, 250, 0.14));
+  color: #f4f8ff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24);
+}
+
+.mkt-search-wrap {
+  position: relative;
+  flex: 1 1 260px;
+  min-width: 220px;
+}
+
+.mkt-search-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 14px 10px 40px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(8, 14, 24, 0.45);
+  color: #f4f8ff;
+  font-size: 14px;
+}
+
+.mkt-search-icon {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #8fa1b5;
+  pointer-events: none;
+}
+
+.mkt-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.mkt-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 13px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #c1ccda;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.mkt-chip.is-active {
+  color: #d7ff8b;
+  background: rgba(194, 255, 105, 0.15);
+  border-color: rgba(194, 255, 105, 0.34);
+}
+
+.mkt-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.mkt-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-width: 0;
+  padding: 20px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: linear-gradient(145deg, rgba(25, 39, 58, 0.78), rgba(12, 20, 33, 0.88));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.13), 0 12px 28px rgba(0, 0, 0, 0.2);
+  transition: transform 170ms ease, border-color 170ms ease;
+}
+
+.mkt-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.26);
+}
+
+.mkt-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.mkt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.mkt-badge.is-lime {
+  color: #d7ff8b;
+  background: rgba(194, 255, 105, 0.14);
+  border-color: rgba(194, 255, 105, 0.3);
+}
+
+.mkt-card h2 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  line-height: 1.3;
+  color: #f4f8ff;
+  overflow-wrap: anywhere;
+}
+
+.mkt-card-sub {
+  font-size: 11px;
+  color: #93a7be;
+  margin-bottom: 10px;
+  overflow-wrap: anywhere;
+}
+
+.mkt-card-desc {
+  margin: 0 0 16px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #c1ccda;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.mkt-card-footer {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mkt-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 13px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  color: #f4f8ff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.mkt-action.is-primary {
+  flex: 1 1 auto;
+  color: #0b1407;
+  background: linear-gradient(135deg, #d7ff8b, #9ef065);
+  border-color: rgba(215, 255, 139, 0.7);
+}
+
+.mkt-empty {
+  padding: 36px 24px;
+  border-radius: 24px;
+  text-align: center;
+  color: #c1ccda;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.mkt-nav-link:focus-visible,
+.mkt-seg-btn:focus-visible,
+.mkt-search-input:focus-visible,
+.mkt-chip:focus-visible,
+.mkt-action:focus-visible {
+  outline: 2px solid #d7ff8b;
+  outline-offset: 2px;
+}
+
+@media (max-width: 960px) {
+  .mkt-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .mkt-grid {
+    grid-template-columns: 1fr;
+  }
+  .mkt-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .mkt-segmented {
+    width: 100%;
+  }
+  .mkt-seg-btn {
+    flex: 1 1 50%;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mkt-card,
+  .mkt-nav-link,
+  .mkt-seg-btn,
+  .mkt-chip {
+    transition: none;
+  }
+}

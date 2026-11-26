@@ -2,14 +2,34 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createBrowserClient } from "@supabase/ssr";
-import { ArrowLeft, Cable, CheckCircle2, ExternalLink, Loader2, LockKeyhole, Plus, Power } from "lucide-react";
+import {
+  ArrowLeft,
+  Cable,
+  Check,
+  CheckCircle2,
+  Copy,
+  ExternalLink,
+  Globe,
+  Loader2,
+  LockKeyhole,
+  Plus,
+  Power,
+  Search,
+  Sparkles,
+  Trash2,
+} from "lucide-react";
 
 function getRemoteUrl(entry) {
   const server = entry?.server || entry || {};
   const remotes = Array.isArray(server.remotes) ? server.remotes : [];
-  const match = remotes.find((item) => typeof item?.url === "string" && item.url.startsWith("https://"));
-  return match?.url || "";
+  const preferred = remotes.find((item) => {
+    if (typeof item?.url !== "string" || !item.url.startsWith("https://")) return false;
+    const kind = String(item?.type || item?.transport || "streamable_http").trim();
+    return /^(streamable.?http|http)$/i.test(kind);
+  });
+  return (preferred || remotes.find((item) => typeof item?.url === "string" && item.url.startsWith("https://")))?.url || "";
 }
 
 export default function ConnectGateway({
@@ -20,17 +40,27 @@ export default function ConnectGateway({
   candidates = [],
   lookupError = null,
 }) {
+  const router = useRouter();
   const [selectedEntry, setSelectedEntry] = useState(initialEntry);
+  const [searchInput, setSearchInput] = useState(serverParam || queryParam || "");
   const [session, setSession] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [connections, setConnections] = useState([]);
   const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState(lookupError || "");
 
   const [customName, setCustomName] = useState(serverParam || queryParam || "");
   const [customEndpoint, setCustomEndpoint] = useState(endpointParam || "");
   const [customBusy, setCustomBusy] = useState(false);
+
+  useEffect(() => {
+    setSelectedEntry(initialEntry);
+    setSearchInput(serverParam || queryParam || "");
+    setCustomName(serverParam || queryParam || "");
+    setCustomEndpoint(endpointParam || "");
+  }, [initialEntry, serverParam, queryParam, endpointParam]);
 
   const loadSessionAndConnections = useCallback(async () => {
     setAuthLoading(true);
@@ -80,6 +110,26 @@ export default function ConnectGateway({
     });
   }
 
+  function handleSearchSubmit(event) {
+    event.preventDefault();
+    const trimmed = searchInput.trim();
+    if (!trimmed) return;
+    router.push(`/connect?query=${encodeURIComponent(trimmed)}`);
+  }
+
+  async function copyDirectLink() {
+    if (typeof window === "undefined") return;
+    const activeName = (selectedEntry?.server || selectedEntry)?.name;
+    const link = activeName
+      ? `${window.location.origin}/connect?server=${encodeURIComponent(activeName)}`
+      : window.location.href;
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {}
+  }
+
   const activeServer = selectedEntry?.server || selectedEntry || null;
   const activeRemoteUrl = getRemoteUrl(selectedEntry);
   const existingConnection = activeServer?.name
@@ -110,7 +160,7 @@ export default function ConnectGateway({
       if (!res.ok) {
         throw new Error([data.error, data.detail].filter(Boolean).join(": ") || "Could not connect MCP server.");
       }
-      setStatusMessage(`${server.title || server.name} is now connected and enabled in your DRIVE MCP gateway.`);
+      setStatusMessage(`${server.title || server.name} sekarang terhubung dan aktif di gateway DRIVE MCP kamu.`);
       await loadSessionAndConnections();
     } catch (err) {
       setErrorMessage(err?.message || "Connection failed.");
@@ -135,10 +185,31 @@ export default function ConnectGateway({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not update connection.");
-      setStatusMessage(!conn.enabled ? "MCP enabled in your DRIVE gateway." : "MCP paused in your DRIVE gateway.");
+      setStatusMessage(!conn.enabled ? "MCP diaktifkan kembali di gateway DRIVE." : "MCP dijeda sementara di gateway DRIVE.");
       await loadSessionAndConnections();
     } catch (err) {
       setErrorMessage(err?.message || "Update failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function disconnectConnection(conn) {
+    if (!session?.access_token) return;
+    setBusy(true);
+    setErrorMessage("");
+    setStatusMessage("");
+    try {
+      const res = await fetch(`/api/connections?id=${encodeURIComponent(conn.id)}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Could not disconnect MCP.");
+      setStatusMessage("Koneksi MCP dihapus dari akun DRIVE kamu.");
+      await loadSessionAndConnections();
+    } catch (err) {
+      setErrorMessage(err?.message || "Disconnect failed.");
     } finally {
       setBusy(false);
     }
@@ -181,7 +252,7 @@ export default function ConnectGateway({
           throw new Error([connData.error, connData.detail].filter(Boolean).join(": ") || "Registered server, but could not enable it.");
         }
       }
-      setStatusMessage(`${customName.trim()} connected and enabled in your DRIVE MCP gateway.`);
+      setStatusMessage(`${customName.trim()} berhasil diverifikasi dan aktif di gateway DRIVE MCP kamu.`);
       await loadSessionAndConnections();
     } catch (err) {
       setErrorMessage(err?.message || "Could not connect custom MCP server.");
@@ -193,157 +264,244 @@ export default function ConnectGateway({
   const targetLabel = activeServer?.title || activeServer?.name || serverParam || queryParam || "MCP Gateway";
 
   return (
-    <main style={{ maxWidth: 760, margin: "0 auto", padding: "32px 20px 64px" }}>
-      <div style={{ marginBottom: 20 }}>
-        <Link href="/#mcp" style={{ display: "inline-flex", alignItems: "center", gap: 8, opacity: 0.85, textDecoration: "none" }}>
-          <ArrowLeft size={16} /> Back to DRIVE Workspace
+    <main className="connect-shell">
+      <nav className="connect-topbar" aria-label="Gateway navigation">
+        <Link href="/#mcp" className="connect-back-link">
+          <ArrowLeft size={15} /> Workspace
         </Link>
-      </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+          <Link href="/marketplace" className="connect-back-link">
+            <Sparkles size={15} /> Marketplace
+          </Link>
+          <button type="button" className="connect-back-link" onClick={copyDirectLink}>
+            {copied ? <Check size={15} /> : <Copy size={15} />}
+            {copied ? "Link Copied" : "Copy Direct URL"}
+          </button>
+        </div>
+      </nav>
 
-      <section className="glass-surface" style={{ padding: 28, borderRadius: 24 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, opacity: 0.8, fontSize: 12, letterSpacing: "0.08em", textTransform: "uppercase" }}>
-          <Cable size={15} /> DRIVE MCP Direct Gateway
+      <section className="connect-panel" aria-labelledby="connect-heading">
+        <div className="connect-eyebrow">
+          <Cable size={14} /> DRIVE MCP DIRECT GATEWAY
         </div>
 
-        <h1 style={{ margin: "0 0 8px", fontSize: 28 }}>Connect {targetLabel}</h1>
-        <p style={{ margin: "0 0 20px", opacity: 0.8, lineHeight: 1.5 }}>
-          Hubungkan MCP server langsung ke akun DRIVE kamu. Setelah aktif, AI provider yang terhubung ke DRIVE MCP otomatis bisa membaca dan memakai tool dari server ini.
+        <h1 id="connect-heading" className="connect-title">
+          Connect {targetLabel}
+        </h1>
+        <p className="connect-subtitle">
+          Hubungkan MCP server langsung ke akun DRIVE kamu. Begitu aktif, AI provider yang terhubung ke DRIVE MCP otomatis bisa membaca dan memakai tool dari server ini.
         </p>
 
-        {errorMessage && (
-          <div style={{ padding: "12px 14px", borderRadius: 14, background: "rgba(239,68,68,0.14)", border: "1px solid rgba(239,68,68,0.35)", marginBottom: 16 }}>
-            {errorMessage}
-          </div>
-        )}
+        <form onSubmit={handleSearchSubmit} className="connect-search-row" role="search">
+          <input
+            type="search"
+            className="connect-input"
+            aria-label="Search MCP server to connect"
+            placeholder="Cari MCP lain (contoh: figcraft, github, supabase, context7)..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+          />
+          <button type="submit" className="connect-btn">
+            <Search size={15} /> Cari
+          </button>
+        </form>
 
-        {statusMessage && (
-          <div style={{ padding: "12px 14px", borderRadius: 14, background: "rgba(34,197,94,0.14)", border: "1px solid rgba(34,197,94,0.35)", marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
-            <CheckCircle2 size={16} /> {statusMessage}
-          </div>
-        )}
+        <div aria-live="polite">
+          {errorMessage && (
+            <div className="connect-alert is-error" role="alert">
+              {errorMessage}
+            </div>
+          )}
+          {statusMessage && (
+            <div className="connect-alert is-success" role="status">
+              <CheckCircle2 size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+              <span>{statusMessage}</span>
+            </div>
+          )}
+        </div>
 
         {authLoading ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "16px 0", opacity: 0.8 }}>
-            <Loader2 size={16} className="spin" /> Checking DRIVE session...
+          <div className="connect-card" style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <Loader2 size={16} className="spin" /> Memeriksa sesi DRIVE kamu...
           </div>
         ) : !session ? (
-          <div style={{ padding: 20, borderRadius: 18, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.14)", marginBottom: 20 }}>
-            <p style={{ margin: "0 0 14px", display: "flex", alignItems: "center", gap: 8 }}>
-              <LockKeyhole size={16} /> Sign in to your DRIVE account to connect this MCP.
-            </p>
-            <button type="button" className="glass-chip-btn" onClick={signInWithGoogle}>
-              Sign in with Google
-            </button>
+          <div className="connect-card">
+            <div className="connect-card-head">
+              <div>
+                <h2 className="connect-card-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <LockKeyhole size={18} /> Masuk ke DRIVE
+                </h2>
+                <p className="connect-card-meta" style={{ marginTop: 6 }}>
+                  Login dulu agar koneksi MCP tersimpan khusus ke akun kamu. Setelah login, kamu otomatis kembali ke halaman ini.
+                </p>
+              </div>
+            </div>
+            <div className="connect-actions" style={{ marginTop: 16 }}>
+              <button type="button" className="connect-btn is-primary" onClick={signInWithGoogle}>
+                Sign in with Google
+              </button>
+            </div>
           </div>
         ) : null}
 
         {activeServer && (
-          <div style={{ padding: 20, borderRadius: 18, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", marginBottom: 20 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, flexWrap: "wrap" }}>
+          <article className="connect-card">
+            <div className="connect-card-head">
               <div>
-                <h2 style={{ margin: "0 0 4px", fontSize: 20 }}>{activeServer.title || activeServer.name}</h2>
-                <div style={{ fontSize: 13, opacity: 0.72 }}>
+                <h2 className="connect-card-title">{activeServer.title || activeServer.name}</h2>
+                <div className="connect-card-meta">
                   {activeServer.name} {activeServer.version ? `· v${activeServer.version}` : ""}
                 </div>
               </div>
               {activeServer.repository?.url && (
-                <a href={activeServer.repository.url} target="_blank" rel="noreferrer" style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+                <a
+                  href={activeServer.repository.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="connect-back-link"
+                >
                   Source <ExternalLink size={13} />
                 </a>
               )}
             </div>
 
+            <div className="connect-badges">
+              <span className={`connect-pill ${activeRemoteUrl ? "is-ready" : ""}`}>
+                <Globe size={12} /> {activeRemoteUrl ? "1-Click Remote HTTPS" : "Local / STDIO Package"}
+              </span>
+              {existingConnection && (
+                <span className={`connect-pill ${existingConnection.enabled ? "is-active" : ""}`}>
+                  {existingConnection.enabled ? "Active in DRIVE" : "Paused"}
+                </span>
+              )}
+            </div>
+
             {activeServer.description && (
-              <p style={{ margin: "12px 0", opacity: 0.85, lineHeight: 1.5 }}>{activeServer.description}</p>
+              <p className="connect-subtitle" style={{ marginBottom: 14 }}>
+                {activeServer.description}
+              </p>
             )}
 
             {activeRemoteUrl ? (
-              <div style={{ fontSize: 12, opacity: 0.72, wordBreak: "break-all", marginBottom: 16 }}>
+              <div className="connect-endpoint">
                 Remote endpoint: <code>{activeRemoteUrl}</code>
               </div>
             ) : (
-              <div style={{ fontSize: 13, opacity: 0.85, marginBottom: 16 }}>
-                Entry ini tidak memiliki remote Streamable HTTP endpoint di registry publik. Kamu tetap bisa menghubungkannya lewat form Custom Remote MCP di bawah jika punya URL endpoint-nya.
-              </div>
+              <p className="connect-card-meta" style={{ marginBottom: 16, lineHeight: 1.55 }}>
+                Entry ini belum mencantumkan remote Streamable HTTP endpoint di registry publik. Kalau kamu punya URL endpoint-nya, langsung tempel di form Custom Remote MCP di bawah.
+              </p>
             )}
 
             {session && activeRemoteUrl && (
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <div className="connect-actions">
                 {existingConnection ? (
-                  <button type="button" className="glass-chip-btn" disabled={busy} onClick={() => toggleConnection(existingConnection)}>
-                    <Power size={14} /> {existingConnection.enabled ? "Pause MCP" : "Enable in DRIVE"}
-                  </button>
+                  <>
+                    <button
+                      type="button"
+                      className={`connect-btn ${existingConnection.enabled ? "" : "is-primary"}`}
+                      disabled={busy}
+                      onClick={() => toggleConnection(existingConnection)}
+                    >
+                      {busy ? <Loader2 size={15} className="spin" /> : <Power size={15} />}
+                      {existingConnection.enabled ? "Pause MCP" : "Enable in DRIVE"}
+                    </button>
+                    <button
+                      type="button"
+                      className="connect-btn is-danger"
+                      disabled={busy}
+                      onClick={() => disconnectConnection(existingConnection)}
+                    >
+                      <Trash2 size={15} /> Disconnect
+                    </button>
+                  </>
                 ) : (
-                  <button type="button" className="glass-chip-btn" disabled={busy} onClick={() => connectRegistryServer(selectedEntry)}>
-                    {busy ? <Loader2 size={14} className="spin" /> : <Plus size={14} />} Connect &amp; Enable in DRIVE
+                  <button
+                    type="button"
+                    className="connect-btn is-primary"
+                    disabled={busy}
+                    onClick={() => connectRegistryServer(selectedEntry)}
+                  >
+                    {busy ? <Loader2 size={15} className="spin" /> : <Plus size={15} />}
+                    Connect &amp; Enable in DRIVE
                   </button>
                 )}
-                <Link href="/#mcp" className="glass-chip-btn" style={{ textDecoration: "none" }}>
+                <Link href="/#mcp" className="connect-btn">
                   Open My MCPs
                 </Link>
               </div>
             )}
-          </div>
+          </article>
         )}
 
         {candidates.length > 1 && (
-          <div style={{ marginBottom: 24 }}>
-            <h3 style={{ margin: "0 0 10px", fontSize: 15, opacity: 0.85 }}>Matching MCP servers in Official Registry</h3>
-            <div style={{ display: "grid", gap: 10 }}>
+          <section aria-label="Matching MCP servers">
+            <h3 className="connect-eyebrow" style={{ color: "#b9c8d9", marginBottom: 10 }}>
+              Kandidat MCP yang Cocok ({candidates.length})
+            </h3>
+            <div className="connect-candidates">
               {candidates.map((entry) => {
                 const s = entry.server || entry;
                 const isSelected = activeServer?.name === s.name;
+                const remoteReady = Boolean(getRemoteUrl(entry));
                 return (
                   <button
                     key={`${s.name}@${s.version}`}
                     type="button"
+                    className={`connect-candidate ${isSelected ? "is-selected" : ""}`}
                     onClick={() => setSelectedEntry(entry)}
-                    style={{
-                      textAlign: "left",
-                      padding: "12px 14px",
-                      borderRadius: 14,
-                      background: isSelected ? "rgba(255,255,255,0.14)" : "rgba(255,255,255,0.04)",
-                      border: "1px solid rgba(255,255,255,0.14)",
-                      color: "inherit",
-                      cursor: "pointer",
-                    }}
                   >
-                    <div style={{ fontWeight: 600 }}>{s.title || s.name}</div>
-                    <div style={{ fontSize: 12, opacity: 0.72 }}>{s.name} · {getRemoteUrl(entry) ? "Remote HTTPS ready" : "Local / STDIO"}</div>
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: 14 }}>{s.title || s.name}</div>
+                      <div className="connect-card-meta">{s.name}</div>
+                    </div>
+                    <span className={`connect-pill ${remoteReady ? "is-ready" : ""}`}>
+                      {remoteReady ? "Remote Ready" : "STDIO"}
+                    </span>
                   </button>
                 );
               })}
             </div>
-          </div>
+          </section>
         )}
 
         {session && (!activeRemoteUrl || endpointParam) && (
-          <form onSubmit={connectCustomServer} style={{ padding: 20, borderRadius: 18, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)" }}>
-            <h3 style={{ margin: "0 0 6px", fontSize: 16 }}>Connect Custom Remote MCP Gateway</h3>
-            <p style={{ margin: "0 0 14px", fontSize: 13, opacity: 0.78 }}>
-              Masukkan URL HTTPS Streamable HTTP endpoint untuk menghubungkan {customName || "MCP server"} langsung ke akun DRIVE kamu.
+          <form onSubmit={connectCustomServer} className="connect-card" style={{ marginBottom: 0 }}>
+            <h3 className="connect-card-title" style={{ fontSize: 17, marginBottom: 6 }}>
+              Connect Custom Remote MCP Gateway
+            </h3>
+            <p className="connect-card-meta" style={{ marginBottom: 16, lineHeight: 1.5 }}>
+              Punya URL Streamable HTTP sendiri (misalnya server pribadi atau Figcraft hosted endpoint)? Masukkan di sini untuk verifikasi &amp; aktivasi instan.
             </p>
-            <div style={{ display: "grid", gap: 10, marginBottom: 14 }}>
-              <input
-                type="text"
-                required
-                placeholder="MCP Display Name (e.g. Figcraft)"
-                value={customName}
-                onChange={(e) => setCustomName(e.target.value)}
-                style={{ padding: "10px 12px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.18)", background: "rgba(0,0,0,0.22)", color: "inherit" }}
-              />
-              <input
-                type="url"
-                required
-                placeholder="https://example.com/mcp"
-                value={customEndpoint}
-                onChange={(e) => setCustomEndpoint(e.target.value)}
-                style={{ padding: "10px 12px", borderRadius: 12, border: "1px solid rgba(255,255,255,0.18)", background: "rgba(0,0,0,0.22)", color: "inherit" }}
-              />
+            <div className="connect-form-grid">
+              <label className="connect-label">
+                Nama MCP
+                <input
+                  type="text"
+                  required
+                  className="connect-input"
+                  placeholder="Contoh: Figcraft"
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                />
+              </label>
+              <label className="connect-label">
+                Endpoint URL (HTTPS)
+                <input
+                  type="url"
+                  required
+                  className="connect-input"
+                  placeholder="https://example.com/mcp"
+                  value={customEndpoint}
+                  onChange={(e) => setCustomEndpoint(e.target.value)}
+                />
+              </label>
             </div>
-            <button type="submit" className="glass-chip-btn" disabled={customBusy}>
-              {customBusy ? <Loader2 size={14} className="spin" /> : <Cable size={14} />} Verify &amp; Connect Custom MCP
-            </button>
+            <div className="connect-actions">
+              <button type="submit" className="connect-btn is-primary" disabled={customBusy}>
+                {customBusy ? <Loader2 size={15} className="spin" /> : <Cable size={15} />}
+                Verify &amp; Connect Custom MCP
+              </button>
+            </div>
           </form>
         )}
       </section>

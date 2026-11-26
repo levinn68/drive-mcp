@@ -1,674 +1,434 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
-import { BookOpen, CheckCircle2, ChevronDown, Code2, ExternalLink, FileSearch, LoaderCircle, RefreshCw, Search, ShieldAlert, ChevronRight, Trash2 } from "lucide-react";
+import {
+  BookOpen,
+  Check,
+  ExternalLink,
+  LoaderCircle,
+  Plus,
+  Power,
+  Search,
+  ShieldCheck,
+  Star,
+  Trash2,
+} from "lucide-react";
+
+const SKILL_CATEGORIES = [
+  { id: "", label: "All" },
+  { id: "development", label: "Development" },
+  { id: "ai", label: "AI" },
+  { id: "design", label: "Design" },
+  { id: "data", label: "Data" },
+  { id: "security", label: "Security" },
+  { id: "productivity", label: "Productivity" },
+];
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  return url && key ? createBrowserClient(url, key) : null;
+  if (!url || !key) return null;
+  return createBrowserClient(url, key);
 }
 
 export default function SkillLibrary() {
-  const [skills, setSkills] = useState([]);
-  const [url, setUrl] = useState("");
-  const [inspected, setInspected] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState("");
-  const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
-  const [signedIn, setSignedIn] = useState(false);
-  const [expanded, setExpanded] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [repositories, setRepositories] = useState([]);
-  const [repositoryDetails, setRepositoryDetails] = useState({});
-  const [searching, setSearching] = useState(false);
-  const [searchMessage, setSearchMessage] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [connections, setConnections] = useState([]);
-  const [bindings, setBindings] = useState([]);
-  const [bindingChoice, setBindingChoice] = useState({});
-  const [bindingDrafts, setBindingDrafts] = useState({});
-  const [discoveredTools, setDiscoveredTools] = useState({});
-  const [discoveringConnection, setDiscoveringConnection] = useState("");
-  const [approvals, setApprovals] = useState([]);
-  const [auditLogs, setAuditLogs] = useState([]);
-  const [runtimeTasks, setRuntimeTasks] = useState({});
-  const [runtimeContexts, setRuntimeContexts] = useState({});
-  const [runtimeToolArgs, setRuntimeToolArgs] = useState({});
+  const [subTab, setSubTab] = useState("discover");
+  const [query, setQuery] = useState("");
+  const [category, setCategory] = useState("");
+  const [catalog, setCatalog] = useState([]);
+  const [mySkills, setMySkills] = useState([]);
+  const [loadingCatalog, setLoadingCatalog] = useState(true);
+  const [loadingMy, setLoadingMy] = useState(false);
+  const [installingId, setInstallingId] = useState("");
+  const [togglingId, setTogglingId] = useState("");
+  const [toast, setToast] = useState({ type: "", message: "" });
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const installedRepoKeys = useMemo(() => {
+    const map = new Set();
+    for (const s of mySkills) {
+      if (s.source_repo) map.add(s.source_repo.toLowerCase());
+      if (s.name) map.add(s.name.toLowerCase());
+    }
+    return map;
+  }, [mySkills]);
+
+  const loadMySkills = useCallback(async () => {
     const supabase = getSupabase();
-    if (!supabase) { setError("Supabase is not configured."); setLoading(false); return; }
-    const { data: { session } } = await supabase.auth.getSession();
-    setSignedIn(Boolean(session));
-    if (!session) { setSkills([]); setLoading(false); return; }
-    const { data, error: loadError } = await supabase.from("user_skills")
-      .select("id,name,description,source_repo,skill_path,version,license,status,skill_md,created_at")
-      .order("updated_at", { ascending: false });
-    if (loadError) setError(loadError.message);
-    else setSkills(data || []);
-    const { data: bindingRows, error: bindingError } = await supabase.from("mcp_skill_bindings")
-      .select("id,skill_id,connection_id,allowed_tools,enabled,requires_approval");
-    if (bindingError) setError(bindingError.message);
-    else setBindings(bindingRows || []);
-    const token = session.access_token;
-    const connectionResponse = await fetch("/api/connections", { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
-    const connectionData = await connectionResponse.json();
-    if (connectionResponse.ok) setConnections(connectionData.connections || []);
-    else setError(connectionData.error || "Could not load MCP connections");
-    const approvalResponse = await fetch("/api/skills/approvals", { headers: { Authorization: `Bearer ${token}` }, cache: "no-store" });
-    const approvalData = await approvalResponse.json();
-    if (approvalResponse.ok) { setApprovals(approvalData.approvals || []); setAuditLogs(approvalData.auditLogs || []); }
-    else setError(approvalData.error || "Could not load approval queue");
-    setLoading(false);
+    if (!supabase) return;
+    setLoadingMy(true);
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session) {
+        setMySkills([]);
+        return;
+      }
+      const { data, error } = await supabase
+        .from("user_skills")
+        .select("id,name,description,source_repo,skill_path,status,updated_at")
+        .order("updated_at", { ascending: false });
+      if (!error && Array.isArray(data)) {
+        setMySkills(data);
+      }
+    } finally {
+      setLoadingMy(false);
+    }
   }, []);
 
-  // Initial data loading synchronizes this component with Supabase on mount.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => { load(); }, [load]);
+  const loadCatalog = useCallback(async (searchText = "") => {
+    setLoadingCatalog(true);
+    try {
+      const params = new URLSearchParams();
+      if (searchText.trim()) params.set("q", searchText.trim());
+      const res = await fetch(`/api/skills/discover?${params.toString()}`, {
+        cache: "no-store",
+      });
+      const data = await res.json();
+      const items = Array.isArray(data.skills)
+        ? data.skills
+        : Array.isArray(data.items)
+        ? data.items
+        : [];
+      setCatalog(items);
+    } catch {
+      setCatalog([]);
+    } finally {
+      setLoadingCatalog(false);
+    }
+  }, []);
 
   useEffect(() => {
-    let active = true;
-    (async () => {
-      setSearching(true);
-      try {
-        const response = await fetch("/api/catalog/skills", { cache: "no-store" });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "Skills catalog unavailable");
-        if (!active) return;
-        setRepositories((data.items || []).map((item) => ({
-          id: item.id, full_name: item.source, description: item.description || item.name,
-          html_url: item.installUrl || `https://github.com/${item.source}`,
-          default_branch: "", stars: item.stars || 0,
-          license: item.isDuplicate ? "Possible duplicate" : "Catalog entry",
-          language: "Agent Skill", catalogSkill: item,
-        })));
-        setSearchMessage(`Loaded ${data.count || 0} Skills from the public Skills Directory. Select any entry to inspect its bundle.`);
-      } catch (e) { if (active) setSearchMessage(e.message || "Skills catalog unavailable"); }
-      finally { if (active) setSearching(false); }
-    })();
-    return () => { active = false; };
-  }, []);
+    const timer = window.setTimeout(() => {
+      loadCatalog("");
+      loadMySkills();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadCatalog, loadMySkills]);
 
-  const categoryOptions = ["all", ...new Set(repositories.map((item) => item.catalogSkill?.category || "other"))];
-  const categorizedRepositories = selectedCategory === "all"
-    ? repositories
-    : repositories.filter((item) => (item.catalogSkill?.category || "other") === selectedCategory);
-  const visibleRepositories = categorizedRepositories;
+  const visibleCatalog = useMemo(() => {
+    const cat = category.trim().toLowerCase();
+    const q = query.trim().toLowerCase();
+    return catalog.filter((item) => {
+      const itemCat = String(item.category || "").toLowerCase();
+      if (cat && !itemCat.includes(cat)) return false;
+      if (!q) return true;
+      const hay = [item.name, item.description, item.source, item.category, item.slug]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [catalog, category, query]);
 
-  async function searchRepositories() {
-    setSearching(true); setSearchMessage(""); setError("");
+  async function quickInstall(item) {
+    const key = item.id || item.source || item.name;
+    setInstallingId(key);
+    setToast({ type: "", message: "" });
     try {
-      const response = await fetch(`/api/catalog/skills?q=${encodeURIComponent(searchQuery)}`, { cache: "no-store" });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Skills catalog search failed");
-      setSelectedCategory("all");
-      setRepositories((data.items || []).map((item) => ({
-        id: item.id, full_name: item.source, description: item.description || item.name,
-        html_url: item.installUrl || `https://github.com/${item.source}`,
-        default_branch: "", stars: item.stars || 0,
-        license: item.duplicate ? "Possible duplicate" : "Catalog entry",
-        language: "Agent Skill", catalogSkill: item,
-      })));
-      setSearchMessage(`Showing ${data.count || 0} catalog Skills from the public Skills Directory. Select one to inspect its source bundle with NVIDIA SkillSpector.`);
-    } catch (e) { setError(e.message || "Repository search failed"); setRepositories([]); }
-    finally { setSearching(false); }
-  }
+      const supabase = getSupabase();
+      if (!supabase) throw new Error("Authentication belum dikonfigurasi.");
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/")}`,
+          },
+        });
+        return;
+      }
 
-  async function inspectRepository(repository) {
-    setRepositoryDetails((current) => ({ ...current, [repository.id || repository.full_name]: { loading: true, skills: [] } }));
-    setError("");
-    try {
-      const [owner, repo] = repository.full_name.split("/");
-      const response = await fetch(`/api/skills/repository?owner=${encodeURIComponent(owner)}&repo=${encodeURIComponent(repo)}&branch=${encodeURIComponent(repository.default_branch || "")}&skill=${encodeURIComponent(repository.catalogSkill?.slug || "")}&skillName=${encodeURIComponent(repository.catalogSkill?.name || "")}`);
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Could not inspect repository");
-      setRepositoryDetails((current) => ({ ...current, [repository.id || repository.full_name]: { ...data, loading: false } }));
-    } catch (e) {
-      setRepositoryDetails((current) => ({ ...current, [repository.id || repository.full_name]: { loading: false, error: e.message, skills: [] } }));
+      const rawRepo = item.source || item.installUrl || "";
+      const repo = rawRepo
+        .replace(/^https?:\/\/github\.com\//i, "")
+        .split("/blob/")[0]
+        .replace(/^\/+|\/+$/g, "");
+
+      const res = await fetch("/api/skills/quick-install", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          repository: repo,
+          slug: item.slug || item.name,
+          name: item.name,
+          description: item.description,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error([data.error, data.detail].filter(Boolean).join(": ") || "Gagal memasang Skill.");
+      }
+      setToast({
+        type: "success",
+        message: `${item.name} berhasil dipasang & langsung aktif di DRIVE kamu.`,
+      });
+      await loadMySkills();
+    } catch (err) {
+      setToast({
+        type: "error",
+        message: err?.message || "Gagal memasang Skill.",
+      });
+    } finally {
+      setInstallingId("");
     }
   }
 
-  async function selectSkillFile(skillFile) {
-    setUrl(skillFile.raw_url);
-    setBusy("inspect"); setError(""); setNotice(""); setInspected(null);
+  async function toggleSkill(skill) {
+    const supabase = getSupabase();
+    if (!supabase) return;
+    setTogglingId(skill.id);
+    const nextStatus = skill.status === "enabled" ? "disabled" : "enabled";
     try {
-      const supabase = getSupabase();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Sign in before scanning a Skill.");
-      const response = await fetch("/api/skills/inspect", {
-        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ url: skillFile.raw_url }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Skill inspection failed");
-      setInspected(data);
-    } catch (e) { setError(e.message || "Could not inspect selected Skill"); }
-    finally { setBusy(""); }
-  }
-
-  async function inspect() {
-    setBusy("inspect"); setError(""); setNotice(""); setInspected(null);
-    try {
-      const supabase = getSupabase();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Sign in before scanning a Skill.");
-      const response = await fetch("/api/skills/inspect", {
-        method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ url }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Inspection failed");
-      setInspected(data);
-    } catch (e) { setError(e.message || "Could not inspect Skill"); }
-    finally { setBusy(""); }
-  }
-
-  async function importSkill() {
-    if (!inspected?.scan?.safe_to_install || !inspected.scan.complete || !inspected.scan.content_sha256 || !inspected.scan.bundle_sha256 || !Array.isArray(inspected.scan.bundle_manifest)) {
-      setError("A complete NVIDIA SkillSpector SAFE verdict is required before importing.");
-      return;
+      await supabase
+        .from("user_skills")
+        .update({ status: nextStatus, updated_at: new Date().toISOString() })
+        .eq("id", skill.id);
+      setMySkills((prev) =>
+        prev.map((item) => (item.id === skill.id ? { ...item, status: nextStatus } : item))
+      );
+    } finally {
+      setTogglingId("");
     }
-    if (!inspected) return;
-    setBusy("import"); setError(""); setNotice("");
-    const supabase = getSupabase();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { setError("Sign in before saving a Skill."); setBusy(""); return; }
-    const { error: saveError } = await supabase.from("user_skills").upsert({
-      user_id: session.user.id,
-      name: inspected.name,
-      description: inspected.description,
-      source_repo: inspected.source_repo,
-      skill_path: inspected.skill_path,
-      skill_md: inspected.skill_md,
-      version: inspected.version,
-      license: inspected.license,
-      security_scan: inspected.scan,
-      security_scan_hash: inspected.scan.content_sha256,
-      security_bundle_hash: inspected.scan.bundle_sha256,
-      security_bundle_manifest: inspected.scan.bundle_manifest,
-      security_scan_status: "safe",
-      security_scanned_at: inspected.scan.scanned_at,
-      security_scanner_version: inspected.scan.scanner_version,
-      status: "review_required",
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "user_id,source_repo,skill_path" });
-    if (saveError) setError(saveError.message);
-    else { setNotice("Skill saved to your library. It remains disabled pending your review."); setInspected(null); setUrl(""); await load(); }
-    setBusy("");
   }
 
-  async function attachConnection(skill) {
-    const connectionId = bindingChoice[skill.id];
-    if (!connectionId) { setError("Choose an MCP connection first."); return; }
-    if (skill.status !== "enabled") { setError("Approve this Skill after reviewing it before creating a binding."); return; }
-    setBusy(`bind:${skill.id}`); setError(""); setNotice("");
+  async function removeSkill(skill) {
     const supabase = getSupabase();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { setError("Sign in before creating a binding."); setBusy(""); return; }
-    const { error: saveError } = await supabase.from("mcp_skill_bindings").upsert({
-      user_id: session.user.id,
-      skill_id: skill.id,
-      connection_id: connectionId,
-      allowed_tools: [],
-      enabled: false,
-      requires_approval: true,
-      updated_at: new Date().toISOString(),
-    }, { onConflict: "user_id,skill_id,connection_id" });
-    if (saveError) setError(saveError.message);
-    else { setNotice("MCP linked to this Skill. Binding remains disabled until tool permissions are configured."); await load(); }
-    setBusy("");
-  }
-
-  async function requestRuntimeToolApproval(bindingId, toolName, skillId, overrideArgs) {
-    const key = `${skillId}:${toolName}`;
-    const raw = overrideArgs === undefined ? (runtimeToolArgs[key] || "{}") : JSON.stringify(overrideArgs);
-    let args;
-    try { args = JSON.parse(raw); } catch { setError(`Arguments for ${toolName} must be valid JSON.`); return; }
-    if (!args || typeof args !== "object" || Array.isArray(args)) { setError("Tool arguments must be a JSON object."); return; }
-    const supabase = getSupabase();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { setError("Sign in before requesting approval."); return; }
-    setBusy(`request:${key}`); setError(""); setNotice("");
+    if (!supabase) return;
+    setTogglingId(skill.id);
     try {
-      const response = await fetch("/api/skills/approvals", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ action: "request", bindingId, toolName, arguments: args }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Could not request tool approval");
-      setNotice(`Approval requested for ${toolName}. Review it in Execution approvals.`);
-      await load();
-    } catch (e) { setError(e.message || "Could not request tool approval"); }
-    finally { setBusy(""); }
-  }
-
-  async function prepareSkillRuntime(skill) {
-    const task = (runtimeTasks[skill.id] || "").trim();
-    if (!task) { setError("Describe the task before preparing the Skill runtime."); return; }
-    const supabase = getSupabase();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { setError("Sign in before preparing the runtime."); return; }
-    setBusy(`runtime:${skill.id}`); setError(""); setNotice("");
-    try {
-      const response = await fetch("/api/skills/runtime", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ skillId: skill.id, task }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Could not prepare Skill runtime");
-      setRuntimeContexts((current) => ({ ...current, [skill.id]: data }));
-      setNotice("Skill runtime context prepared. No model has been called and no tool has been executed.");
-    } catch (e) { setError(e.message || "Could not prepare Skill runtime"); }
-    finally { setBusy(""); }
-  }
-
-  async function executeApproval(approvalId) {
-    const supabase = getSupabase();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { setError("Sign in to execute this request."); return; }
-    setBusy(`execute:${approvalId}`); setError(""); setNotice("");
-    try {
-      const response = await fetch("/api/skills/execute", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ approvalId }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.detail || data.error || "Tool execution failed");
-      setNotice(data.executed ? "MCP tool executed successfully." : "MCP tool returned an error.");
-      await load();
-    } catch (e) { setError(e.message || "Tool execution failed"); await load(); }
-    finally { setBusy(""); }
-  }
-
-  async function reviewApproval(approvalId, decision) {
-    const supabase = getSupabase();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { setError("Sign in to review this request."); return; }
-    setBusy(`approval:${approvalId}`); setError(""); setNotice("");
-    try {
-      const response = await fetch("/api/skills/approvals", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ action: "review", approvalId, decision }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Could not review approval");
-      setNotice(decision === "approved" ? "Approval recorded. Tool execution is a separate step." : "Request denied.");
-      await load();
-    } catch (e) { setError(e.message || "Could not review approval"); }
-    finally { setBusy(""); }
-  }
-
-  async function discoverMcpTools(connectionId) {
-    setDiscoveringConnection(connectionId); setError(""); setNotice("");
-    try {
-      const supabase = getSupabase();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("Sign in before discovering MCP tools.");
-      const response = await fetch("/api/skills/tools", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ connectionId }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "MCP tool discovery failed");
-      setDiscoveredTools((current) => ({ ...current, [connectionId]: data }));
-      setNotice(`Discovered ${data.total} MCP tools. Select only the tools this Skill needs.`);
-    } catch (e) { setError(e.message || "MCP tool discovery failed"); }
-    finally { setDiscoveringConnection(""); }
-  }
-
-  function toggleAllowedTool(binding, toolName, checked) {
-    const current = bindingDrafts[binding.id] ?? (binding.allowed_tools || []).join("\n");
-    const selected = new Set(current.split(/[\n,]/).map((name) => name.trim()).filter(Boolean));
-    if (checked) selected.add(toolName); else selected.delete(toolName);
-    setBindingDrafts((state) => ({ ...state, [binding.id]: [...selected].join("\n") }));
-  }
-
-  async function setBindingEnabled(binding, skill, enabled) {
-    const connection = connections.find((item) => item.id === binding.connection_id);
-    if (enabled && skill.status !== "enabled") { setError("Approve the Skill before enabling its MCP binding."); return; }
-    if (enabled && !connection?.enabled) { setError("Enable this MCP connection in your workspace before enabling the binding."); return; }
-    if (enabled && !(binding.allowed_tools || []).length) { setError("Discover and save at least one allowed tool before enabling this binding."); return; }
-    const supabase = getSupabase();
-    setBusy(`binding-state:${binding.id}`); setError(""); setNotice("");
-    const { error: updateError } = await supabase.from("mcp_skill_bindings")
-      .update({ enabled, requires_approval: true, updated_at: new Date().toISOString() }).eq("id", binding.id);
-    if (updateError) setError(updateError.message);
-    else { setNotice(enabled ? "Skill binding enabled. Every tool call still requires approval." : "Skill binding disabled."); await load(); }
-    setBusy("");
-  }
-
-  async function saveBindingPolicy(binding) {
-    const raw = bindingDrafts[binding.id] ?? (binding.allowed_tools || []).join("\n");
-    const tools = [...new Set(raw.split(/[\n,]/).map((name) => name.trim()).filter(Boolean))];
-    if (tools.some((name) => !/^[a-zA-Z0-9_.:-]{1,128}$/.test(name))) {
-      setError("Tool names may only contain letters, numbers, underscore, dot, colon, and hyphen.");
-      return;
+      await supabase.from("user_skills").delete().eq("id", skill.id);
+      setMySkills((prev) => prev.filter((item) => item.id !== skill.id));
+    } finally {
+      setTogglingId("");
     }
-    if (tools.length > 100) { setError("A binding can contain at most 100 allowed tool names."); return; }
-    const supabase = getSupabase();
-    setBusy(`policy:${binding.id}`); setError(""); setNotice("");
-    const { error: updateError } = await supabase.from("mcp_skill_bindings")
-      .update({ allowed_tools: tools, enabled: false, requires_approval: true, updated_at: new Date().toISOString() })
-      .eq("id", binding.id);
-    if (updateError) setError(updateError.message);
-    else { setNotice("Tool allowlist saved as a staged policy. Runtime execution remains disabled."); await load(); }
-    setBusy("");
   }
 
-  async function removeBinding(binding) {
-    const supabase = getSupabase();
-    setBusy(`unbind:${binding.id}`); setError("");
-    const { error: deleteError } = await supabase.from("mcp_skill_bindings").delete().eq("id", binding.id);
-    if (deleteError) setError(deleteError.message);
-    else await load();
-    setBusy("");
+  function handleSearchSubmit(event) {
+    event.preventDefault();
+    loadCatalog(query);
   }
 
-  async function setStatus(skill, status) {
-    const supabase = getSupabase();
-    setBusy(skill.id); setError("");
-    const { error: updateError } = await supabase.from("user_skills")
-      .update({ status, reviewed_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-      .eq("id", skill.id);
-    if (updateError) setError(updateError.message);
-    else await load();
-    setBusy("");
-  }
-
-  async function remove(skill) {
-    const supabase = getSupabase();
-    setBusy(skill.id); setError("");
-    const { error: deleteError } = await supabase.from("user_skills").delete().eq("id", skill.id);
-    if (deleteError) setError(deleteError.message);
-    else await load();
-    setBusy("");
-  }
+  const subIndex = subTab === "discover" ? 0 : 1;
 
   return (
-    <section className="skill-library-section glass-surface" id="skills">
-      <div className="section-head">
-        <div>
-          <div className="eyebrow"><span className="pulse" /> AGENT WORKFLOW LIBRARY</div>
-          <h1>Skills, on your terms.</h1>
-          <p>Discover Skills by category or intent, inspect their SKILL.md, then save them to your private library. Nothing is auto-installed or executed.</p>
+    <div className="drive-mcp-workspace">
+      <div className="drive-subtabs-wrap">
+        <div
+          className="drive-subtabs is-2"
+          role="tablist"
+          aria-label="Skills sections"
+          style={{ "--sub-index": subIndex }}
+        >
+          <span className="drive-subtabs-pill" aria-hidden="true" />
+          <button
+            type="button"
+            role="tab"
+            aria-selected={subTab === "discover"}
+            className={`drive-subtab-btn ${subTab === "discover" ? "is-active" : ""}`}
+            onClick={() => setSubTab("discover")}
+          >
+            Directory
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={subTab === "my"}
+            className={`drive-subtab-btn ${subTab === "my" ? "is-active" : ""}`}
+            onClick={() => setSubTab("my")}
+          >
+            My Skills ({mySkills.length})
+          </button>
         </div>
       </div>
 
-      <div className="skill-import-panel">
-        <div className="skill-import-title">
-          <span className="benefit-icon"><Search size={18} /></span>
-          <div><strong>Discover Skill repositories</strong><small>Browse by category or search by what a Skill does. Each selected bundle is scanned by NVIDIA SkillSpector before import.</small></div>
+      {toast.message && (
+        <div
+          className={`custom-form-alert ${toast.type === "error" ? "is-error" : "is-success"}`}
+          role={toast.type === "error" ? "alert" : "status"}
+        >
+          <span>{toast.message}</span>
         </div>
-        <form className="skill-url-row" onSubmit={(event) => { event.preventDefault(); searchRepositories(); }}>
-          <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Smart search: name, capability, topic, provider, or tool…" aria-label="Search Skills catalog" />
-          <button type="submit" className="glass-add-button" disabled={searching || searchQuery.trim().length < 2}>
-            {searching ? <LoaderCircle className="spin" size={14} /> : <Search size={14} />}
-            <span>Search catalog</span>
-          </button>
-        </form>
-        <p className="availability-note">Skills Directory · Categories separate discovery · NVIDIA SkillSpector checks selected bundles</p>
-        {searchMessage && <p className="availability-note">{searchMessage}</p>}
-        {categoryOptions.length > 1 && (
-          <div className="segmented-pills is-full skill-category-filter" role="group" aria-label="Filter Skills by category">
-            {categoryOptions.map((category) => (
-              <button key={category} type="button" className={"segmented-pill " + (selectedCategory === category ? "is-active" : "")} onClick={() => setSelectedCategory(category)}>
-                {category === "all" ? "All Skills" : category.replace(/[-_/]/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase())}
+      )}
+
+      {subTab === "discover" ? (
+        <section className="catalog-section" id="skills-directory">
+          <form className="catalog-search" onSubmit={handleSearchSubmit}>
+            <Search size={15} />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search Agent Skills (react, supabase, audit...)"
+              aria-label="Search Agent Skills"
+            />
+            <button type="submit">Search</button>
+          </form>
+
+          <div className="mcp-category-filter" aria-label="Skill categories">
+            {SKILL_CATEGORIES.map((cat) => (
+              <button
+                key={cat.label}
+                type="button"
+                className={`category-chip ${category === cat.id ? "is-active" : ""}`}
+                onClick={() => setCategory(cat.id)}
+              >
+                {cat.label}
               </button>
             ))}
           </div>
-        )}
-        {categorizedRepositories.length > 0 && (
-          <div className="skill-repository-list">
-            {visibleRepositories.map((repository) => {
-              const detail = repositoryDetails[repository.id || repository.full_name];
-              return (
-                <article className="skill-repository-card" key={repository.id || repository.full_name}>
-                  <div className="skill-repository-main">
-                    <div className="skill-repository-copy">
-                      <strong>{repository.catalogSkill?.name || repository.full_name}</strong>
-                      <p>{(repository.catalogSkill?.description || repository.description || "No description provided.").length > 150 ? `${(repository.catalogSkill?.description || repository.description).slice(0, 147).trimEnd()}…` : (repository.catalogSkill?.description || repository.description || "No description provided.")}</p>
-                      <small>★ {repository.stars.toLocaleString()} repo stars · {repository.catalogSkill?.category || "Other"} · {repository.catalogSkill?.verified ? "Verified listing" : "Community listing"}</small>
+
+          <div className="directory-toolbar">
+            <div className="directory-stats">
+              <strong>{visibleCatalog.length}</strong> skills available
+              <span className="registry-live">
+                <i /> 1-Click Install
+              </span>
+            </div>
+          </div>
+
+          {loadingCatalog ? (
+            <div className="empty-state">
+              <LoaderCircle size={22} className="spin" />
+              <h3>Loading Skills...</h3>
+            </div>
+          ) : visibleCatalog.length === 0 ? (
+            <div className="empty-state">
+              <Search size={22} />
+              <h3>No matching Skills</h3>
+              <p>Try a different keyword or category.</p>
+            </div>
+          ) : (
+            <div className="integration-grid">
+              {visibleCatalog.map((item, idx) => {
+                const key = item.id || item.source || `${item.name}-${idx}`;
+                const isBusy = installingId === key;
+                const isInstalled =
+                  installedRepoKeys.has(String(item.name || "").toLowerCase()) ||
+                  installedRepoKeys.has(String(item.source || "").toLowerCase());
+                const repoUrl = item.installUrl || (item.source ? `https://github.com/${item.source}` : "");
+                return (
+                  <article key={key} className="integration-card server-card">
+                    <div className="card-top">
+                      <div className="integration-icon">
+                        <BookOpen size={15} />
+                      </div>
+                      <span className="status">
+                        {item.verified ? (
+                          <>
+                            <ShieldCheck size={10} /> Verified
+                          </>
+                        ) : (
+                          item.category || "Skill"
+                        )}
+                      </span>
                     </div>
-                    <button type="button" className="glass-chip-btn" onClick={() => inspectRepository(repository)} disabled={detail?.loading}>
-                      {detail?.loading ? <LoaderCircle className="spin" size={13}/> : <FileSearch size={13}/>}
-                      <span>Inspect Skill</span>
-                    </button>
-                  </div>
-                  {detail?.error && <p className="skill-inline-error">{detail.error}</p>}
-                  {detail && !detail.loading && !detail.error && (
-                    <div className="skill-repository-files">
-                      <div className="skill-repository-meta">{detail.skills.length} SKILL.md file{detail.skills.length === 1 ? "" : "s"} found · branch {detail.branch}{detail.truncated ? " · tree truncated" : ""}</div>
-                      {detail.skills.length === 0 ? <p className="availability-note">No SKILL.md files found in this repository tree.</p> : detail.skills.map((file) => (
-                        <button type="button" className="skill-file-row" key={file.path} onClick={() => selectSkillFile(file)} disabled={busy === "inspect"}>
-                          <span><BookOpen size={14}/><span>{file.frontmatterName || file.path}</span><small>{file.path} · {file.size.toLocaleString()} bytes</small></span>
-                          <ChevronRight size={15}/>
-                        </button>
-                      ))}
-                      <a className="skill-repo-link" href={detail.html_url} target="_blank" rel="noreferrer">Open repository <ExternalLink size={11}/></a>
+
+                    <div className="server-meta">
+                      {item.stars > 0 && (
+                        <span className="version-pill">
+                          <Star size={10} /> {Number(item.stars).toLocaleString()}
+                        </span>
+                      )}
+                      {item.category && <span className="transport-pill">{item.category}</span>}
                     </div>
-                  )}
-                </article>
-              );
-            })}
-          </div>
-        )}
-      </div>
 
-      <div className="skill-import-panel">
-        <div className="skill-import-title">
-          <span className="benefit-icon"><FileSearch size={18} /></span>
-          <div><strong>Inspect a direct SKILL.md URL</strong><small>Or paste a raw GitHub URL manually</small></div>
-        </div>
-        <div className="skill-url-row">
-          <input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://raw.githubusercontent.com/owner/repo/main/path/SKILL.md" aria-label="Raw GitHub SKILL.md URL" />
-          <button type="button" className="glass-add-button" onClick={inspect} disabled={busy === "inspect" || !url.trim()}>
-            {busy === "inspect" ? <LoaderCircle className="spin" size={14} /> : <FileSearch size={14} />}
-            <span>Inspect</span>
-          </button>
-        </div>
-        <p className="availability-note">Manual source selection · GitHub raw files only · Maximum 250 KB · Agent Skills frontmatter required</p>
-      </div>
+                    <h3>{item.name || item.source}</h3>
+                    <p>{item.description || "Agent Skill siap dipasang 1-klik ke akun DRIVE."}</p>
 
-      {error && <div className="skill-alert is-error"><ShieldAlert size={16} />{error}</div>}
-      {notice && <div className="skill-alert is-success"><CheckCircle2 size={16} />{notice}</div>}
-
-      {signedIn && (
-        <div className="skill-import-panel skill-approval-panel">
-          <div className="skill-import-title">
-            <span className="benefit-icon"><ShieldAlert size={18}/></span>
-            <div><strong>Execution approvals</strong><small>Review requests before any connected tool can run</small></div>
-            <span className="skill-approval-count">{approvals.filter((item) => item.status === "pending" && new Date(item.expires_at).getTime() > Date.now()).length} pending</span>
-          </div>
-          {approvals.filter((item) => item.status === "pending").length === 0 ? <p className="availability-note">No pending approval requests.</p> : approvals.filter((item) => item.status === "pending").map((item) => (
-            <div className="skill-approval-row" key={item.id}>
-              <div><strong>{item.tool_name}</strong><small>Expires {new Date(item.expires_at).toLocaleString()}</small><pre>{JSON.stringify(item.arguments, null, 2)}</pre></div>
-              <div className="skill-approval-actions">
-                <button type="button" className="glass-chip-btn" onClick={() => reviewApproval(item.id, "denied")} disabled={busy === `approval:${item.id}`}>Deny</button>
-                <button type="button" className="glass-add-button" onClick={() => reviewApproval(item.id, "approved")} disabled={busy === `approval:${item.id}`}>Approve</button>
-              </div>
-            </div>
-          ))}
-          {approvals.filter((item) => item.status === "approved").map((item) => (
-            <div className="skill-approval-row" key={item.id}>
-              <div><strong>{item.tool_name}</strong><small>Approved · expires {new Date(item.expires_at).toLocaleString()}</small><pre>{JSON.stringify(item.arguments, null, 2)}</pre></div>
-              <div className="skill-approval-actions">
-                <button type="button" className="glass-add-button" onClick={() => executeApproval(item.id)} disabled={busy === `execute:${item.id}`}>{busy === `execute:${item.id}` ? <LoaderCircle className="spin" size={13}/> : <Code2 size={13}/>} Execute once</button>
-              </div>
-            </div>
-          ))}
-          <div className="skill-audit-heading"><strong>Recent tool activity</strong><small>Latest 100 events</small></div>
-          {auditLogs.length === 0 ? <p className="availability-note">No tool activity recorded yet.</p> : auditLogs.slice(0,12).map((item) => (
-            <div className="skill-audit-row" key={item.id}>
-              <span><strong>{item.tool_name}</strong><small>{item.action} · {item.outcome}</small></span>
-              <time>{new Date(item.created_at).toLocaleString()}</time>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {inspected && (
-        <article className="skill-preview-card">
-          <div className="skill-card-heading">
-            <span className="highlight-icon"><BookOpen size={18} /></span>
-            <div><small>INSPECTION RESULT</small><h3>{inspected.name}</h3></div>
-            <span className="status is-remote">SkillSpector SAFE</span>
-          </div>
-          <p>{inspected.description}</p>
-          <div className="skill-check-grid">
-            <span><ShieldAlert size={13}/> NVIDIA SkillSpector {inspected.scan.scanner_version}</span>
-            <span><CheckCircle2 size={13}/> Verdict: {inspected.scan.recommendation}</span>
-            <span>Risk score: {inspected.scan.risk_score ?? "Not reported"}/100</span>
-            <span>Mode: {inspected.scan.scan_mode}</span>
-          </div>
-          <div className={`skill-risk-banner risk-${inspected.checks.risk_level}`}>
-            <ShieldAlert size={16}/>
-            <span><strong>{inspected.checks.risk_level === "high" ? "High-risk patterns found" : inspected.checks.risk_level === "review" ? "Manual review recommended" : "No obvious patterns detected"}</strong><small>{inspected.disclaimer}</small></span>
-          </div>
-          <div className="skill-check-grid">
-            <span><CheckCircle2 size={13} /> YAML frontmatter</span>
-            <span><Code2 size={13} /> {inspected.checks.size_bytes.toLocaleString()} bytes</span>
-            <span><ExternalLink size={13} /> {inspected.checks.external_urls} URLs · {inspected.checks.external_hosts.length} hosts</span>
-            <span className={inspected.checks.scripts_detected ? "is-warning" : ""}><ShieldAlert size={13} /> {inspected.checks.scripts_detected ? "Script execution patterns" : "No shell patterns detected"}</span>
-          </div>
-          {inspected.checks.findings.length > 0 && (
-            <div className="skill-findings-list">
-              <strong>Findings to review</strong>
-              {inspected.checks.findings.map((finding) => <div key={finding.id}><span>{finding.label}</span><small>{finding.severity}</small></div>)}
+                    <div className="card-bottom">
+                      {repoUrl ? (
+                        <div className="server-actions">
+                          <a href={repoUrl} target="_blank" rel="noreferrer">
+                            Source <ExternalLink size={11} />
+                          </a>
+                        </div>
+                      ) : null}
+                      <button
+                        type="button"
+                        disabled={isBusy}
+                        className={`skill-install-btn ${isInstalled ? "is-installed" : ""}`}
+                        onClick={() => quickInstall(item)}
+                      >
+                        {isBusy ? (
+                          <LoaderCircle size={13} className="spin" />
+                        ) : isInstalled ? (
+                          <Check size={13} />
+                        ) : (
+                          <Plus size={13} />
+                        )}
+                        {isBusy ? "Installing..." : isInstalled ? "Terpasang" : "Install"}
+                      </button>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           )}
-          {inspected.checks.external_hosts.length > 0 && <p className="availability-note">External hosts: {inspected.checks.external_hosts.join(", ")}</p>}
-          <div className="skill-preview-actions">
-            <button type="button" className="glass-add-button" onClick={importSkill} disabled={busy === "import"}>{busy === "import" ? "Saving…" : "Save disabled"}</button>
-            <button type="button" className="glass-chip-btn" onClick={() => setInspected(null)}>Cancel</button>
-          </div>
-          <details><summary>Review full SKILL.md</summary><pre className="skill-markdown-preview">{inspected.skill_md}</pre></details>
-        </article>
-      )}
-
-      <div className="skill-library-heading" id="my-skills">
-        <div><div className="eyebrow"><span className="pulse" /> PRIVATE COLLECTION</div><h2>My Skills <span className="heading-period">.</span></h2></div>
-        <button type="button" className="glass-icon-button" onClick={load} aria-label="Refresh Skills" disabled={loading}><RefreshCw className={loading ? "spin" : ""} size={16}/></button>
-      </div>
-      {!signedIn ? (
-        <div className="connection-empty"><div className="empty-orb"><BookOpen size={22}/></div><h3>Sign in to build your Skill Library</h3><p>Your imported Skills are private to your account.</p></div>
-      ) : loading ? (
-        <div className="connection-empty"><LoaderCircle className="spin" size={22}/><p>Loading your Skills…</p></div>
-      ) : skills.length === 0 ? (
-        <div className="connection-empty"><div className="empty-orb"><BookOpen size={22}/></div><h3>No Skills saved yet</h3><p>Browse the Skills marketplace, inspect a selected bundle, and save it here for review.</p></div>
+        </section>
       ) : (
-        <div className="skill-list">
-          {skills.map((skill) => (
-            <article className="skill-saved-card" key={skill.id}>
-              <div className="skill-saved-top">
-                <span className="highlight-icon"><BookOpen size={17}/></span>
-                <div className="skill-saved-copy"><h3>{skill.name}</h3><p>{skill.description}</p></div>
-                <span className={`status ${skill.status === "enabled" ? "is-remote" : "is-promoted"}`}>{skill.status === "enabled" ? "Approved" : skill.status === "rejected" ? "Rejected" : "Review required"}</span>
-              </div>
-              <div className="skill-source-line"><a href={skill.source_repo} target="_blank" rel="noreferrer">{skill.source_repo.replace("https://github.com/","")} <ExternalLink size={11}/></a><span>{skill.license || "License not declared"}</span></div>
-              <button type="button" className="skill-expand-button" onClick={() => setExpanded(expanded === skill.id ? "" : skill.id)}><span>Inspect contents</span><ChevronDown size={14}/></button>
-              {expanded === skill.id && <pre className="skill-markdown-preview">{skill.skill_md}</pre>}
-              <div className="skill-card-actions">
-                {skill.status !== "enabled" && <button type="button" className="glass-add-button" onClick={() => setStatus(skill,"enabled")} disabled={busy === skill.id}><CheckCircle2 size={13}/><span>Approve Skill</span></button>}
-                {skill.status === "enabled" && <button type="button" className="glass-chip-btn" onClick={() => setStatus(skill,"review_required")} disabled={busy === skill.id}>Disable approval</button>}
-                <button type="button" className="glass-chip-btn" onClick={() => remove(skill)} disabled={busy === skill.id}><Trash2 size={13}/>Remove</button>
-              </div>
-              {skill.status === "enabled" && (
-                <div className="skill-runtime-panel">
-                  <div className="skill-binding-heading"><strong>Prepare agent runtime</strong><small>Context only · no execution</small></div>
-                  <textarea value={runtimeTasks[skill.id] || ""} onChange={(event) => setRuntimeTasks((current) => ({ ...current, [skill.id]: event.target.value }))} rows={2} maxLength={4000} placeholder="Describe the outcome you want this Skill to help with…" aria-label={`Task for ${skill.name}`} />
-                  <button type="button" className="glass-add-button" onClick={() => prepareSkillRuntime(skill)} disabled={busy === `runtime:${skill.id}` || !runtimeTasks[skill.id]?.trim()}>
-                    {busy === `runtime:${skill.id}` ? <LoaderCircle className="spin" size={13}/> : <Code2 size={13}/>}
-                    Prepare runtime context
-                  </button>
-                  {runtimeContexts[skill.id] && (
-                    <div className="skill-runtime-result">
-                      <div className="skill-runtime-meta"><strong>Context prepared</strong><span>{runtimeContexts[skill.id].sources.reduce((n, source) => n + (source.tools?.length || 0), 0)} allowed tools available</span></div>
-                      {runtimeContexts[skill.id].sources.map((source) => (
-                        <div className="skill-runtime-source" key={source.bindingId}>
-                          {source.unavailable ? <small>{source.unavailable}</small> : <>
-                            <strong>{source.tools.length} tools · approval required</strong>
-                            {source.tools.map((tool) => {
-                              const key = `${skill.id}:${tool.name}`;
-                              return <div className="skill-runtime-tool" key={tool.name}>
-                                <div><strong>{tool.name}</strong><small>{tool.description || "No description supplied."}</small></div>
-                                <details><summary>Input schema</summary><pre>{JSON.stringify(tool.inputSchema, null, 2)}</pre></details>
-                                <textarea rows={2} value={runtimeToolArgs[key] || "{}"} onChange={(event) => setRuntimeToolArgs((current) => ({ ...current, [key]: event.target.value }))} aria-label={`Arguments for ${tool.name}`} placeholder='{"key":"value"}' />
-                                <button type="button" className="glass-chip-btn" onClick={() => requestRuntimeToolApproval(source.bindingId, tool.name, skill.id)} disabled={busy === `request:${key}`}>{busy === `request:${key}` ? "Requesting…" : "Request approval"}</button>
-                              </div>;
-                            })}
-                          </>}
-                        </div>
-                      ))}
-                      <details><summary>Inspect prepared Skill instructions and policy</summary><pre>{JSON.stringify({ skill: runtimeContexts[skill.id].skill, task: runtimeContexts[skill.id].task, instructionTrust: runtimeContexts[skill.id].instructionTrust, policy: runtimeContexts[skill.id].policy, skillInstructions: runtimeContexts[skill.id].skillInstructions }, null, 2)}</pre></details>
+        <section className="catalog-section" id="my-skills">
+          {loadingMy ? (
+            <div className="empty-state">
+              <LoaderCircle size={22} className="spin" />
+              <h3>Loading My Skills...</h3>
+            </div>
+          ) : mySkills.length === 0 ? (
+            <div className="empty-state">
+              <BookOpen size={22} />
+              <h3>Belum ada Skill terpasang</h3>
+              <p>Buka tab Directory lalu klik Install di kartu Skill mana saja.</p>
+            </div>
+          ) : (
+            <div className="integration-grid">
+              {mySkills.map((skill) => {
+                const enabled = skill.status === "enabled";
+                const busy = togglingId === skill.id;
+                return (
+                  <article key={skill.id} className="integration-card server-card">
+                    <div className="card-top">
+                      <div className="integration-icon">
+                        <BookOpen size={15} />
+                      </div>
+                      <span className={`status ${enabled ? "is-enabled" : ""}`}>
+                        {enabled ? "Active" : "Paused"}
+                      </span>
                     </div>
-                  )}
-                </div>
-              )}
-              <div className="skill-binding-panel">
-                <div className="skill-binding-heading"><strong>Connect an MCP</strong><small>{bindings.filter((binding) => binding.skill_id === skill.id).length} linked</small></div>
-                {connections.length === 0 ? <p className="availability-note">Add a remote MCP connection in the Add tab before linking it here.</p> : (
-                  <div className="skill-binding-row">
-                    <select aria-label={`Select MCP for ${skill.name}`} value={bindingChoice[skill.id] || ""} onChange={(event) => setBindingChoice((current) => ({ ...current, [skill.id]: event.target.value }))}>
-                      <option value="">Choose your MCP connection…</option>
-                      {connections.map((connection) => <option key={connection.id} value={connection.id}>{connection.server?.title || connection.server?.display_name || connection.server?.server_name || connection.server?.endpoint_url || "MCP connection"}{connection.enabled ? " · Active" : " · Off"}</option>)}
-                    </select>
-                    <button type="button" className="glass-chip-btn" onClick={() => attachConnection(skill)} disabled={busy === `bind:${skill.id}` || skill.status !== "enabled"}>Link</button>
-                  </div>
-                )}
-                {bindings.filter((binding) => binding.skill_id === skill.id).map((binding) => {
-                  const connection = connections.find((item) => item.id === binding.connection_id);
-                  return <div className="skill-binding-existing" key={binding.id}>
-                    <span><strong>{connection?.server?.title || connection?.server?.display_name || connection?.server?.server_name || "Connected MCP"}</strong><small>{binding.enabled ? "Enabled" : "Linked · Disabled"} · {binding.allowed_tools?.length || 0} tools allowed · Approval required</small></span>
-                    <div className="skill-binding-controls">
-                      <button type="button" className={binding.enabled ? "glass-chip-btn" : "glass-add-button"} onClick={() => setBindingEnabled(binding, skill, !binding.enabled)} disabled={busy === `binding-state:${binding.id}`}>
-                        {binding.enabled ? "Disable binding" : "Enable binding"}
-                      </button>
-                      <button type="button" className="glass-chip-btn" onClick={() => removeBinding(binding)} disabled={busy === `unbind:${binding.id}`}>Unlink</button>
-                    </div>
-<div className="skill-policy-editor">
-                      <div className="skill-policy-discovery-head">
-                        <label>Available MCP tools</label>
-                        <button type="button" className="glass-chip-btn" onClick={() => discoverMcpTools(binding.connection_id)} disabled={discoveringConnection === binding.connection_id}>
-                          {discoveringConnection === binding.connection_id ? <LoaderCircle className="spin" size={12}/> : <Search size={12}/>}
-                          {discoveringConnection === binding.connection_id ? "Discovering…" : "Discover tools"}
+                    <h3>{skill.name}</h3>
+                    <p>{skill.description || skill.source_repo || "Installed DRIVE Skill"}</p>
+                    <div className="card-bottom">
+                      <div className="server-actions">
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => toggleSkill(skill)}
+                          className="glass-chip-btn"
+                        >
+                          <Power size={11} /> {enabled ? "Turn Off" : "Turn On"}
+                        </button>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() => removeSkill(skill)}
+                          className="glass-chip-btn is-danger"
+                          aria-label={`Remove ${skill.name}`}
+                        >
+                          <Trash2 size={11} />
                         </button>
                       </div>
-                      {discoveredTools[binding.connection_id] ? (
-                        <div className="skill-tool-picker">
-                          <small>{discoveredTools[binding.connection_id].total} tools reported by server{discoveredTools[binding.connection_id].truncated ? " · showing first 200" : ""}</small>
-                          {discoveredTools[binding.connection_id].tools.map((tool) => {
-                            const selected = (bindingDrafts[binding.id] ?? (binding.allowed_tools || []).join("\n")).split(/[\n,]/).map((name) => name.trim()).includes(tool.name);
-                            return <label className="skill-tool-option" key={tool.name}>
-                              <input type="checkbox" checked={selected} onChange={(event) => toggleAllowedTool(binding, tool.name, event.target.checked)} />
-                              <span><strong>{tool.name}</strong><small>{tool.description || "No description provided by server."}</small></span>
-                            </label>;
-                          })}
-                        </div>
-                      ) : <p className="availability-note">Discover tools from this MCP endpoint to choose them from a list.</p>}
-                      <label htmlFor={`tools-${binding.id}`}>Allowed tool names, one per line</label>
-                      <textarea id={`tools-${binding.id}`} rows={3} value={bindingDrafts[binding.id] ?? (binding.allowed_tools || []).join("\n")} onChange={(event) => setBindingDrafts((current) => ({ ...current, [binding.id]: event.target.value }))} placeholder={"server.tool_name"} />
-                      <div className="skill-policy-actions">
-                        <small>Allowlist metadata only · execution disabled · approval required</small>
-                        <button type="button" className="glass-chip-btn" onClick={() => saveBindingPolicy(binding)} disabled={busy === `policy:${binding.id}`}>Save allowlist</button>
-                      </div>
                     </div>
-                  </div>;
-                })}
-              </div>
-              <small className="availability-note">Approval does not execute the Skill. New bindings are always disabled and have no allowed tools until a permission manager is configured.</small>
-            </article>
-          ))}
-        </div>
+                  </article>
+                );
+              })}
+            </div>
+          )}
+        </section>
       )}
-    </section>
+    </div>
   );
 }

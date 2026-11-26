@@ -1,4 +1,4 @@
-/* DRIVE MCP — App-First Cupertino Liquid Glass v2.1 (Zero Landing-Page Bloat, Zero Acid Green) */
+/* DRIVE MCP — App-First Cupertino Liquid Glass v2.2 (Unified MCP + Skills + Account) */
 
 :root {
   --drive-glass-bg: #060a12;
@@ -120,7 +120,7 @@ body {
 }
 
 /* ==========================================================================
-   3. iOS LIQUID GLASS SEGMENTED SUB-TABS (Directory | My MCPs | + Custom)
+   3. iOS LIQUID GLASS SEGMENTED SUB-TABS (3-tab MCP & 2-tab Skills)
    ========================================================================== */
 .drive-mcp-workspace {
   display: flex;
@@ -147,6 +147,11 @@ body {
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
+.drive-subtabs.is-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(100%, 320px);
+}
+
 .drive-subtabs-pill {
   position: absolute;
   top: 4px;
@@ -161,6 +166,10 @@ body {
   transition: transform 280ms var(--drive-spring);
   pointer-events: none;
   will-change: transform;
+}
+
+.drive-subtabs.is-2 .drive-subtabs-pill {
+  width: calc((100% - 8px) / 2);
 }
 
 .drive-subtab-btn {
@@ -190,7 +199,249 @@ body {
 }
 
 /* ==========================================================================
-   4. UNIFIED iOS LIQUID GLASS BLUE/CRYSTAL ACCENTS (0% ACID GREEN)
+   4. ACCOUNT PROFILE CARD + CLEAN CUSTOM FORM
+   ========================================================================== */
+.account-profile-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: linear-gradient(155deg, rgba(20, 32, 52, 0.84), rgba(10, 16, 28, 0.94));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 10px 24px rgba(0, 0, 0, 0.28);
+}
+
+.account-profile-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  flex: 1 1 220px;
+}
+
+.account-profile-avatar {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+  color: #8cdbff;
+  background: linear-gradient(145deg, rgba(10, 132, 255, 0.24), rgba(90, 200, 250, 0.12));
+  border: 1px solid rgba(124, 212, 255, 0.34);
+}
+
+.account-profile-meta {
+  min-width: 0;
+}
+
+.account-profile-email-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.account-profile-meta strong {
+  font-size: 13.5px;
+  color: #f4f8ff;
+  overflow-wrap: anywhere;
+}
+
+.account-profile-meta small {
+  display: block;
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: #9bb0c8;
+  line-height: 1.4;
+}
+
+.account-sync-pill {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #86efac;
+  background: rgba(48, 209, 88, 0.15);
+  border: 1px solid rgba(48, 209, 88, 0.35);
+}
+
+.account-auth-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.07);
+  color: #eef5ff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 110ms ease-out, background 160ms ease;
+}
+
+.account-auth-btn.is-primary {
+  background: linear-gradient(135deg, #2b95ff, #0a84ff);
+  border-color: rgba(145, 212, 255, 0.55);
+  color: #f7fbff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 18px rgba(10, 132, 255, 0.28);
+}
+
+.account-auth-btn:active {
+  transform: scale(0.96);
+}
+
+.custom-form-clean {
+  padding: 16px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(155deg, rgba(20, 32, 52, 0.8), rgba(9, 15, 27, 0.92));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 12px 28px rgba(0, 0, 0, 0.28);
+}
+
+.custom-fields {
+  display: grid;
+  gap: 14px;
+}
+
+.custom-field-label {
+  display: grid;
+  gap: 6px;
+}
+
+.custom-field-label span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: #9eb3ca;
+}
+
+.custom-field-label input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 13px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(6, 11, 20, 0.62);
+  color: #f4f8ff;
+  font-size: 13.5px;
+}
+
+.custom-policy-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.custom-policy-pills span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  color: #b7c8dc;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.custom-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(145, 212, 255, 0.55);
+  background: linear-gradient(135deg, #2b95ff, #0a84ff);
+  color: #f7fbff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.36), 0 8px 20px rgba(10, 132, 255, 0.3);
+  transition: transform 110ms ease-out;
+}
+
+.custom-submit-btn:active {
+  transform: scale(0.97);
+}
+
+.custom-form-alert {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding: 10px 13px;
+  border-radius: 14px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  animation: driveToastIn 200ms var(--drive-spring) both;
+}
+
+.custom-form-alert.is-success {
+  color: #d7f8e3;
+  background: rgba(48, 209, 88, 0.14);
+  border: 1px solid rgba(48, 209, 88, 0.34);
+}
+
+.custom-form-alert.is-error {
+  color: #fecaca;
+  background: rgba(255, 69, 58, 0.14);
+  border: 1px solid rgba(255, 69, 58, 0.34);
+}
+
+.custom-form-hint {
+  margin: 12px 0 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: #8ea3bb;
+}
+
+.skill-install-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+  min-height: 34px;
+  padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(145, 212, 255, 0.55);
+  background: linear-gradient(135deg, #2b95ff, #0a84ff);
+  color: #f7fbff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34), 0 6px 16px rgba(10, 132, 255, 0.26);
+  transition: transform 110ms ease-out;
+}
+
+.skill-install-btn:active {
+  transform: scale(0.96);
+}
+
+.skill-install-btn.is-installed {
+  background: rgba(48, 209, 88, 0.16);
+  border-color: rgba(48, 209, 88, 0.38);
+  color: #86efac;
+  box-shadow: none;
+  animation: driveSpringPop 260ms var(--drive-spring-pop) both;
+}
+
+/* ==========================================================================
+   5. UNIFIED iOS LIQUID GLASS BLUE/CRYSTAL ACCENTS (0% ACID GREEN)
    ========================================================================== */
 .top-pill-btn.is-accent,
 .primary-btn,
@@ -237,7 +488,7 @@ button.add-mcp-btn {
 }
 
 /* ==========================================================================
-   5. CALIBRATED BOTTOM DOCK & PROPORTIONAL LIQUID LENS BUBBLE
+   6. CALIBRATED BOTTOM DOCK & PROPORTIONAL LIQUID LENS BUBBLE
    ========================================================================== */
 .bottom-dock-stage {
   position: fixed !important;
@@ -340,7 +591,7 @@ button.add-mcp-btn {
 }
 
 /* ==========================================================================
-   6. STICKY OAUTH RETURN BAR (ALL AI PROVIDERS)
+   7. STICKY OAUTH RETURN BAR (ALL AI PROVIDERS)
    ========================================================================== */
 .oauth-return-bar {
   position: sticky;
@@ -423,7 +674,7 @@ button.add-mcp-btn {
 }
 
 /* ==========================================================================
-   7. FLAT CANVAS SECTIONS + COMPACT HEADERS + SWIPEABLE CATEGORY RAIL
+   8. FLAT CANVAS SECTIONS + COMPACT HEADERS + SWIPEABLE CATEGORY RAIL
    ========================================================================== */
 .catalog-section,
 .platform-section,
@@ -439,9 +690,10 @@ button.add-mcp-btn {
 }
 
 .catalog-section .section-head,
-.platform-section .section-head {
+.platform-section .section-head,
+.account-status-page .section-head {
   gap: 10px !important;
-  margin-bottom: 10px !important;
+  margin-bottom: 12px !important;
 }
 
 .catalog-section .section-head h1,
@@ -485,7 +737,7 @@ button.add-mcp-btn {
 }
 
 /* ==========================================================================
-   8. MOTION PRIMITIVES (MO-069, MO-024, MO-099, MO-031, MO-119)
+   9. MOTION PRIMITIVES + 2-COLUMN MOBILE GRID (MCP, SKILLS & ACCOUNT)
    ========================================================================== */
 @keyframes driveTabIn {
   from {
@@ -551,9 +803,6 @@ button.add-mcp-btn {
 .integration-grid > .integration-card:nth-child(6),
 .mkt-grid > .mkt-card:nth-child(6) { animation-delay: 125ms; }
 
-/* ==========================================================================
-   9. EXTENSION STORE 3-COLUMN DESKTOP / 2-COLUMN COMPACT MOBILE GRID
-   ========================================================================== */
 @media (min-width: 721px) {
   .integration-grid,
   .server-grid,
@@ -565,6 +814,21 @@ button.add-mcp-btn {
 }
 
 @media (max-width: 720px) {
+  .account-active-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .account-active-card {
+    padding: 14px !important;
+    border-radius: 20px !important;
+  }
+
+  .account-active-card > strong {
+    font-size: 32px !important;
+  }
+
   .integration-grid,
   .server-grid,
   .directory-grid,
@@ -615,6 +879,12 @@ button.add-mcp-btn {
     border-color: rgba(124, 212, 255, 0.28) !important;
   }
 
+  .integration-card .status.is-enabled {
+    color: #86efac !important;
+    background: rgba(48, 209, 88, 0.16) !important;
+    border-color: rgba(48, 209, 88, 0.35) !important;
+  }
+
   .integration-card .server-id {
     display: none !important;
   }
@@ -644,16 +914,6 @@ button.add-mcp-btn {
     -webkit-box-orient: vertical !important;
     overflow: hidden !important;
     margin-bottom: 8px !important;
-  }
-
-  .integration-card .server-tags {
-    gap: 4px !important;
-    margin-bottom: 8px !important;
-  }
-
-  .integration-card .server-tags span {
-    font-size: 9.5px !important;
-    padding: 2px 6px !important;
   }
 
   .integration-card .card-bottom {
@@ -687,6 +947,8 @@ button.add-mcp-btn {
   .app-panel,
   .drive-subpanel,
   .oauth-return-bar,
+  .custom-form-alert,
+  .skill-install-btn.is-installed,
   .integration-grid > .integration-card,
   .mkt-grid > .mkt-card {
     animation: none !important;
@@ -695,7 +957,8 @@ button.add-mcp-btn {
   .drive-subtabs-pill,
   .integration-card,
   .top-pill-btn,
-  .oauth-return-btn {
+  .oauth-return-btn,
+  .skill-install-btn {
     transition: none !important;
   }
 }

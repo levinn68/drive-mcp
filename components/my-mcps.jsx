@@ -6,6 +6,7 @@ import {
   ArrowUpRight,
   Cable,
   Check,
+  CheckCircle2,
   ChevronDown,
   ChevronUp,
   Copy,
@@ -34,6 +35,34 @@ async function getAccessToken() {
     data: { session },
   } = await supabase.auth.getSession();
   return session?.access_token || null;
+}
+
+function getAuthMethodLabel(endpointUrl) {
+  const lower = String(endpointUrl || "").toLowerCase();
+  if (!lower) return { label: "STDIO", cls: "" };
+  if (
+    lower.includes("context7.com") ||
+    lower.includes("deepwiki.com") ||
+    lower.includes("developers.openai.com") ||
+    lower.includes("docs.mcp.cloudflare.com")
+  ) {
+    return { label: "No Auth", cls: "is-auth-none" };
+  }
+  if (
+    lower.includes("githubcopilot.com") ||
+    lower.includes("firecrawl") ||
+    lower.includes("tavily") ||
+    lower.includes("apify") ||
+    lower.includes("exa.ai") ||
+    lower.includes("snyk") ||
+    lower.includes("datadog")
+  ) {
+    return { label: "PAT / Token", cls: "is-auth-pat" };
+  }
+  if (lower.includes("figma.com")) {
+    return { label: "OAuth Catalog", cls: "is-auth-pat" };
+  }
+  return { label: "OAuth 2.1", cls: "is-auth-oauth" };
 }
 
 export function AddMcpButton({
@@ -117,16 +146,15 @@ export function AddMcpButton({
                 endpointUrl,
                 note: authData.message || "",
                 tokenPortalUrl: authData.tokenPortalUrl || "",
-                tokenPortalLabel: authData.tokenPortalLabel || "Buka halaman token provider",
+                tokenPortalLabel: authData.tokenPortalLabel || "Buat Token Provider",
+                oauthAppPortalUrl: authData.oauthAppPortalUrl || "",
+                oauthAppPortalLabel: authData.oauthAppPortalLabel || "Buat OAuth App",
                 supportsOAuthApp: Boolean(authData.supportsOAuthApp),
                 callbackUrl:
                   authData.callbackUrl || `${window.location.origin}/api/mcp-auth/callback`,
               },
             })
           );
-          if (authData.tokenPortalUrl) {
-            window.open(authData.tokenPortalUrl, "_blank", "noopener,noreferrer");
-          }
           setState("added");
           return;
         }
@@ -172,6 +200,7 @@ export function AddMcpButton({
 
 export default function MyMcpPanel() {
   const [connections, setConnections] = useState([]);
+  const [authorizedPrefixes, setAuthorizedPrefixes] = useState(() => new Set());
   const [loading, setLoading] = useState(true);
   const [signedIn, setSignedIn] = useState(true);
   const [filter, setFilter] = useState("all");
@@ -185,7 +214,6 @@ export default function MyMcpPanel() {
   const [oauthClientSecret, setOauthClientSecret] = useState("");
   const [banner, setBanner] = useState({ type: "", text: "" });
 
-  // Tools discovery state per connectionId
   const [openToolsId, setOpenToolsId] = useState("");
   const [toolsById, setToolsById] = useState({});
   const [toolSearchById, setToolSearchById] = useState({});
@@ -203,15 +231,24 @@ export default function MyMcpPanel() {
         return;
       }
       setSignedIn(true);
-      const response = await fetch("/api/connections", {
-        headers: { Authorization: `Bearer ${token}` },
-        cache: "no-store",
-      });
-      const data = await response.json();
-      if (!response.ok) {
+      const [connRes, authStatusRes] = await Promise.all([
+        fetch("/api/connections", {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        }),
+        fetch("/api/mcp-auth/status", { cache: "no-store" }),
+      ]);
+      const data = await connRes.json();
+      if (!connRes.ok) {
         throw new Error(data.error || "Could not load saved connections.");
       }
       setConnections(Array.isArray(data.connections) ? data.connections : []);
+      if (authStatusRes.ok) {
+        const st = await authStatusRes.json();
+        setAuthorizedPrefixes(
+          new Set(Array.isArray(st.authorizedPrefixes) ? st.authorizedPrefixes : [])
+        );
+      }
     } catch (err) {
       setBanner({ type: "error", text: err?.message || "Could not load saved connections." });
     } finally {
@@ -303,12 +340,20 @@ export default function MyMcpPanel() {
         }),
       });
       const data = await res.json();
+      const loadedTools = Array.isArray(data.tools) ? data.tools : [];
+      if (loadedTools.length > 0 && !data.requiresAuth) {
+        setAuthorizedPrefixes((prev) => {
+          const next = new Set(prev);
+          next.add(String(item.id).slice(0, 12));
+          return next;
+        });
+      }
       setToolsById((prev) => ({
         ...prev,
         [item.id]: {
           loading: false,
           loaded: true,
-          tools: Array.isArray(data.tools) ? data.tools : [],
+          tools: loadedTools,
           total: Number(data.total || 0),
           requiresAuth: Boolean(data.requiresAuth),
           message: data.message || "",
@@ -372,6 +417,11 @@ export default function MyMcpPanel() {
       }
       if (data.mode === "none") {
         setBanner({ type: "success", text: data.message || `${title} aktif tanpa login.` });
+        setAuthorizedPrefixes((prev) => {
+          const next = new Set(prev);
+          next.add(String(item.id).slice(0, 12));
+          return next;
+        });
         await load();
         loadToolsForConnection(item, true);
         return;
@@ -383,7 +433,9 @@ export default function MyMcpPanel() {
           endpointUrl,
           note: data.message,
           tokenPortalUrl: data.tokenPortalUrl || "",
-          tokenPortalLabel: data.tokenPortalLabel || "Buka halaman token provider",
+          tokenPortalLabel: data.tokenPortalLabel || "Buat Token Provider",
+          oauthAppPortalUrl: data.oauthAppPortalUrl || "",
+          oauthAppPortalLabel: data.oauthAppPortalLabel || "Buat OAuth App",
           supportsOAuthApp: Boolean(data.supportsOAuthApp),
           callbackUrl: data.callbackUrl || `${window.location.origin}/api/mcp-auth/callback`,
         });
@@ -443,6 +495,11 @@ export default function MyMcpPanel() {
         text: `Token untuk ${bearerTarget.title} berhasil disimpan & aktif.`,
       });
       const savedTarget = bearerTarget;
+      setAuthorizedPrefixes((prev) => {
+        const next = new Set(prev);
+        next.add(String(savedTarget.id).slice(0, 12));
+        return next;
+      });
       setBearerTarget(null);
       setBearerValue("");
       await load();
@@ -626,7 +683,7 @@ export default function MyMcpPanel() {
                     className={`category-chip ${authModeTab === "token" ? "is-active" : ""}`}
                     onClick={() => setAuthModeTab("token")}
                   >
-                    Access Token
+                    Access Token (PAT)
                   </button>
                   <button
                     type="button"
@@ -645,17 +702,30 @@ export default function MyMcpPanel() {
 
             {authModeTab === "token" ? (
               <>
-                {bearerTarget.tokenPortalUrl && (
-                  <a
-                    href={bearerTarget.tokenPortalUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="glass-chip-btn"
-                    style={{ width: "fit-content", textDecoration: "none" }}
-                  >
-                    <ExternalLink size={12} /> {bearerTarget.tokenPortalLabel}
-                  </a>
-                )}
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  {bearerTarget.tokenPortalUrl && (
+                    <a
+                      href={bearerTarget.tokenPortalUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="glass-chip-btn"
+                      style={{ textDecoration: "none" }}
+                    >
+                      <ExternalLink size={12} /> {bearerTarget.tokenPortalLabel}
+                    </a>
+                  )}
+                  {bearerTarget.oauthAppPortalUrl && (
+                    <a
+                      href={bearerTarget.oauthAppPortalUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="glass-chip-btn"
+                      style={{ textDecoration: "none" }}
+                    >
+                      <ExternalLink size={12} /> {bearerTarget.oauthAppPortalLabel}
+                    </a>
+                  )}
+                </div>
                 <label className="custom-field-label">
                   <span>API KEY / PERSONAL ACCESS TOKEN</span>
                   <input
@@ -669,6 +739,17 @@ export default function MyMcpPanel() {
               </>
             ) : (
               <>
+                {bearerTarget.oauthAppPortalUrl && (
+                  <a
+                    href={bearerTarget.oauthAppPortalUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="glass-chip-btn"
+                    style={{ width: "fit-content", textDecoration: "none" }}
+                  >
+                    <ExternalLink size={12} /> {bearerTarget.oauthAppPortalLabel}
+                  </a>
+                )}
                 <div className="custom-policy-pills">
                   <span>Callback URL: {bearerTarget.callbackUrl}</span>
                   <button
@@ -756,6 +837,11 @@ export default function MyMcpPanel() {
             const isAuthorizing = authBusyId === item.id;
             const isToolsOpen = openToolsId === item.id;
             const toolState = toolsById[item.id];
+            const authInfo = getAuthMethodLabel(endpoint);
+            const isAuthorized =
+              authInfo.label === "No Auth" ||
+              authorizedPrefixes.has(String(item.id).slice(0, 12)) ||
+              (toolState?.loaded && !toolState?.requiresAuth && toolState?.total > 0);
             const toolFilter = (toolSearchById[item.id] || "").trim().toLowerCase();
             const filteredTools = (toolState?.tools || []).filter((t) => {
               if (!toolFilter) return true;
@@ -772,6 +858,12 @@ export default function MyMcpPanel() {
                     <div className="my-mcp-row-title">
                       <strong>{title}</strong>
                       <span className="status">{isCustom ? "CUSTOM" : "REMOTE"}</span>
+                      <span className={`transport-pill ${authInfo.cls}`}>{authInfo.label}</span>
+                      {isAuthorized && (
+                        <span className="status is-enabled">
+                          <CheckCircle2 size={10} /> Connected
+                        </span>
+                      )}
                     </div>
                     <p>{endpoint || item.server?.description || "Connected via DRIVE MCP"}</p>
                     <div className="my-mcp-row-actions">
@@ -788,7 +880,7 @@ export default function MyMcpPanel() {
                           {isToolsOpen ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
                         </button>
                       )}
-                      {endpoint && (
+                      {endpoint && !isAuthorized && (
                         <button
                           type="button"
                           className="glass-chip-btn"

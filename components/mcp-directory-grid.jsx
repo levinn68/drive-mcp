@@ -5,9 +5,13 @@ import { createBrowserClient } from "@supabase/ssr";
 import {
   ExternalLink,
   Globe2,
+  KeyRound,
+  Lock,
   Search,
   Server,
   ShieldCheck,
+  Star,
+  Unlock,
 } from "lucide-react";
 import { AddMcpButton } from "./my-mcps";
 
@@ -28,6 +32,13 @@ export const MCP_CATEGORIES = [
   { id: "security", label: "Security & Auth" },
   { id: "data", label: "Data & Analytics" },
 ];
+
+const AUTH_BADGE_MAP = {
+  none: { label: "No Auth", cls: "is-auth-none", Icon: Unlock },
+  oauth: { label: "OAuth 2.1", cls: "is-auth-oauth", Icon: Lock },
+  pat: { label: "PAT / Token", cls: "is-auth-pat", Icon: KeyRound },
+  oauth_catalog: { label: "OAuth Catalog", cls: "is-auth-pat", Icon: Lock },
+};
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -136,7 +147,6 @@ export default function McpDirectoryGrid({
     const cat = category.trim().toLowerCase();
 
     return initialServers.filter((entry) => {
-      // 1. Hide MCPs already connected in My MCPs
       if (connectedKeys.size > 0) {
         const entryKeys = getEntryKeys(entry);
         if (entryKeys.some((k) => connectedKeys.has(k))) {
@@ -144,7 +154,6 @@ export default function McpDirectoryGrid({
         }
       }
 
-      // 2. Category filter
       if (cat === "remote") {
         if (!entry.isRemote) return false;
       } else if (cat) {
@@ -152,7 +161,6 @@ export default function McpDirectoryGrid({
         if (entryCat !== cat) return false;
       }
 
-      // 3. Live search filter
       if (!q) return true;
       const hay = [
         entry.name,
@@ -160,6 +168,7 @@ export default function McpDirectoryGrid({
         entry.description,
         entry.category,
         entry.transport,
+        entry.authType,
       ]
         .filter(Boolean)
         .join(" ")
@@ -190,7 +199,7 @@ export default function McpDirectoryGrid({
             setQuery(e.target.value);
             setVisibleLimit(36);
           }}
-          placeholder="Search 3,000+ MCPs (GitHub, Supabase, Vercel, Figma...)"
+          placeholder="Search 5,000+ MCPs (GitHub, Supabase, Vercel, Figma...)"
           aria-label="Search MCP servers"
         />
         {query ? (
@@ -245,58 +254,69 @@ export default function McpDirectoryGrid({
       ) : visibleServers.length ? (
         <>
           <div className="integration-grid">
-            {visibleServers.map((item, index) => (
-              <article
-                key={`${item.id || item.name}-${index}`}
-                className="integration-card server-card"
-              >
-                <div className="card-top">
-                  <div className="integration-icon">
-                    {item.verifiedPopular ? (
-                      <ShieldCheck size={16} />
-                    ) : (
-                      <Server size={16} />
+            {visibleServers.map((item, index) => {
+              const authBadge = AUTH_BADGE_MAP[item.authType] || AUTH_BADGE_MAP.oauth;
+              const AuthIcon = authBadge.Icon;
+              return (
+                <article
+                  key={`${item.id || item.name}-${index}`}
+                  className="integration-card server-card"
+                >
+                  <div className="card-top">
+                    <div className="integration-icon">
+                      {item.verifiedPopular ? (
+                        <ShieldCheck size={16} />
+                      ) : (
+                        <Server size={16} />
+                      )}
+                    </div>
+                    <span
+                      className={`status ${item.verifiedPopular ? "is-enabled" : ""}`}
+                    >
+                      {item.verifiedPopular
+                        ? "Verified"
+                        : item.isRemote
+                        ? "Remote"
+                        : "STDIO"}
+                    </span>
+                  </div>
+
+                  <div className="server-meta">
+                    {item.stars > 0 && (
+                      <span className="version-pill is-star-pill">
+                        <Star size={10} /> {Number(item.stars).toLocaleString()}
+                      </span>
+                    )}
+                    <span className={`transport-pill ${authBadge.cls}`}>
+                      <AuthIcon size={9} /> {authBadge.label}
+                    </span>
+                    {item.category && (
+                      <span className="version-pill">{item.category}</span>
                     )}
                   </div>
-                  <span
-                    className={`status ${item.verifiedPopular ? "is-enabled" : ""}`}
-                  >
-                    {item.verifiedPopular
-                      ? "Verified"
-                      : item.isRemote
-                      ? "Remote"
-                      : "STDIO"}
-                  </span>
-                </div>
 
-                <div className="server-meta">
-                  <span className="transport-pill">{item.transport}</span>
-                  {item.category && (
-                    <span className="version-pill">{item.category}</span>
-                  )}
-                </div>
+                  <h3>{item.name}</h3>
+                  <p>{item.description}</p>
 
-                <h3>{item.name}</h3>
-                <p>{item.description}</p>
-
-                <div className="card-bottom">
-                  {item.repository ? (
-                    <div className="server-actions">
-                      <a href={item.repository} target="_blank" rel="noreferrer">
-                        Source <ExternalLink size={11} />
-                      </a>
-                    </div>
-                  ) : null}
-                  <AddMcpButton
-                    serverName={item.id}
-                    version={item.version}
-                    registryEntry={item.rawEntry}
-                    remoteAvailable={item.isRemote}
-                    onConnected={() => handleOptimisticConnected(item.rawEntry)}
-                  />
-                </div>
-              </article>
-            ))}
+                  <div className="card-bottom">
+                    {item.repository ? (
+                      <div className="server-actions">
+                        <a href={item.repository} target="_blank" rel="noreferrer">
+                          Source <ExternalLink size={11} />
+                        </a>
+                      </div>
+                    ) : null}
+                    <AddMcpButton
+                      serverName={item.id}
+                      version={item.version}
+                      registryEntry={item.rawEntry}
+                      remoteAvailable={item.isRemote}
+                      onConnected={() => handleOptimisticConnected(item.rawEntry)}
+                    />
+                  </div>
+                </article>
+              );
+            })}
           </div>
 
           {visibleLimit < filteredServers.length && (

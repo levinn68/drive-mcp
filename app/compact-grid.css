@@ -1,4 +1,4 @@
-/* DRIVE MCP — App-First Cupertino Liquid Glass v2.3 (Optimistic Toggle + Verified MCPs + Skills) */
+/* DRIVE MCP — App-First Cupertino Liquid Glass v2.4 (Zero-Clip Cards + OAuth 2.1 CIMD + 3K Catalog) */
 
 :root {
   --drive-glass-bg: #060a12;
@@ -190,7 +190,7 @@ body {
   animation: driveTabIn 200ms var(--drive-spring) both;
 }
 
-/* My MCPs Instant iOS Switch & Cards */
+/* My MCPs Instant iOS Switch & Zero-Clip Cards */
 .my-mcp-summary-strip {
   display: flex;
   align-items: center;
@@ -243,7 +243,7 @@ body {
 
 .my-mcp-row-main {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 12px;
 }
 
@@ -257,22 +257,27 @@ body {
   align-items: center;
   gap: 7px;
   flex-wrap: wrap;
-  margin-bottom: 3px;
+  margin-bottom: 4px;
 }
 
 .my-mcp-row-title strong {
-  font-size: 14px;
+  font-size: 14.5px;
   color: #f4f8ff;
-  line-height: 1.25;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .my-mcp-row-copy p {
-  margin: 0 0 8px;
-  font-size: 11.5px;
+  margin: 0 0 9px;
+  font-size: 12px;
+  line-height: 1.45;
   color: #9cb0c7;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .my-mcp-row-actions {
@@ -457,6 +462,7 @@ body {
 .custom-policy-pills {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 7px;
 }
 
@@ -470,6 +476,8 @@ body {
   color: #b7c8dc;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.12);
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .custom-submit-btn {
@@ -522,9 +530,22 @@ body {
 
 .custom-form-hint {
   margin: 12px 0 0;
-  font-size: 11.5px;
+  font-size: 12px;
   line-height: 1.5;
-  color: #8ea3bb;
+  color: #9cb0c7;
+}
+
+.hidden-connected-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #86efac;
+  background: rgba(48, 209, 88, 0.14);
+  border: 1px solid rgba(48, 209, 88, 0.32);
+  margin-left: 6px;
 }
 
 .skill-install-btn,
@@ -534,7 +555,7 @@ body {
   justify-content: center !important;
   gap: 5px !important;
   width: 100% !important;
-  min-height: 34px !important;
+  min-height: 36px !important;
   padding: 0 12px !important;
   border-radius: 12px !important;
   border: 1px solid rgba(145, 212, 255, 0.55) !important;
@@ -591,8 +612,8 @@ body {
 }
 
 .account-active-icon {
-  background: linear-gradient(145deg, rgba(10, 132, 255, 0.24), rgba(90, 200, 250, 0.12)) !important;
-  border-color: rgba(124, 212, 255, 0.34) !important;
+  background: rgba(10, 132, 255, 0.16) !important;
+  border-color: rgba(90, 200, 250, 0.32) !important;
 }
 
 .category-chip.is-active,
@@ -725,43 +746,58 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  flex-wrap: wrap;
 }
 
 .oauth-return-copy {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  line-height: 1.4;
-  color: #e6f2ff;
-  flex: 1 1 200px;
+  gap: 9px;
+  min-width: 0;
 }
 
 .oauth-return-icon {
-  color: #5ac8fa;
   flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: #7cd4ff;
+  background: rgba(10, 132, 255, 0.18);
+  border: 1px solid rgba(124, 212, 255, 0.32);
+}
+
+.oauth-return-copy strong {
+  display: block;
+  font-size: 12.5px;
+  color: #f4f8ff;
+}
+
+.oauth-return-copy small {
+  display: block;
+  font-size: 11px;
+  color: #9cb0c7;
 }
 
 .oauth-return-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .oauth-return-btn {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
   gap: 6px;
-  min-height: 36px;
-  padding: 0 14px;
+  min-height: 34px;
+  padding: 0 13px;
   border-radius: 999px;
-  border: 1px solid rgba(145, 212, 255, 0.58);
+  border: 1px solid rgba(145, 212, 255, 0.55);
   background: linear-gradient(135deg, #2b95ff, #0a84ff);
   color: #f7fbff;
   font-size: 12px;
   font-weight: 700;
+  text-decoration: none;
   cursor: pointer;
   white-space: nowrap;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 18px rgba(10, 132, 255, 0.32);
@@ -769,17 +805,14 @@ body {
 }
 
 .oauth-return-btn:active {
-  transform: scale(0.96);
+  transform: scale(0.95);
 }
 
 .oauth-return-dismiss {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.07);
   color: #c1ccda;
   cursor: pointer;
@@ -831,7 +864,7 @@ body {
 
 .mcp-category-filter::-webkit-scrollbar,
 .skill-category-filter::-webkit-scrollbar {
-  display: none;
+  display: none !important;
 }
 
 .mcp-category-filter .category-chip,
@@ -840,6 +873,7 @@ body {
   white-space: nowrap !important;
 }
 
+/* Motion Primitives */
 @keyframes driveTabIn {
   from {
     opacity: 0;
@@ -865,7 +899,7 @@ body {
 @keyframes driveToastIn {
   from {
     opacity: 0;
-    transform: translateY(-8px);
+    transform: translateY(-6px);
   }
   to {
     opacity: 1;
@@ -904,6 +938,82 @@ body {
 .integration-grid > .integration-card:nth-child(6),
 .mkt-grid > .mkt-card:nth-child(6) { animation-delay: 125ms; }
 
+/* ==========================================================================
+   ZERO-CLIP RESPONSIVE CARD SYSTEM (NO SLOP ENGINE: NS-09-01 + NS-24-04)
+   ========================================================================== */
+.integration-card,
+.server-card,
+.skill-repository-card {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  overflow: visible !important;
+  border-radius: 20px !important;
+  border: 1px solid rgba(255, 255, 255, 0.13) !important;
+  background: linear-gradient(155deg, rgba(20, 32, 52, 0.84), rgba(9, 15, 27, 0.94)) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 8px 18px rgba(0, 0, 0, 0.28) !important;
+}
+
+.integration-card h3,
+.server-card h3 {
+  display: block !important;
+  -webkit-line-clamp: unset !important;
+  -webkit-box-orient: initial !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  color: #f4f8ff !important;
+  font-weight: 700 !important;
+}
+
+.integration-card p,
+.server-card p {
+  display: block !important;
+  -webkit-line-clamp: unset !important;
+  -webkit-box-orient: initial !important;
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  word-break: break-word !important;
+  color: #a9bdd4 !important;
+}
+
+.integration-card .card-top {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 8px !important;
+  flex-wrap: wrap !important;
+}
+
+.integration-card .status,
+.integration-card .transport-pill,
+.integration-card .version-pill {
+  max-width: 100% !important;
+  white-space: normal !important;
+  overflow-wrap: anywhere !important;
+  line-height: 1.25 !important;
+}
+
+.integration-card .status.is-enabled {
+  color: #86efac !important;
+  background: rgba(48, 209, 88, 0.16) !important;
+  border-color: rgba(48, 209, 88, 0.35) !important;
+}
+
+.integration-card .card-bottom {
+  margin-top: auto !important;
+  padding-top: 10px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  gap: 8px !important;
+}
+
 @media (min-width: 721px) {
   .integration-grid,
   .server-grid,
@@ -911,6 +1021,24 @@ body {
     display: grid !important;
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 14px !important;
+    align-items: stretch !important;
+  }
+
+  .integration-card,
+  .server-card {
+    padding: 16px !important;
+  }
+
+  .integration-card h3 {
+    font-size: 15px !important;
+    line-height: 1.32 !important;
+    margin: 6px 0 6px !important;
+  }
+
+  .integration-card p {
+    font-size: 12.5px !important;
+    line-height: 1.5 !important;
+    margin: 0 0 12px !important;
   }
 }
 
@@ -939,34 +1067,32 @@ body {
     display: grid !important;
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 10px !important;
+    align-items: stretch !important;
   }
 
   .integration-card,
   .server-card,
   .skill-repository-card {
-    padding: 11px !important;
+    padding: 12px !important;
     border-radius: 18px !important;
-    min-width: 0 !important;
-    border: 1px solid rgba(255, 255, 255, 0.13) !important;
-    background: linear-gradient(155deg, rgba(20, 32, 52, 0.84), rgba(9, 15, 27, 0.94)) !important;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 8px 18px rgba(0, 0, 0, 0.28) !important;
     transition: transform 130ms ease-out !important;
   }
 
   .integration-card:active,
   .skill-repository-card:active {
-    transform: scale(0.98) !important;
+    transform: scale(0.985) !important;
   }
 
   .integration-card .card-top {
     gap: 6px !important;
-    margin-bottom: 6px !important;
+    margin-bottom: 7px !important;
   }
 
   .integration-card .integration-icon {
     width: 28px !important;
     height: 28px !important;
     border-radius: 9px !important;
+    flex: none !important;
     color: #7cd4ff !important;
     background: rgba(10, 132, 255, 0.16) !important;
     border-color: rgba(124, 212, 255, 0.28) !important;
@@ -980,53 +1106,35 @@ body {
     border-color: rgba(124, 212, 255, 0.28) !important;
   }
 
-  .integration-card .status.is-enabled {
-    color: #86efac !important;
-    background: rgba(48, 209, 88, 0.16) !important;
-    border-color: rgba(48, 209, 88, 0.35) !important;
-  }
-
   .integration-card .server-id {
     display: none !important;
   }
 
   .integration-card .server-meta {
+    display: flex !important;
     font-size: 10px !important;
     gap: 5px !important;
     flex-wrap: wrap !important;
-    margin-bottom: 4px !important;
+    margin-bottom: 6px !important;
   }
 
   .integration-card h3 {
-    font-size: 13px !important;
-    line-height: 1.25 !important;
-    display: -webkit-box !important;
-    -webkit-line-clamp: 2 !important;
-    -webkit-box-orient: vertical !important;
-    overflow: hidden !important;
-    margin: 2px 0 5px !important;
+    font-size: 13.5px !important;
+    line-height: 1.3 !important;
+    margin: 2px 0 6px !important;
   }
 
   .integration-card p {
-    font-size: 11px !important;
-    line-height: 1.38 !important;
-    display: -webkit-box !important;
-    -webkit-line-clamp: 2 !important;
-    -webkit-box-orient: vertical !important;
-    overflow: hidden !important;
-    margin-bottom: 8px !important;
-  }
-
-  .integration-card .card-bottom {
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 6px !important;
-    padding-top: 8px !important;
+    font-size: 11.5px !important;
+    line-height: 1.46 !important;
+    margin: 0 0 10px !important;
   }
 
   .integration-card .server-actions {
+    display: flex !important;
     justify-content: space-between !important;
     gap: 4px !important;
+    flex-wrap: wrap !important;
   }
 
   .integration-card .server-actions a,
@@ -1038,7 +1146,7 @@ body {
 
   .integration-card .card-bottom > button {
     width: 100% !important;
-    min-height: 32px !important;
+    min-height: 34px !important;
     font-size: 11.5px !important;
     justify-content: center !important;
   }

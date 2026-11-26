@@ -25,6 +25,131 @@ function isSafeHttpsUrl(raw) {
   }
 }
 
+function resolvePublicOrigin(request) {
+  const url = new URL(request.url);
+  const proto =
+    request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim() ||
+    url.protocol.replace(":", "") ||
+    "https";
+  const host =
+    request.headers.get("x-forwarded-host")?.split(",")[0]?.trim() ||
+    request.headers.get("host") ||
+    url.host;
+  return `${proto}://${host}`;
+}
+
+function getProviderHints(endpointUrl) {
+  const lower = String(endpointUrl || "").toLowerCase();
+  if (lower.includes("githubcopilot.com") || lower.includes("github.com")) {
+    return {
+      envClientId: process.env.GITHUB_MCP_CLIENT_ID || process.env.GITHUB_CLIENT_ID || "",
+      envClientSecret: process.env.GITHUB_MCP_CLIENT_SECRET || process.env.GITHUB_CLIENT_SECRET || "",
+      tokenPortalUrl: "https://github.com/settings/personal-access-tokens/new",
+      tokenPortalLabel: "Buat GitHub Personal Access Token",
+      preferCimd: false,
+      defaultScopes: "repo read:org read:user",
+    };
+  }
+  if (lower.includes("mcp.vercel.com") || lower.includes("vercel.com")) {
+    return {
+      envClientId: process.env.VERCEL_MCP_CLIENT_ID || "",
+      envClientSecret: process.env.VERCEL_MCP_CLIENT_SECRET || "",
+      tokenPortalUrl: "https://vercel.com/account/tokens",
+      tokenPortalLabel: "Buat Vercel Access Token",
+      preferCimd: true,
+      defaultScopes: "openid",
+    };
+  }
+  if (lower.includes("supabase.com")) {
+    return {
+      envClientId: process.env.SUPABASE_MCP_CLIENT_ID || "",
+      envClientSecret: process.env.SUPABASE_MCP_CLIENT_SECRET || "",
+      tokenPortalUrl: "https://supabase.com/dashboard/account/tokens",
+      tokenPortalLabel: "Buat Supabase Access Token",
+      preferCimd: true,
+      defaultScopes: "",
+    };
+  }
+  if (lower.includes("stripe.com")) {
+    return {
+      envClientId: "",
+      envClientSecret: "",
+      tokenPortalUrl: "https://dashboard.stripe.com/apikeys",
+      tokenPortalLabel: "Buka Stripe API Keys",
+      preferCimd: true,
+      defaultScopes: "",
+    };
+  }
+  if (lower.includes("notion.com")) {
+    return {
+      envClientId: "",
+      envClientSecret: "",
+      tokenPortalUrl: "https://www.notion.so/profile/integrations",
+      tokenPortalLabel: "Buka Notion Integrations",
+      preferCimd: true,
+      defaultScopes: "",
+    };
+  }
+  if (lower.includes("linear.app")) {
+    return {
+      envClientId: "",
+      envClientSecret: "",
+      tokenPortalUrl: "https://linear.app/settings/api",
+      tokenPortalLabel: "Buka Linear API Settings",
+      preferCimd: true,
+      defaultScopes: "",
+    };
+  }
+  if (lower.includes("figma.com")) {
+    return {
+      envClientId: "",
+      envClientSecret: "",
+      tokenPortalUrl: "https://www.figma.com/developers/api#access-tokens",
+      tokenPortalLabel: "Buat Figma Personal Access Token",
+      preferCimd: true,
+      defaultScopes: "",
+    };
+  }
+  if (lower.includes("sentry.dev") || lower.includes("sentry.io")) {
+    return {
+      envClientId: "",
+      envClientSecret: "",
+      tokenPortalUrl: "https://sentry.io/settings/account/api/auth-tokens/",
+      tokenPortalLabel: "Buat Sentry Auth Token",
+      preferCimd: true,
+      defaultScopes: "",
+    };
+  }
+  if (lower.includes("cloudflare.com")) {
+    return {
+      envClientId: "",
+      envClientSecret: "",
+      tokenPortalUrl: "https://dash.cloudflare.com/profile/api-tokens",
+      tokenPortalLabel: "Buat Cloudflare API Token",
+      preferCimd: true,
+      defaultScopes: "",
+    };
+  }
+  if (lower.includes("neon.tech")) {
+    return {
+      envClientId: "",
+      envClientSecret: "",
+      tokenPortalUrl: "https://console.neon.tech/app/settings/api-keys",
+      tokenPortalLabel: "Buat Neon API Key",
+      preferCimd: true,
+      defaultScopes: "",
+    };
+  }
+  return {
+    envClientId: "",
+    envClientSecret: "",
+    tokenPortalUrl: "",
+    tokenPortalLabel: "",
+    preferCimd: false,
+    defaultScopes: "",
+  };
+}
+
 async function getUserClient(request) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -46,7 +171,7 @@ async function getUserClient(request) {
 async function fetchJsonSafe(url) {
   try {
     const res = await fetch(url, {
-      headers: { accept: "application/json", "user-agent": "DRIVE-MCP-Gateway/2.0" },
+      headers: { accept: "application/json", "user-agent": "DRIVE-MCP-Gateway/2.4" },
       cache: "no-store",
       signal: AbortSignal.timeout(6500),
     });
@@ -61,7 +186,7 @@ async function discoverUpstreamOAuth(endpointUrl) {
   const target = new URL(endpointUrl);
   const origin = target.origin;
 
-  // Step 1: Probe MCP endpoint directly to see if it works without auth or returns WWW-Authenticate
+  // Step 1: Probe MCP endpoint directly (zero-auth public MCPs return 200 OK)
   let wwwAuth = "";
   try {
     const probe = await fetch(endpointUrl, {
@@ -77,7 +202,7 @@ async function discoverUpstreamOAuth(endpointUrl) {
         params: {
           protocolVersion: "2025-03-26",
           capabilities: {},
-          clientInfo: { name: "DRIVE MCP", version: "2.0" },
+          clientInfo: { name: "DRIVE MCP", version: "2.4" },
         },
       }),
       signal: AbortSignal.timeout(6000),
@@ -95,19 +220,25 @@ async function discoverUpstreamOAuth(endpointUrl) {
     resourceMetaUrl = match[1];
   }
 
+  const cleanPath = target.pathname.replace(/\/$/, "");
   const prmCandidates = [
     resourceMetaUrl,
-    `${origin}/.well-known/oauth-protected-resource${target.pathname.replace(/\/$/, "")}`,
+    cleanPath ? `${origin}/.well-known/oauth-protected-resource${cleanPath}` : "",
     `${origin}/.well-known/oauth-protected-resource`,
   ].filter(Boolean);
 
   let authServerOrigin = origin;
   let scopesSupported = [];
+  let canonicalResource = endpointUrl.replace(/\/$/, "");
+
   for (const candidate of prmCandidates) {
     const prm = await fetchJsonSafe(candidate);
     if (prm && Array.isArray(prm.authorization_servers) && prm.authorization_servers[0]) {
       authServerOrigin = prm.authorization_servers[0].replace(/\/$/, "");
       if (Array.isArray(prm.scopes_supported)) scopesSupported = prm.scopes_supported;
+      if (typeof prm.resource === "string" && prm.resource.startsWith("https://")) {
+        canonicalResource = prm.resource;
+      }
       break;
     }
   }
@@ -131,13 +262,15 @@ async function discoverUpstreamOAuth(endpointUrl) {
   if (!metadata) {
     return {
       mode: "bearer",
-      message: "MCP ini menggunakan API Key / Bearer Token (tidak menyediakan OAuth otomatis).",
+      canonicalResource,
+      message: "MCP ini menggunakan API Key / Personal Access Token (tidak menyediakan OAuth otomatis).",
     };
   }
 
   return {
     mode: "oauth",
     metadata,
+    canonicalResource,
     scopes: scopesSupported.length
       ? scopesSupported.slice(0, 6).join(" ")
       : Array.isArray(metadata.scopes_supported)
@@ -161,6 +294,9 @@ export async function POST(request) {
   const endpointUrl = String(body.endpointUrl || "").trim();
   const serverTitle = String(body.serverTitle || "MCP Server").trim().slice(0, 100);
   const bearerToken = typeof body.bearerToken === "string" ? body.bearerToken.trim() : "";
+  const customClientId = typeof body.oauthClientId === "string" ? body.oauthClientId.trim() : "";
+  const customClientSecret =
+    typeof body.oauthClientSecret === "string" ? body.oauthClientSecret.trim() : "";
 
   if (!connectionId || !isSafeHttpsUrl(endpointUrl)) {
     return NextResponse.json(
@@ -169,7 +305,9 @@ export async function POST(request) {
     );
   }
 
-  // Direct Bearer / API Key save mode
+  const hints = getProviderHints(endpointUrl);
+
+  // Direct Bearer / Personal Access Token save mode
   if (bearerToken) {
     const { error } = await auth.supabase
       .from("user_mcp_connections")
@@ -194,8 +332,11 @@ export async function POST(request) {
     return res;
   }
 
-  // OAuth 2.1 Discovery & Dynamic Client Registration
+  // OAuth 2.1 Discovery
   const discovery = await discoverUpstreamOAuth(endpointUrl);
+  const reqOrigin = resolvePublicOrigin(request);
+  const redirectUri = `${reqOrigin}/api/mcp-auth/callback`;
+  const cimdClientId = `${reqOrigin}/.well-known/oauth-client-metadata.json`;
 
   if (discovery.mode === "none") {
     await auth.supabase
@@ -206,7 +347,7 @@ export async function POST(request) {
     return NextResponse.json({
       mode: "none",
       verified: true,
-      message: `${serverTitle} langsung aktif (publik, tidak perlu login tambahan).`,
+      message: `${serverTitle} langsung aktif (publik, tanpa login tambahan).`,
     });
   }
 
@@ -214,60 +355,74 @@ export async function POST(request) {
     return NextResponse.json({
       mode: "bearer",
       message: discovery.message,
+      tokenPortalUrl: hints.tokenPortalUrl,
+      tokenPortalLabel: hints.tokenPortalLabel,
+      supportsOAuthApp: false,
+      callbackUrl: redirectUri,
     });
   }
 
-  const { metadata, scopes } = discovery;
-  const reqOrigin = new URL(request.url).origin;
-  const redirectUri = `${reqOrigin}/api/mcp-auth/callback`;
+  const { metadata, canonicalResource } = discovery;
+  const scopes = discovery.scopes || hints.defaultScopes || "";
 
-  if (!metadata.registration_endpoint) {
-    return NextResponse.json({
-      mode: "bearer",
-      authorizePortal: metadata.authorization_endpoint,
-      message: `${serverTitle} tidak mendukung Dynamic Client Registration otomatis. Masukkan API Key / Personal Access Token di bawah ini.`,
-    });
+  // MCP OAuth 2.1 Client Registration Priority:
+  // 1. User-supplied or Pre-registered OAuth App credentials
+  let clientId = customClientId || hints.envClientId || "";
+  let clientSecret = customClientSecret || hints.envClientSecret || "";
+  let registrationMethod = clientId ? "preregistered" : "";
+
+  // 2. Client ID Metadata Document (CIMD) — MCP 2025-11-25 standard (used by Vercel MCP, etc.)
+  const supportsCimd =
+    Boolean(metadata.client_id_metadata_document_supported) ||
+    (hints.preferCimd && reqOrigin.startsWith("https://"));
+
+  if (!clientId && supportsCimd && reqOrigin.startsWith("https://")) {
+    clientId = cimdClientId;
+    registrationMethod = "cimd";
   }
 
-  // RFC 7591 Dynamic Client Registration
-  let clientId = "";
-  let clientSecret = "";
-  try {
-    const regRes = await fetch(metadata.registration_endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-      body: JSON.stringify({
-        client_name: "DRIVE MCP Gateway",
-        redirect_uris: [redirectUri],
-        grant_types: ["authorization_code", "refresh_token"],
-        response_types: ["code"],
-        token_endpoint_auth_method: "none",
-      }),
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!regRes.ok) {
-      return NextResponse.json({
-        mode: "bearer",
-        message: `${serverTitle} menolak pendaftaran OAuth otomatis (HTTP ${regRes.status}). Gunakan API Key / Token untuk menyambungkan.`,
+  // 3. RFC 7591 Dynamic Client Registration fallback
+  if (!clientId && metadata.registration_endpoint) {
+    try {
+      const regRes = await fetch(metadata.registration_endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          client_name: "DRIVE MCP",
+          client_uri: reqOrigin,
+          redirect_uris: [redirectUri],
+          grant_types: ["authorization_code", "refresh_token"],
+          response_types: ["code"],
+          token_endpoint_auth_method: "none",
+        }),
+        signal: AbortSignal.timeout(8000),
       });
+      if (regRes.ok) {
+        const reg = await regRes.json();
+        clientId = reg.client_id || "";
+        clientSecret = reg.client_secret || "";
+        registrationMethod = "dcr";
+      } else if (reqOrigin.startsWith("https://") && metadata.client_id_metadata_document_supported !== false) {
+        // If DCR rejected our redirect URI (e.g. HTTP 400), try CIMD URL client_id as standard MCP 2025-11-25 fallback
+        clientId = cimdClientId;
+        registrationMethod = "cimd_fallback";
+      }
+    } catch {
+      // Fall through to manual credentials prompt
     }
-    const reg = await regRes.json();
-    clientId = reg.client_id || "";
-    clientSecret = reg.client_secret || "";
-  } catch {
-    return NextResponse.json({
-      mode: "bearer",
-      message: `Gagal mendaftar OAuth ke ${serverTitle}. Gunakan API Key / Token.`,
-    });
   }
 
   if (!clientId) {
     return NextResponse.json({
       mode: "bearer",
-      message: `${serverTitle} tidak mengembalikan client_id OAuth. Gunakan API Key / Token.`,
+      supportsOAuthApp: Boolean(metadata.authorization_endpoint),
+      callbackUrl: redirectUri,
+      tokenPortalUrl: hints.tokenPortalUrl,
+      tokenPortalLabel: hints.tokenPortalLabel,
+      message: `${serverTitle} memerlukan Personal Access Token (PAT) atau OAuth App Client ID & Secret sendiri karena provider belum membuka pendaftaran OAuth otomatis.`,
     });
   }
 
@@ -282,7 +437,12 @@ export async function POST(request) {
   authorizeUrl.searchParams.set("state", state);
   authorizeUrl.searchParams.set("code_challenge", codeChallenge);
   authorizeUrl.searchParams.set("code_challenge_method", "S256");
-  if (scopes) authorizeUrl.searchParams.set("scope", scopes);
+  if (canonicalResource) {
+    authorizeUrl.searchParams.set("resource", canonicalResource);
+  }
+  if (scopes) {
+    authorizeUrl.searchParams.set("scope", scopes);
+  }
 
   const pendingPayload = JSON.stringify({
     state,
@@ -291,13 +451,16 @@ export async function POST(request) {
     clientSecret,
     tokenEndpoint: metadata.token_endpoint,
     redirectUri,
+    resource: canonicalResource,
     connectionId,
     serverTitle,
+    registrationMethod,
     userToken: auth.token,
   });
 
   const response = NextResponse.json({
     mode: "oauth",
+    registrationMethod,
     authorizeUrl: authorizeUrl.toString(),
   });
   response.cookies.set("drive_upstream_oauth", Buffer.from(pendingPayload).toString("base64url"), {

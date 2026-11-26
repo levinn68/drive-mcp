@@ -1,4 +1,5 @@
 import "./globals.css";
+import "./compact-grid.css";
 
 export const metadata = {
   title: "DRIVE | One Hub. Every Connection.",

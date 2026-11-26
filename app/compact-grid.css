@@ -1,0 +1,71 @@
+/* Compact 2-column mobile grid for DRIVE MCP & Skills cards */
+
+@media (max-width: 720px) {
+  .server-grid,
+  .directory-grid,
+  .mcp-grid,
+  .skill-directory-grid,
+  .skill-repository-grid,
+  .skill-results-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .server-card,
+  .mcp-card,
+  .skill-repository-card {
+    padding: 12px !important;
+    border-radius: 18px !important;
+    min-width: 0 !important;
+  }
+
+  .server-card h3,
+  .skill-repository-copy strong {
+    font-size: 13px !important;
+    line-height: 1.28 !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .server-card p,
+  .skill-repository-copy p {
+    font-size: 11px !important;
+    line-height: 1.42 !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin: 6px 0 8px !important;
+  }
+
+  .server-meta,
+  .server-card-footer,
+  .server-actions,
+  .server-card-actions {
+    gap: 6px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .server-card .transport-pill,
+  .server-card .version-pill {
+    font-size: 10px !important;
+    padding: 3px 7px !important;
+  }
+
+  .server-card button,
+  .skill-repository-main > .glass-chip-btn {
+    min-height: 36px !important;
+    padding: 0 10px !important;
+    font-size: 11px !important;
+    border-radius: 11px !important;
+  }
+
+  .discover-highlights {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+}

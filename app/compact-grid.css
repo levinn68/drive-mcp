@@ -1,4 +1,77 @@
-/* Compact 2-column mobile grid for DRIVE MCP & Skills cards */
+/* Compact 2-column mobile grid & sticky OAuth return bar for DRIVE MCP */
+
+.oauth-return-bar {
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  padding: calc(8px + env(safe-area-inset-top)) 12px 8px;
+  background: linear-gradient(135deg, rgba(16, 30, 22, 0.94), rgba(10, 18, 28, 0.96));
+  border-bottom: 1px solid rgba(215, 255, 139, 0.35);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+}
+
+.oauth-return-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.oauth-return-copy {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #e6f4ea;
+  flex: 1 1 200px;
+}
+
+.oauth-return-icon {
+  color: #d7ff8b;
+  flex: none;
+}
+
+.oauth-return-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.oauth-return-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(215, 255, 139, 0.75);
+  background: linear-gradient(135deg, #d7ff8b, #9ef065);
+  color: #0b1407;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.oauth-return-dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: #c1ccda;
+  cursor: pointer;
+}
 
 @media (max-width: 720px) {
   .server-grid,

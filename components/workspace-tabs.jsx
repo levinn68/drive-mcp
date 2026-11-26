@@ -7,6 +7,7 @@ import {
   Cable,
   Command,
   Compass,
+  Globe,
   LockKeyhole,
   LogIn,
   LogOut,
@@ -15,18 +16,7 @@ import {
   Sparkles,
   User,
 } from "lucide-react";
-
-const NAV_ITEMS = [
-  { id: "mcp", label: "MCP Hub", short: "MCP", icon: Cable },
-  { id: "skills", label: "Skills Library", short: "Skills", icon: BookOpen },
-  { id: "account", label: "Account Status", short: "Account", icon: LockKeyhole },
-];
-
-const MCP_SUBTABS = [
-  { id: "discover", label: "Directory" },
-  { id: "my", label: "My MCPs" },
-  { id: "custom", label: "+ Custom" },
-];
+import { useDriveLang } from "./lang-context";
 
 const HASH_TO_TAB = {
   "#mcp": "mcp",
@@ -52,6 +42,7 @@ function getSupabaseClient() {
 }
 
 function AccountStatusPanel() {
+  const { t } = useDriveLang();
   const [session, setSession] = useState(null);
   const [mcp, setMcp] = useState([]);
   const [skills, setSkills] = useState([]);
@@ -103,7 +94,14 @@ function AccountStatusPanel() {
     const timer = window.setTimeout(() => {
       refresh();
     }, 0);
-    return () => window.clearTimeout(timer);
+    const onSync = () => refresh();
+    window.addEventListener("drive:connections-changed", onSync);
+    window.addEventListener("drive:auth-changed", onSync);
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("drive:connections-changed", onSync);
+      window.removeEventListener("drive:auth-changed", onSync);
+    };
   }, [refresh]);
 
   async function handleSignIn() {
@@ -118,7 +116,7 @@ function AccountStatusPanel() {
         },
       });
     } catch (e) {
-      setError(e?.message || "Failed to start Google sign-in.");
+      setError(e?.message || t("Gagal memulai login Google.", "Failed to start Google sign-in."));
       setAuthBusy(false);
     }
   }
@@ -132,8 +130,9 @@ function AccountStatusPanel() {
       setSession(null);
       setMcp([]);
       setSkills([]);
+      window.dispatchEvent(new Event("drive:auth-changed"));
     } catch (e) {
-      setError(e?.message || "Failed to sign out.");
+      setError(e?.message || t("Gagal keluar akun.", "Failed to sign out."));
     } finally {
       setAuthBusy(false);
     }
@@ -144,12 +143,12 @@ function AccountStatusPanel() {
       <div className="section-head">
         <div>
           <div className="eyebrow">
-            <span className="pulse" /> ACCOUNT
+            <span className="pulse" /> {t("AKUN", "ACCOUNT")}
           </div>
-          <h1>Account &amp; Status</h1>
+          <h1>{t("Akun & Status", "Account & Status")}</h1>
         </div>
         <button type="button" className="glass-chip-btn" onClick={refresh} disabled={loading}>
-          <RefreshCw size={13} className={loading ? "spin" : ""} /> Refresh
+          <RefreshCw size={13} className={loading ? "spin" : ""} /> {t("Muat Ulang", "Refresh")}
         </button>
       </div>
 
@@ -163,14 +162,24 @@ function AccountStatusPanel() {
               <>
                 <div className="account-profile-email-row">
                   <strong>{session.user.email}</strong>
-                  <span className="account-sync-pill">Synced</span>
+                  <span className="account-sync-pill">{t("Tersinkron", "Synced")}</span>
                 </div>
-                <small>Signed in to DRIVE · MCPs &amp; Skills synced to your account</small>
+                <small>
+                  {t(
+                    "Masuk ke DRIVE · MCP & Skills otomatis tersinkron ke akun kamu",
+                    "Signed in to DRIVE · MCPs & Skills synced to your account"
+                  )}
+                </small>
               </>
             ) : (
               <>
-                <strong>Not signed in</strong>
-                <small>Sign in to sync MCP connections &amp; installed Skills</small>
+                <strong>{t("Belum masuk", "Not signed in")}</strong>
+                <small>
+                  {t(
+                    "Masuk dengan Google untuk menyinkronkan koneksi MCP & Skills",
+                    "Sign in to sync MCP connections & installed Skills"
+                  )}
+                </small>
               </>
             )}
           </div>
@@ -182,7 +191,8 @@ function AccountStatusPanel() {
             onClick={handleSignOut}
             disabled={authBusy}
           >
-            <LogOut size={13} /> {authBusy ? "Signing out..." : "Sign out"}
+            <LogOut size={13} />{" "}
+            {authBusy ? t("Keluar...", "Signing out...") : t("Keluar", "Sign out")}
           </button>
         ) : (
           <button
@@ -191,7 +201,10 @@ function AccountStatusPanel() {
             onClick={handleSignIn}
             disabled={authBusy}
           >
-            <LogIn size={13} /> {authBusy ? "Redirecting..." : "Sign in with Google"}
+            <LogIn size={13} />{" "}
+            {authBusy
+              ? t("Mengalihkan...", "Redirecting...")
+              : t("Masuk dengan Google", "Sign in with Google")}
           </button>
         )}
       </article>
@@ -203,9 +216,13 @@ function AccountStatusPanel() {
           <span className="account-active-icon">
             <Cable size={18} />
           </span>
-          <small>ACTIVE MCPs</small>
+          <small>{t("MCP AKTIF", "ACTIVE MCPs")}</small>
           <strong>{loading ? "—" : mcp.length}</strong>
-          <span>{mcp.length === 1 ? "server enabled" : "servers enabled"}</span>
+          <span>
+            {mcp.length === 1
+              ? t("server aktif", "server enabled")
+              : t("server aktif", "servers enabled")}
+          </span>
           <div className="account-active-list">
             {mcp.slice(0, 4).map((item) => (
               <div key={item.id}>
@@ -216,8 +233,14 @@ function AccountStatusPanel() {
                   "MCP connection"}
               </div>
             ))}
-            {!loading && !mcp.length && <p>No active MCPs yet.</p>}
-            {mcp.length > 4 && <p>+{mcp.length - 4} more active</p>}
+            {!loading && !mcp.length && (
+              <p>{t("Belum ada MCP aktif.", "No active MCPs yet.")}</p>
+            )}
+            {mcp.length > 4 && (
+              <p>
+                +{mcp.length - 4} {t("lainnya aktif", "more active")}
+              </p>
+            )}
           </div>
         </article>
 
@@ -225,9 +248,13 @@ function AccountStatusPanel() {
           <span className="account-active-icon">
             <BookOpen size={18} />
           </span>
-          <small>ACTIVE SKILLS</small>
+          <small>{t("SKILLS AKTIF", "ACTIVE SKILLS")}</small>
           <strong>{loading ? "—" : skills.length}</strong>
-          <span>{skills.length === 1 ? "skill enabled" : "skills enabled"}</span>
+          <span>
+            {skills.length === 1
+              ? t("skill aktif", "skill enabled")
+              : t("skill aktif", "skills enabled")}
+          </span>
           <div className="account-active-list">
             {skills.slice(0, 4).map((item) => (
               <div key={item.id}>
@@ -235,8 +262,14 @@ function AccountStatusPanel() {
                 {item.name}
               </div>
             ))}
-            {!loading && !skills.length && <p>No active Skills yet.</p>}
-            {skills.length > 4 && <p>+{skills.length - 4} more active</p>}
+            {!loading && !skills.length && (
+              <p>{t("Belum ada Skill aktif.", "No active Skills yet.")}</p>
+            )}
+            {skills.length > 4 && (
+              <p>
+                +{skills.length - 4} {t("lainnya aktif", "more active")}
+              </p>
+            )}
           </div>
         </article>
       </div>
@@ -261,6 +294,7 @@ export default function WorkspaceTabs({
   serverCount = 0,
   query = "",
 }) {
+  const { lang, setLang, t } = useDriveLang();
   const [active, setActive] = useState(() => resolveInitialTab(initialTab, query));
   const [mcpView, setMcpView] = useState("discover");
   const [dragIndex, setDragIndex] = useState(null);
@@ -270,13 +304,25 @@ export default function WorkspaceTabs({
   const dockRef = useRef(null);
   const glideTimerRef = useRef(null);
 
+  const navItems = [
+    { id: "mcp", label: "MCP Hub", short: "MCP", icon: Cable },
+    { id: "skills", label: t("Pustaka Skills", "Skills Library"), short: "Skills", icon: BookOpen },
+    { id: "account", label: t("Status Akun", "Account Status"), short: t("Akun", "Account"), icon: LockKeyhole },
+  ];
+
+  const mcpSubtabs = [
+    { id: "discover", label: t("Direktori", "Directory") },
+    { id: "my", label: t("MCP Saya", "My MCPs") },
+    { id: "custom", label: t("+ Kustom", "+ Custom") },
+  ];
+
   const activeIndex = Math.max(
     0,
-    NAV_ITEMS.findIndex((item) => item.id === active)
+    navItems.findIndex((item) => item.id === active)
   );
   const subIndex = Math.max(
     0,
-    MCP_SUBTABS.findIndex((item) => item.id === mcpView)
+    mcpSubtabs.findIndex((item) => item.id === mcpView)
   );
 
   const selectTab = useCallback((nextTab) => {
@@ -284,7 +330,7 @@ export default function WorkspaceTabs({
       if (prev !== nextTab) {
         setIsAnimatingLens(true);
         if (glideTimerRef.current) window.clearTimeout(glideTimerRef.current);
-        glideTimerRef.current = window.setTimeout(() => setIsAnimatingLens(false), 340);
+        glideTimerRef.current = window.setTimeout(() => setIsAnimatingLens(false), 260);
       }
       return nextTab;
     });
@@ -292,6 +338,11 @@ export default function WorkspaceTabs({
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("mcp_auth")) {
+        setActive("mcp");
+        setMcpView("my");
+      }
       const hash = window.location.hash.toLowerCase();
       if (!hash) return;
       const mapped = HASH_TO_TAB[hash];
@@ -299,12 +350,18 @@ export default function WorkspaceTabs({
       if (hash === "#my-mcps" || hash === "#connections") setMcpView("my");
       else if (hash === "#custom" || hash === "#add") setMcpView("custom");
       else if (hash === "#directory" || hash === "#discover") setMcpView("discover");
-      // Keep the browser address bar clean without #mcp / #skills / #account
       const cleanUrl = `${window.location.pathname}${window.location.search}`;
       window.history.replaceState(null, "", cleanUrl);
     }, 0);
+
+    const onOpenAuth = () => {
+      setActive("mcp");
+      setMcpView("my");
+    };
+    window.addEventListener("drive:open-mcp-auth", onOpenAuth);
     return () => {
       window.clearTimeout(timer);
+      window.removeEventListener("drive:open-mcp-auth", onOpenAuth);
       if (glideTimerRef.current) window.clearTimeout(glideTimerRef.current);
     };
   }, []);
@@ -315,18 +372,28 @@ export default function WorkspaceTabs({
     const rect = dock.getBoundingClientRect();
     const innerWidth = Math.max(1, rect.width - 12);
     const ratio = Math.min(0.999, Math.max(0, (clientX - rect.left - 6) / innerWidth));
-    return Math.min(NAV_ITEMS.length - 1, Math.max(0, Math.floor(ratio * NAV_ITEMS.length)));
+    return Math.min(navItems.length - 1, Math.max(0, Math.floor(ratio * navItems.length)));
   }
 
   function handlePointerDown(event) {
     if (event.button !== 0 && event.pointerType === "mouse") return;
     setIsDragging(true);
-    setDragIndex(getPointerTabIndex(event.clientX));
+    const idx = getPointerTabIndex(event.clientX);
+    setDragIndex(idx);
+    const target = navItems[idx];
+    if (target && target.id !== active) {
+      setActive(target.id);
+    }
   }
 
   function handlePointerMove(event) {
     if (!isDragging) return;
-    setDragIndex(getPointerTabIndex(event.clientX));
+    const idx = getPointerTabIndex(event.clientX);
+    setDragIndex(idx);
+    const target = navItems[idx];
+    if (target && target.id !== active) {
+      setActive(target.id);
+    }
   }
 
   function finishPointerDrag(event) {
@@ -337,61 +404,21 @@ export default function WorkspaceTabs({
         : dragIndex ?? activeIndex;
     setIsDragging(false);
     setDragIndex(null);
-    const target = NAV_ITEMS[Math.min(NAV_ITEMS.length - 1, Math.max(0, finalIdx))];
+    const target = navItems[Math.min(navItems.length - 1, Math.max(0, finalIdx))];
     if (target) selectTab(target.id);
   }
 
   function handleKeyDown(event) {
     if (event.key === "ArrowRight") {
       event.preventDefault();
-      selectTab(NAV_ITEMS[(activeIndex + 1) % NAV_ITEMS.length].id);
+      selectTab(navItems[(activeIndex + 1) % navItems.length].id);
     } else if (event.key === "ArrowLeft") {
       event.preventDefault();
-      selectTab(NAV_ITEMS[(activeIndex - 1 + NAV_ITEMS.length) % NAV_ITEMS.length].id);
+      selectTab(navItems[(activeIndex - 1 + navItems.length) % navItems.length].id);
     }
   }
 
   const currentLensIndex = isDragging && dragIndex !== null ? dragIndex : activeIndex;
-
-  const mcpPanel = (
-    <div className="drive-mcp-workspace">
-      <div className="drive-subtabs-wrap">
-        <div
-          className="drive-subtabs"
-          role="tablist"
-          aria-label="MCP sections"
-          style={{ "--sub-index": subIndex }}
-        >
-          <span className="drive-subtabs-pill" aria-hidden="true" />
-          {MCP_SUBTABS.map((tab) => {
-            const isActive = mcpView === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                role="tab"
-                aria-selected={isActive}
-                className={`drive-subtab-btn ${isActive ? "is-active" : ""}`}
-                onClick={() => setMcpView(tab.id)}
-              >
-                {tab.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      <div key={mcpView} className="drive-subpanel">
-        {mcpView === "discover" ? discover : mcpView === "my" ? connections : add}
-      </div>
-    </div>
-  );
-
-  const panels = {
-    mcp: mcpPanel,
-    skills,
-    account: <AccountStatusPanel />,
-  };
 
   return (
     <main className="drive-app">
@@ -412,6 +439,25 @@ export default function WorkspaceTabs({
         </button>
 
         <div className="app-top-actions">
+          <div className="lang-toggle-group" role="group" aria-label={t("Pilih bahasa", "Language")}>
+            <button
+              type="button"
+              className={lang === "id" ? "is-active" : ""}
+              onClick={() => setLang("id")}
+              aria-pressed={lang === "id"}
+            >
+              <Globe size={11} /> ID
+            </button>
+            <button
+              type="button"
+              className={lang === "en" ? "is-active" : ""}
+              onClick={() => setLang("en")}
+              aria-pressed={lang === "en"}
+            >
+              EN
+            </button>
+          </div>
+
           <button
             type="button"
             className="top-pill-btn"
@@ -423,17 +469,17 @@ export default function WorkspaceTabs({
                 setMcpView("discover");
               }
             }}
-            title="Browse MCP Directory"
+            title={t("Buka Direktori MCP", "Browse MCP Directory")}
           >
             <Compass size={13} />
             <span>
               {active === "mcp" && mcpView === "discover"
                 ? serverCount
-                  ? `${serverCount} MCPs`
-                  : "Directory"
+                  ? `${serverCount.toLocaleString()} MCP`
+                  : t("Direktori", "Directory")
                 : active === "skills"
-                ? "MCPs"
-                : "Directory"}
+                ? "MCP"
+                : t("Direktori", "Directory")}
             </span>
           </button>
 
@@ -449,17 +495,62 @@ export default function WorkspaceTabs({
                 setMcpView("custom");
               }
             }}
-            title="Add Custom MCP"
+            title={t("Tambah MCP Kustom", "Add Custom MCP")}
           >
             {active === "account" ? <Sparkles size={12} /> : <Plus size={13} />}
-            <span>{active === "account" ? "MCPs" : "Connect"}</span>
+            <span>{active === "account" ? "MCP" : t("Sambung", "Connect")}</span>
           </button>
         </div>
       </header>
 
+      {/* Persistent mounted panels for 0ms instant switching (no unmount/re-fetch spinners) */}
       <section className="app-content" aria-live="polite">
-        <div key={active} className="app-panel">
-          {panels[active]}
+        <div className="app-panel" hidden={active !== "mcp"}>
+          <div className="drive-mcp-workspace">
+            <div className="drive-subtabs-wrap">
+              <div
+                className="drive-subtabs"
+                role="tablist"
+                aria-label={t("Bagian MCP", "MCP sections")}
+                style={{ "--sub-index": subIndex }}
+              >
+                <span className="drive-subtabs-pill" aria-hidden="true" />
+                {mcpSubtabs.map((tab) => {
+                  const isActive = mcpView === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      className={`drive-subtab-btn ${isActive ? "is-active" : ""}`}
+                      onClick={() => setMcpView(tab.id)}
+                    >
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="drive-subpanel" hidden={mcpView !== "discover"}>
+              {discover}
+            </div>
+            <div className="drive-subpanel" hidden={mcpView !== "my"}>
+              {connections}
+            </div>
+            <div className="drive-subpanel" hidden={mcpView !== "custom"}>
+              {add}
+            </div>
+          </div>
+        </div>
+
+        <div className="app-panel" hidden={active !== "skills"}>
+          {skills}
+        </div>
+
+        <div className="app-panel" hidden={active !== "account"}>
+          <AccountStatusPanel />
         </div>
       </section>
 
@@ -469,7 +560,7 @@ export default function WorkspaceTabs({
           className={`liquid-navbar-3 ${isDragging ? "is-dragging" : ""} ${
             isAnimatingLens ? "is-gliding" : ""
           }`}
-          aria-label="Main navigation"
+          aria-label={t("Navigasi utama", "Primary navigation")}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={finishPointerDrag}
@@ -480,7 +571,7 @@ export default function WorkspaceTabs({
           }}
         >
           <span className="liquid-lens-pill" aria-hidden="true" />
-          {NAV_ITEMS.map(({ id, label, short, icon: Icon }) => {
+          {navItems.map(({ id, label, short, icon: Icon }) => {
             const isActive = active === id;
             return (
               <button

@@ -79,13 +79,14 @@ export function AddMcpButton({
       if (typeof onConnected === "function") onConnected(result);
       window.dispatchEvent(new Event("drive:connections-changed"));
 
-      // Automatically initiate upstream MCP OAuth 2.1 handshake (CIMD / DCR) if Remote HTTP MCP
+      // Immediately initiate upstream MCP OAuth 2.1 handshake (CIMD / DCR) & redirect to original MCP
       const endpointUrl =
         registryEntry?.server?.remotes?.[0]?.url ||
         result?.connection?.server?.endpoint_url ||
         result?.connection?.server?.remote_url ||
         "";
       const connectionId = result?.connection?.id || "";
+      const title = registryEntry?.server?.title || serverName;
 
       if (remoteAvailable && endpointUrl && connectionId) {
         const authRes = await fetch("/api/mcp-auth/start", {
@@ -97,12 +98,34 @@ export function AddMcpButton({
           body: JSON.stringify({
             connectionId,
             endpointUrl,
-            serverTitle: registryEntry?.server?.title || serverName,
+            serverTitle: title,
           }),
         });
         const authData = await authRes.json().catch(() => ({}));
         if (authData.mode === "oauth" && authData.authorizeUrl) {
           window.location.assign(authData.authorizeUrl);
+          return;
+        }
+        if (authData.mode === "bearer") {
+          window.dispatchEvent(
+            new CustomEvent("drive:open-mcp-auth", {
+              detail: {
+                id: connectionId,
+                title,
+                endpointUrl,
+                note: authData.message || "",
+                tokenPortalUrl: authData.tokenPortalUrl || "",
+                tokenPortalLabel: authData.tokenPortalLabel || "Buka halaman token provider",
+                supportsOAuthApp: Boolean(authData.supportsOAuthApp),
+                callbackUrl:
+                  authData.callbackUrl || `${window.location.origin}/api/mcp-auth/callback`,
+              },
+            })
+          );
+          if (authData.tokenPortalUrl) {
+            window.open(authData.tokenPortalUrl, "_blank", "noopener,noreferrer");
+          }
+          setState("added");
           return;
         }
       }
@@ -127,7 +150,7 @@ export function AddMcpButton({
         isError
           ? state
           : remoteAvailable
-          ? "Connect & authorize this remote MCP"
+          ? "Connect & redirect to original MCP authorization"
           : "Save this MCP entry to your workspace"
       }
     >
@@ -217,12 +240,21 @@ export default function MyMcpPanel() {
       }
     }, 0);
     const refresh = () => load();
+    const openAuth = (ev) => {
+      if (ev?.detail?.id) {
+        setBearerTarget(ev.detail);
+        setAuthModeTab("token");
+        setBearerValue("");
+      }
+    };
     window.addEventListener("drive:connections-changed", refresh);
     window.addEventListener("drive:auth-changed", refresh);
+    window.addEventListener("drive:open-mcp-auth", openAuth);
     return () => {
       window.clearTimeout(initialLoad);
       window.removeEventListener("drive:connections-changed", refresh);
       window.removeEventListener("drive:auth-changed", refresh);
+      window.removeEventListener("drive:open-mcp-auth", openAuth);
     };
   }, [load]);
 

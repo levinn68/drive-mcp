@@ -442,13 +442,14 @@ function usageRank(entry) {
     .toLowerCase();
   const index = USAGE_RANK_TERMS.findIndex((term) => haystack.includes(term));
   if (index >= 0) return (isRemote ? 10 : 100) + index;
+  if (entry?._stars > 500) return isRemote ? 200 : 800;
   return isRemote ? 500 : 2000;
 }
 
-async function fetchOfficialRegistry(apiSearch, maxPages = 22) {
+async function fetchOfficialRegistry(apiSearch, maxPages = 24) {
   const results = [];
   let cursor = "";
-  const deadline = Date.now() + 6500;
+  const deadline = Date.now() + 8500;
   for (let i = 0; i < maxPages && Date.now() < deadline; i += 1) {
     const params = new URLSearchParams({ limit: "100", version: "latest" });
     if (apiSearch.length >= 2) params.set("search", apiSearch);
@@ -457,7 +458,7 @@ async function fetchOfficialRegistry(apiSearch, maxPages = 22) {
     try {
       const response = await fetch(`${REGISTRY}/v0.1/servers?${params}`, {
         headers: { accept: "application/json" },
-        next: { revalidate: 1800 },
+        next: { revalidate: 3600 },
         signal: AbortSignal.timeout(4500),
       });
       if (!response.ok) break;
@@ -465,7 +466,7 @@ async function fetchOfficialRegistry(apiSearch, maxPages = 22) {
       const batch = Array.isArray(payload?.servers) ? payload.servers : [];
       results.push(...batch);
       cursor = payload?.metadata?.nextCursor || "";
-      if (!cursor || results.length >= 2200) break;
+      if (!cursor || results.length >= 2400) break;
     } catch {
       break;
     }
@@ -473,10 +474,10 @@ async function fetchOfficialRegistry(apiSearch, maxPages = 22) {
   return results;
 }
 
-async function fetchGlamaDirectory(apiSearch, maxPages = 14) {
+async function fetchGlamaDirectory(apiSearch, maxPages = 16) {
   const results = [];
   let cursor = "";
-  const deadline = Date.now() + 6500;
+  const deadline = Date.now() + 8500;
   for (let i = 0; i < maxPages && Date.now() < deadline; i += 1) {
     const params = new URLSearchParams({ first: "100" });
     if (apiSearch.length >= 2) params.set("query", apiSearch);
@@ -511,12 +512,72 @@ async function fetchGlamaDirectory(apiSearch, maxPages = 14) {
         });
       }
       cursor = payload?.pageInfo?.hasNextPage ? payload?.pageInfo?.endCursor || "" : "";
-      if (!cursor || results.length >= 1400) break;
+      if (!cursor || results.length >= 1600) break;
     } catch {
       break;
     }
   }
   return results;
+}
+
+async function fetchGithubPopularMcps(apiSearch) {
+  const headers = {
+    accept: "application/vnd.github+json",
+    "user-agent": "DRIVE-MCP/2.4",
+  };
+  if (process.env.GITHUB_TOKEN) {
+    headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+  }
+  const qBase = apiSearch
+    ? `${apiSearch} topic:mcp-server stars:>5`
+    : "topic:mcp-server stars:>15";
+  const pages = apiSearch ? [1, 2] : [1, 2, 3, 4, 5, 6];
+  const settled = await Promise.allSettled(
+    pages.map(async (page) => {
+      const url = new URL("https://api.github.com/search/repositories");
+      url.searchParams.set("q", qBase);
+      url.searchParams.set("sort", "stars");
+      url.searchParams.set("order", "desc");
+      url.searchParams.set("per_page", "100");
+      url.searchParams.set("page", String(page));
+      const res = await fetch(url, {
+        headers,
+        next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(6000),
+      });
+      if (!res.ok) return [];
+      const payload = await res.json();
+      return Array.isArray(payload.items) ? payload.items : [];
+    })
+  );
+
+  const items = [];
+  for (const r of settled) {
+    if (r.status !== "fulfilled") continue;
+    for (const repo of r.value) {
+      if (!repo?.full_name || repo.archived) continue;
+      items.push({
+        _stars: Number(repo.stargazers_count || 0),
+        server: {
+          name: `github/${repo.full_name}`,
+          title: repo.name
+            .replace(/[-_]+/g, " ")
+            .replace(/\b\w/g, (c) => c.toUpperCase()),
+          version: `${Number(repo.stargazers_count || 0).toLocaleString()}★`,
+          description:
+            repo.description ||
+            `Popular open-source MCP server (${Number(repo.stargazers_count || 0).toLocaleString()} GitHub stars).`,
+          repository: { url: repo.html_url },
+          remotes:
+            repo.homepage && /^https:\/\/.*mcp/i.test(repo.homepage)
+              ? [{ type: "streamable-http", url: repo.homepage }]
+              : [],
+          packages: [{ identifier: repo.full_name }],
+        },
+      });
+    }
+  }
+  return items;
 }
 
 function serializeServer(entry) {
@@ -566,14 +627,16 @@ async function getServers(query) {
     all.push(item);
   }
 
-  const [officialRes, glamaRes] = await Promise.allSettled([
-    fetchOfficialRegistry(apiSearch, apiSearch ? 6 : 22),
-    fetchGlamaDirectory(apiSearch, apiSearch ? 4 : 14),
+  const [officialRes, glamaRes, githubRes] = await Promise.allSettled([
+    fetchOfficialRegistry(apiSearch, apiSearch ? 6 : 24),
+    fetchGlamaDirectory(apiSearch, apiSearch ? 4 : 16),
+    fetchGithubPopularMcps(apiSearch),
   ]);
 
   const combined = [
     ...(officialRes.status === "fulfilled" ? officialRes.value : []),
     ...(glamaRes.status === "fulfilled" ? glamaRes.value : []),
+    ...(githubRes.status === "fulfilled" ? githubRes.value : []),
   ];
 
   for (const entry of combined) {
@@ -581,7 +644,7 @@ async function getServers(query) {
     if (!key || seen.has(key)) continue;
     seen.add(key);
     all.push(entry);
-    if (all.length >= 3200) break;
+    if (all.length >= 3500) break;
   }
 
   all.sort((a, b) => usageRank(a) - usageRank(b));

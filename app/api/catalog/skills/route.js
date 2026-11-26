@@ -231,7 +231,7 @@ async function fetchSkillsSh(q) {
 }
 
 async function fetchSkillsDirectory(q) {
-  const totalPages = q ? 8 : 30;
+  const totalPages = q ? 8 : 32;
   const allRows = [];
   for (let start = 0; start < totalPages; start += 10) {
     const batch = Array.from({ length: Math.min(10, totalPages - start) }, (_, i) => start + i);
@@ -264,21 +264,56 @@ async function fetchSkillsDirectory(q) {
   return allRows;
 }
 
+async function fetchGithubSkillRepos(q) {
+  const headers = {
+    accept: "application/vnd.github+json",
+    "user-agent": "DRIVE-Skills-Catalog/2.4",
+  };
+  if (process.env.GITHUB_TOKEN) {
+    headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
+  }
+  const searchQuery = q
+    ? `${q} (topic:agent-skills OR topic:claude-skills OR "SKILL.md") stars:>2`
+    : `(topic:agent-skills OR topic:claude-skills OR topic:codex-skills) stars:>5`;
+  const pages = q ? [1, 2] : [1, 2, 3, 4, 5];
+  const settled = await Promise.allSettled(
+    pages.map(async (page) => {
+      const url = new URL("https://api.github.com/search/repositories");
+      url.searchParams.set("q", searchQuery);
+      url.searchParams.set("sort", "stars");
+      url.searchParams.set("order", "desc");
+      url.searchParams.set("per_page", "100");
+      url.searchParams.set("page", String(page));
+      const res = await fetch(url, {
+        headers,
+        next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(6000),
+      });
+      if (!res.ok) return [];
+      const payload = await res.json();
+      return Array.isArray(payload.items) ? payload.items : [];
+    })
+  );
+  return settled.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
+}
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const q = (searchParams.get("q") || "").trim().slice(0, 100).toLowerCase();
 
   try {
-    const [shRes, dirRes] = await Promise.allSettled([
+    const [shRes, dirRes, ghRes] = await Promise.allSettled([
       fetchSkillsSh(q),
       fetchSkillsDirectory(q),
+      fetchGithubSkillRepos(q),
     ]);
 
     const shRows = shRes.status === "fulfilled" ? shRes.value : [];
     const dirRows = dirRes.status === "fulfilled" ? dirRes.value : [];
+    const ghRows = ghRes.status === "fulfilled" ? ghRes.value : [];
 
-    // Deduplicate by (repo + slug) while limiting noisy single-repo floods (max 6 skills per repo)
-    // so the catalog stays rich, useful, and hits ~3,000 high-value Skills!
+    // Deduplicate by (repo + slug) while capping single-repo floods (max 12 per repo)
+    // so the catalog reliably delivers ~3,000+ useful, popular Skills!
     const uniqueSkills = new Map();
     const perRepoCount = new Map();
     let totalRawSkills = 0;
@@ -304,14 +339,14 @@ export async function GET(request) {
         if (Number(item.stars || 0) > existing.stars) existing.stars = Number(item.stars || 0);
         if (Number(item.installs || 0) > existing.installs) existing.installs = Number(item.installs || 0);
         if (item.verified) existing.verified = true;
-        if ((!existing.description || existing.description.startsWith("Popular Agent Skill")) && item.description) {
+        if ((!existing.description || existing.description.startsWith("Agent Skill from")) && item.description) {
           existing.description = item.description;
         }
         return;
       }
 
       const repoCount = perRepoCount.get(repoKey) || 0;
-      if (!bypassRepoCap && repoCount >= 6) return;
+      if (!bypassRepoCap && repoCount >= 12) return;
       perRepoCount.set(repoKey, repoCount + 1);
 
       const displayName = formatTitle(rawName, cleanRepo.split("/")[1]);
@@ -338,7 +373,6 @@ export async function GET(request) {
       });
     }
 
-    // 1. Seed curated popular official skills first
     for (const curated of CURATED_POPULAR_SKILLS) {
       const hay = `${curated.name} ${curated.description} ${curated.source} ${curated.category}`.toLowerCase();
       if (!q || hay.includes(q)) {
@@ -346,7 +380,6 @@ export async function GET(request) {
       }
     }
 
-    // 2. Merge skills.sh (sorted by installs)
     for (const item of shRows) {
       upsert(item.source || item.repository, {
         name: item.name,
@@ -359,7 +392,6 @@ export async function GET(request) {
       });
     }
 
-    // 3. Merge Skills Directory (sorted by stars)
     for (const item of dirRows) {
       upsert(item.repository || item.source, {
         name: item.name,
@@ -373,13 +405,27 @@ export async function GET(request) {
       });
     }
 
+    for (const repo of ghRows) {
+      if (!repo?.full_name || repo.archived) continue;
+      upsert(repo.full_name, {
+        name: repo.name,
+        slug: repo.name,
+        description: repo.description || `Open-source Agent Skill repository (${repo.stargazers_count || 0} stars).`,
+        category: "",
+        author: repo.owner?.login || null,
+        stars: Number(repo.stargazers_count || 0),
+        installs: 0,
+        verified: Number(repo.stargazers_count || 0) >= 300,
+      });
+    }
+
     const items = [...uniqueSkills.values()]
       .sort((a, b) => {
         const scoreA = (a.verified ? 50000 : 0) + a.installs * 2 + a.stars;
         const scoreB = (b.verified ? 50000 : 0) + b.installs * 2 + b.stars;
         return scoreB - scoreA;
       })
-      .slice(0, 3200);
+      .slice(0, 3500);
 
     const categoryCounts = {};
     for (const item of items) {
@@ -393,7 +439,7 @@ export async function GET(request) {
         totalRawSkills,
         target: 3000,
         categories: categoryCounts,
-        source: "Verified Official + skills.sh + Skills Directory",
+        source: "Verified Official + skills.sh + Skills Directory + GitHub",
         query: q || null,
       },
       {

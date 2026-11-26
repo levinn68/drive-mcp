@@ -1,20 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { getUserMcpToken, isSafeHttpsUrl } from "../../../../lib/mcp-token-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-
-function isSafeHttpsUrl(raw) {
-  try {
-    const u = new URL(raw);
-    if (u.protocol !== "https:") return false;
-    const h = u.hostname.toLowerCase();
-    if (h === "localhost" || h === "127.0.0.1" || h.endsWith(".local")) return false;
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 async function parseMcpResponse(response) {
   const ct = (response.headers.get("content-type") || "").toLowerCase();
@@ -80,20 +69,21 @@ export async function POST(request) {
     return NextResponse.json({ error: "Valid connectionId and HTTPS endpointUrl required." }, { status: 400 });
   }
 
+  const cookieToken = request.cookies.get(`drive_mcp_tok_${connectionId.slice(0, 12)}`)?.value || "";
+  const storedToken = getUserMcpToken(user, connectionId);
   const upstreamToken =
-    request.cookies.get(`drive_mcp_tok_${connectionId.slice(0, 12)}`)?.value || "";
+    (cookieToken && cookieToken !== "__public__" ? cookieToken : "") || storedToken || "";
 
   const baseHeaders = {
     "Content-Type": "application/json",
     Accept: "application/json, text/event-stream",
-    "User-Agent": "DRIVE-MCP-Gateway/2.5",
+    "User-Agent": "DRIVE-MCP-Gateway/2.7",
   };
   if (upstreamToken) {
     baseHeaders.Authorization = `Bearer ${upstreamToken}`;
   }
 
   try {
-    // Step 1: Initialize MCP session
     const initRes = await fetch(endpointUrl, {
       method: "POST",
       headers: baseHeaders,
@@ -104,7 +94,7 @@ export async function POST(request) {
         params: {
           protocolVersion: "2025-03-26",
           capabilities: {},
-          clientInfo: { name: "DRIVE MCP", version: "2.5" },
+          clientInfo: { name: "DRIVE MCP", version: "2.7" },
         },
       }),
       signal: AbortSignal.timeout(8000),
@@ -123,7 +113,6 @@ export async function POST(request) {
     const toolsHeaders = { ...baseHeaders };
     if (sessionId) toolsHeaders["Mcp-Session-Id"] = sessionId;
 
-    // Best-effort initialized notification
     fetch(endpointUrl, {
       method: "POST",
       headers: toolsHeaders,
@@ -131,7 +120,6 @@ export async function POST(request) {
       signal: AbortSignal.timeout(3000),
     }).catch(() => {});
 
-    // Step 2: Request tools/list
     const listRes = await fetch(endpointUrl, {
       method: "POST",
       headers: toolsHeaders,

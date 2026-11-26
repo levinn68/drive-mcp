@@ -15,10 +15,12 @@ import {
 } from "lucide-react";
 
 export default function OAuthConsentPage() {
-  const supabase = useMemo(() => createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  ), []);
+  const supabase = useMemo(() => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !key) return null;
+    return createBrowserClient(url, key);
+  }, []);
   const [authorizationId, setAuthorizationId] = useState("");
   const [authContextReady, setAuthContextReady] = useState(false);
   const [session, setSession] = useState(null);
@@ -41,6 +43,8 @@ export default function OAuthConsentPage() {
       if (callbackError) setError(callbackError);
     }, 0);
 
+    if (!supabase) return () => window.clearTimeout(timer);
+
     supabase.auth.getSession().then(({ data }) => setSession(data.session || null));
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
       setSession(nextSession || null);
@@ -52,7 +56,7 @@ export default function OAuthConsentPage() {
   }, [supabase]);
 
   useEffect(() => {
-    if (!authContextReady || !session) return;
+    if (!authContextReady || !session || !supabase) return;
     if (!authorizationId) {
       window.location.replace("/");
       return;
@@ -74,6 +78,7 @@ export default function OAuthConsentPage() {
   }
 
   async function signInWithGoogle() {
+    if (!supabase) { setError("Supabase authentication is not configured."); return; }
     setBusy(true); setError(""); setNotice("");
     try {
       const { error: authError } = await supabase.auth.signInWithOAuth({
@@ -85,7 +90,9 @@ export default function OAuthConsentPage() {
   }
 
   async function submitEmail(event) {
-    event.preventDefault(); setBusy(true); setError(""); setNotice("");
+    event.preventDefault();
+    if (!supabase) { setError("Supabase authentication is not configured."); return; }
+    setBusy(true); setError(""); setNotice("");
     try {
       if (mode === "magic") {
         const { error: authError } = await supabase.auth.signInWithOtp({
@@ -110,6 +117,7 @@ export default function OAuthConsentPage() {
   }
 
   async function switchAccount() {
+    if (!supabase) return;
     setBusy(true);
     setError("");
     try {
@@ -126,7 +134,7 @@ export default function OAuthConsentPage() {
   }
 
   async function decide(allow, openDashboardFirst = true) {
-    if (!authorizationId || busy) return;
+    if (!authorizationId || busy || !supabase) return;
     setBusy(true);
     setError("");
     setNotice("");

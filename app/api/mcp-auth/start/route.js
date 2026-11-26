@@ -42,110 +42,154 @@ function getProviderHints(endpointUrl) {
   const lower = String(endpointUrl || "").toLowerCase();
   if (lower.includes("githubcopilot.com") || lower.includes("github.com")) {
     return {
+      authType: "pat",
       envClientId: process.env.GITHUB_MCP_CLIENT_ID || process.env.GITHUB_CLIENT_ID || "",
       envClientSecret: process.env.GITHUB_MCP_CLIENT_SECRET || process.env.GITHUB_CLIENT_SECRET || "",
       tokenPortalUrl: "https://github.com/settings/personal-access-tokens/new",
-      tokenPortalLabel: "Buat GitHub Personal Access Token",
+      tokenPortalLabel: "Buat GitHub PAT (Token)",
+      oauthAppPortalUrl: "https://github.com/settings/applications/new",
+      oauthAppPortalLabel: "Buat GitHub OAuth App",
       preferCimd: false,
+      catalogRestricted: false,
       defaultScopes: "repo read:org read:user",
     };
   }
   if (lower.includes("mcp.vercel.com") || lower.includes("vercel.com")) {
     return {
+      authType: "oauth",
       envClientId: process.env.VERCEL_MCP_CLIENT_ID || "",
       envClientSecret: process.env.VERCEL_MCP_CLIENT_SECRET || "",
       tokenPortalUrl: "https://vercel.com/account/tokens",
       tokenPortalLabel: "Buat Vercel Access Token",
+      oauthAppPortalUrl: "https://vercel.com/dashboard/integrations/console",
+      oauthAppPortalLabel: "Buka Vercel Integrations Console",
       preferCimd: true,
+      catalogRestricted: false,
       defaultScopes: "openid",
     };
   }
   if (lower.includes("supabase.com")) {
     return {
+      authType: "oauth",
       envClientId: process.env.SUPABASE_MCP_CLIENT_ID || "",
       envClientSecret: process.env.SUPABASE_MCP_CLIENT_SECRET || "",
       tokenPortalUrl: "https://supabase.com/dashboard/account/tokens",
       tokenPortalLabel: "Buat Supabase Access Token",
+      oauthAppPortalUrl: "https://supabase.com/dashboard/org/_/apps",
+      oauthAppPortalLabel: "Buat Supabase OAuth App",
       preferCimd: false,
-      defaultScopes: "",
-    };
-  }
-  if (lower.includes("stripe.com")) {
-    return {
-      envClientId: "",
-      envClientSecret: "",
-      tokenPortalUrl: "https://dashboard.stripe.com/apikeys",
-      tokenPortalLabel: "Buka Stripe API Keys",
-      preferCimd: false,
-      defaultScopes: "",
-    };
-  }
-  if (lower.includes("notion.com")) {
-    return {
-      envClientId: "",
-      envClientSecret: "",
-      tokenPortalUrl: "https://www.notion.so/profile/integrations",
-      tokenPortalLabel: "Buka Notion Integrations",
-      preferCimd: false,
-      defaultScopes: "",
-    };
-  }
-  if (lower.includes("linear.app")) {
-    return {
-      envClientId: "",
-      envClientSecret: "",
-      tokenPortalUrl: "https://linear.app/settings/api",
-      tokenPortalLabel: "Buka Linear API Settings",
-      preferCimd: false,
+      catalogRestricted: false,
       defaultScopes: "",
     };
   }
   if (lower.includes("figma.com")) {
     return {
+      authType: "oauth_catalog",
+      envClientId: process.env.FIGMA_MCP_CLIENT_ID || "",
+      envClientSecret: process.env.FIGMA_MCP_CLIENT_SECRET || "",
+      tokenPortalUrl: "https://www.figma.com/developers/api#access-tokens",
+      tokenPortalLabel: "Buka Figma Developer Tokens",
+      oauthAppPortalUrl: "https://www.figma.com/developers/apps",
+      oauthAppPortalLabel: "Buat Figma OAuth App",
+      preferCimd: false,
+      catalogRestricted: true,
+      defaultScopes: "",
+    };
+  }
+  if (lower.includes("stripe.com")) {
+    return {
+      authType: "oauth",
       envClientId: "",
       envClientSecret: "",
-      tokenPortalUrl: "https://www.figma.com/developers/api#access-tokens",
-      tokenPortalLabel: "Buat Figma Personal Access Token",
+      tokenPortalUrl: "https://dashboard.stripe.com/apikeys",
+      tokenPortalLabel: "Buka Stripe API Keys",
+      oauthAppPortalUrl: "https://dashboard.stripe.com/settings/apps",
+      oauthAppPortalLabel: "Buka Stripe Apps",
       preferCimd: false,
+      catalogRestricted: false,
+      defaultScopes: "",
+    };
+  }
+  if (lower.includes("notion.com")) {
+    return {
+      authType: "oauth",
+      envClientId: "",
+      envClientSecret: "",
+      tokenPortalUrl: "https://www.notion.so/profile/integrations",
+      tokenPortalLabel: "Buka Notion Integrations",
+      oauthAppPortalUrl: "https://www.notion.so/profile/integrations",
+      oauthAppPortalLabel: "Buat Notion OAuth Integration",
+      preferCimd: false,
+      catalogRestricted: false,
+      defaultScopes: "",
+    };
+  }
+  if (lower.includes("linear.app")) {
+    return {
+      authType: "oauth",
+      envClientId: "",
+      envClientSecret: "",
+      tokenPortalUrl: "https://linear.app/settings/api",
+      tokenPortalLabel: "Buat Linear API Key",
+      oauthAppPortalUrl: "https://linear.app/settings/api/applications/new",
+      oauthAppPortalLabel: "Buat Linear OAuth App",
+      preferCimd: false,
+      catalogRestricted: false,
       defaultScopes: "",
     };
   }
   if (lower.includes("sentry.dev") || lower.includes("sentry.io")) {
     return {
+      authType: "oauth",
       envClientId: "",
       envClientSecret: "",
       tokenPortalUrl: "https://sentry.io/settings/account/api/auth-tokens/",
       tokenPortalLabel: "Buat Sentry Auth Token",
+      oauthAppPortalUrl: "https://sentry.io/settings/developer-settings/",
+      oauthAppPortalLabel: "Buat Sentry OAuth App",
       preferCimd: false,
+      catalogRestricted: false,
       defaultScopes: "",
     };
   }
   if (lower.includes("cloudflare.com")) {
     return {
+      authType: "oauth",
       envClientId: "",
       envClientSecret: "",
       tokenPortalUrl: "https://dash.cloudflare.com/profile/api-tokens",
       tokenPortalLabel: "Buat Cloudflare API Token",
+      oauthAppPortalUrl: "https://dash.cloudflare.com/",
+      oauthAppPortalLabel: "Buka Cloudflare Dashboard",
       preferCimd: false,
+      catalogRestricted: false,
       defaultScopes: "",
     };
   }
   if (lower.includes("neon.tech")) {
     return {
+      authType: "oauth",
       envClientId: "",
       envClientSecret: "",
       tokenPortalUrl: "https://console.neon.tech/app/settings/api-keys",
       tokenPortalLabel: "Buat Neon API Key",
+      oauthAppPortalUrl: "https://console.neon.tech/app/settings",
+      oauthAppPortalLabel: "Buka Neon Console",
       preferCimd: false,
+      catalogRestricted: false,
       defaultScopes: "",
     };
   }
   return {
+    authType: "oauth",
     envClientId: "",
     envClientSecret: "",
     tokenPortalUrl: "",
     tokenPortalLabel: "",
+    oauthAppPortalUrl: "",
+    oauthAppPortalLabel: "",
     preferCimd: false,
+    catalogRestricted: false,
     defaultScopes: "",
   };
 }
@@ -171,7 +215,7 @@ async function getUserClient(request) {
 async function fetchJsonSafe(url) {
   try {
     const res = await fetch(url, {
-      headers: { accept: "application/json", "user-agent": "DRIVE-MCP-Gateway/2.5" },
+      headers: { accept: "application/json", "user-agent": "DRIVE-MCP-Gateway/2.6" },
       cache: "no-store",
       signal: AbortSignal.timeout(6500),
     });
@@ -202,7 +246,7 @@ async function discoverUpstreamOAuth(endpointUrl) {
         params: {
           protocolVersion: "2025-03-26",
           capabilities: {},
-          clientInfo: { name: "DRIVE MCP", version: "2.5" },
+          clientInfo: { name: "DRIVE MCP", version: "2.6" },
         },
       }),
       signal: AbortSignal.timeout(6000),
@@ -344,25 +388,53 @@ export async function POST(request) {
       .update({ enabled: true, updated_at: new Date().toISOString() })
       .eq("id", connectionId)
       .eq("user_id", auth.user.id);
-    return NextResponse.json({
+    const res = NextResponse.json({
       mode: "none",
       verified: true,
-      message: `${serverTitle} langsung aktif (publik, tanpa login tambahan).`,
+      authorized: true,
+      message: `${serverTitle} langsung aktif (publik, tidak perlu login atau token).`,
     });
+    res.cookies.set(`drive_mcp_tok_${connectionId.slice(0, 12)}`, "__public__", {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+    });
+    return res;
   }
 
   if (discovery.mode === "bearer") {
     return NextResponse.json({
       mode: "bearer",
+      authType: hints.authType,
       message: discovery.message,
       tokenPortalUrl: hints.tokenPortalUrl,
       tokenPortalLabel: hints.tokenPortalLabel,
+      oauthAppPortalUrl: hints.oauthAppPortalUrl,
+      oauthAppPortalLabel: hints.oauthAppPortalLabel,
       supportsOAuthApp: false,
       callbackUrl: redirectUri,
     });
   }
 
   const { metadata, canonicalResource } = discovery;
+  // Guard: Figma's hosted remote MCP (mcp.figma.com) restricts scope "mcp:connect" to catalog-approved clients only
+  if (hints.catalogRestricted && !hints.envClientId) {
+    return NextResponse.json({
+      mode: "bearer",
+      authType: "oauth_catalog",
+      supportsOAuthApp: false,
+      callbackUrl: redirectUri,
+      tokenPortalUrl: hints.tokenPortalUrl,
+      tokenPortalLabel: hints.tokenPortalLabel,
+      oauthAppPortalUrl: "https://developers.figma.com/docs/figma-mcp-server/",
+      oauthAppPortalLabel: "Buka Panduan Figma MCP",
+      message:
+        "Figma Remote MCP (mcp.figma.com) membatasi scope OAuth 'mcp:connect' hanya untuk client yang terdaftar di Figma MCP Catalog (Claude, Cursor, VS Code), sehingga OAuth app biasa akan ditolak Figma. Untuk koneksi via DRIVE, gunakan Figma Personal Access Token atau server Figma API MCP (figma-context-mcp).",
+    });
+  }
+
   const scopes = discovery.scopes || hints.defaultScopes || "";
 
   // MCP OAuth 2.1 Client Registration Order:
@@ -371,15 +443,14 @@ export async function POST(request) {
   let clientSecret = customClientSecret || hints.envClientSecret || "";
   let registrationMethod = clientId ? "preregistered" : "";
 
-  // 2. CIMD ONLY when server explicitly advertises client_id_metadata_document_supported: true
-  //    or for verified CIMD hosts (Vercel MCP). NEVER force CIMD on DCR-only hosts like Supabase or Figma!
+  // 2. CIMD ONLY when server explicitly advertises client_id_metadata_document_supported: true or verified CIMD host (Vercel)
   const explicitCimdSupported = metadata.client_id_metadata_document_supported === true;
   if (!clientId && (explicitCimdSupported || hints.preferCimd) && reqOrigin.startsWith("https://")) {
     clientId = cimdClientId;
     registrationMethod = "cimd";
   }
 
-  // 3. RFC 7591 Dynamic Client Registration (used by Supabase MCP, Figma MCP, Notion, Linear, Sentry, Stripe, etc.)
+  // 3. RFC 7591 Dynamic Client Registration (Supabase, Notion, Linear, Sentry, Stripe, Cloudflare, etc.)
   if (!clientId && metadata.registration_endpoint) {
     try {
       const regRes = await fetch(metadata.registration_endpoint, {
@@ -404,19 +475,20 @@ export async function POST(request) {
         clientSecret = reg.client_secret || "";
         registrationMethod = "dcr";
       }
-    } catch {
-      // Fall through to manual credentials prompt
-    }
+    } catch {}
   }
 
   if (!clientId) {
     return NextResponse.json({
       mode: "bearer",
+      authType: hints.authType,
       supportsOAuthApp: Boolean(metadata.authorization_endpoint),
       callbackUrl: redirectUri,
       tokenPortalUrl: hints.tokenPortalUrl,
       tokenPortalLabel: hints.tokenPortalLabel,
-      message: `${serverTitle} memerlukan Personal Access Token (PAT) atau OAuth App Client ID & Secret sendiri untuk menyambungkan akun.`,
+      oauthAppPortalUrl: hints.oauthAppPortalUrl,
+      oauthAppPortalLabel: hints.oauthAppPortalLabel,
+      message: `${serverTitle} membutuhkan Personal Access Token (PAT) atau OAuth App (Client ID & Secret). Klik tombol di bawah untuk langsung membuat token atau OAuth App di situs resmi provider.`,
     });
   }
 

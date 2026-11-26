@@ -14,8 +14,10 @@ const PULSEMCP_API = "https://api.pulsemcp.com/v0beta/servers";
 const DOCKER_HUB_API = "https://hub.docker.com/v2/search/repositories/";
 const CRATES_IO_API = "https://crates.io/api/v1/crates";
 
-const TARGET_MCP_COUNT = 20500;
-const PER_CATEGORY_PASS1_CAP = 2300;
+const TARGET_MCP_COUNT = 21500;
+const PER_CATEGORY_PASS1_CAP = 2400;
+
+const JUNK_NAME_RX = /^(test|demo|hello[-_]?world|example|sample|my[-_]?first|foo|bar|tmp|temp)[-_0-9]*$/i;
 
 const VERIFIED_POPULAR_MCPS = [
   {
@@ -500,7 +502,6 @@ const VERIFIED_POPULAR_MCPS = [
   },
 ];
 
-// Domain-first classification rules (github placed after domain categories & never matched on repo URL)
 const MCP_CATEGORY_RULES = [
   { id: "database", rx: /\b(sql|postgres|postgresql|mysql|sqlite|supabase|neon|mongo|mongodb|redis|clickhouse|prisma|drizzle|planetscale|turso|database|dbhub|bigquery|snowflake|duckdb|cassandra|dynamodb|neo4j|qdrant|pinecone|milvus)\b/i },
   { id: "cloud", rx: /\b(vercel|cloudflare|aws|azure|gcp|google cloud|netlify|railway|render|docker|kubernetes|k8s|terraform|sentry|devops|deploy|infra|hosting|heroku|fly\.io|digitalocean|helm|ansible)\b/i },
@@ -540,11 +541,11 @@ function inferAuthType(explicitAuthType, isRemote, text) {
   return "oauth";
 }
 
-// 1. Official MCP Registry (up to 7,500 servers)
-async function fetchOfficialRegistry(apiSearch, maxPages = 75) {
+// 1. Official MCP Registry
+async function fetchOfficialRegistry(apiSearch, maxPages = 80) {
   const results = [];
   let cursor = "";
-  const deadline = Date.now() + 16000;
+  const deadline = Date.now() + 16500;
   for (let i = 0; i < maxPages && Date.now() < deadline; i += 1) {
     const params = new URLSearchParams({ limit: "100", version: "latest" });
     if (apiSearch.length >= 2) params.set("search", apiSearch);
@@ -552,7 +553,7 @@ async function fetchOfficialRegistry(apiSearch, maxPages = 75) {
 
     try {
       const response = await fetch(`${REGISTRY}/v0.1/servers?${params}`, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.0" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.1" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(4500),
       });
@@ -563,7 +564,7 @@ async function fetchOfficialRegistry(apiSearch, maxPages = 75) {
         results.push({ ...item, sourceLabel: "Official Registry" });
       }
       cursor = payload?.metadata?.nextCursor || "";
-      if (!cursor || results.length >= 7500) break;
+      if (!cursor || results.length >= 8000) break;
     } catch {
       break;
     }
@@ -571,29 +572,41 @@ async function fetchOfficialRegistry(apiSearch, maxPages = 75) {
   return results;
 }
 
-// 2. Glama MCP Registry (130,000+ servers) — queried BOTH generally AND across 18 balanced categories!
-const GLAMA_BALANCED_QUERIES = [
-  "database", "cloud", "browser", "finance", "crypto", "design", "video",
-  "ecommerce", "crm", "maps", "security", "analytics", "slack", "workflow",
-  "notion", "search", "ai", "github", "docker", "email", "weather", "pdf",
+// 2. Glama MCP Registry (130,000+ real MCP servers) — 65 parallel high-value domain queries + general pages
+const GLAMA_HIGH_SIGNAL_QUERIES = [
+  "postgres", "mysql", "sqlite", "mongodb", "redis", "supabase", "firebase", "snowflake",
+  "aws", "azure", "gcp", "kubernetes", "docker", "terraform", "cloudflare", "vercel",
+  "playwright", "puppeteer", "browser", "scraper", "firecrawl", "selenium", "crawl",
+  "stripe", "paypal", "finance", "stock", "trading", "accounting", "invoice", "bank",
+  "crypto", "ethereum", "solana", "binance", "blockchain", "defi", "wallet",
+  "figma", "blender", "unity", "design", "svg", "3d", "canva", "webflow",
+  "youtube", "spotify", "video", "audio", "ffmpeg", "image", "whisper", "tts",
+  "shopify", "woocommerce", "amazon", "ecommerce", "inventory",
+  "hubspot", "salesforce", "zendesk", "crm", "seo", "marketing", "ads",
+  "maps", "weather", "flight", "travel", "geo",
+  "security", "snyk", "pentest", "owasp", "vault", "auth",
+  "datadog", "grafana", "prometheus", "posthog", "excel", "sheets", "analytics",
+  "slack", "discord", "telegram", "gmail", "outlook", "email", "twitter", "reddit", "linkedin",
+  "n8n", "zapier", "workflow", "homeassistant", "iot",
+  "notion", "linear", "jira", "confluence", "obsidian", "calendar", "pdf", "drive",
+  "search", "arxiv", "wikipedia", "docs", "memory", "rag", "vector", "ollama", "huggingface",
 ];
 
 async function fetchGlamaDirectory(apiSearch) {
   const results = [];
-  const deadline = Date.now() + 16500;
+  const deadline = Date.now() + 17500;
 
-  // 2a. General cursor pagination (fast broad sweep)
   const generalTask = (async () => {
     const out = [];
     let cursor = "";
-    const maxPages = apiSearch ? 8 : 38;
+    const maxPages = apiSearch ? 8 : 30;
     for (let i = 0; i < maxPages && Date.now() < deadline; i += 1) {
       const params = new URLSearchParams({ first: "100" });
       if (apiSearch.length >= 2) params.set("query", apiSearch);
       if (cursor) params.set("after", cursor);
       try {
         const res = await fetch(`${GLAMA_API}?${params}`, {
-          headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.0" },
+          headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.1" },
           next: { revalidate: 3600 },
           signal: AbortSignal.timeout(4500),
         });
@@ -602,7 +615,7 @@ async function fetchGlamaDirectory(apiSearch) {
         const batch = Array.isArray(payload?.servers) ? payload.servers : [];
         out.push(...batch);
         cursor = payload?.pageInfo?.hasNextPage ? payload?.pageInfo?.endCursor || "" : "";
-        if (!cursor || out.length >= 3800) break;
+        if (!cursor || out.length >= 3000) break;
       } catch {
         break;
       }
@@ -610,18 +623,17 @@ async function fetchGlamaDirectory(apiSearch) {
     return out;
   })();
 
-  // 2b. Parallel category-balanced sweeps so every domain is richly represented
   const categoryTask = apiSearch
     ? Promise.resolve([])
     : (async () => {
         const out = [];
-        for (let i = 0; i < GLAMA_BALANCED_QUERIES.length && Date.now() < deadline; i += 11) {
-          const batchTerms = GLAMA_BALANCED_QUERIES.slice(i, i + 11);
+        for (let i = 0; i < GLAMA_HIGH_SIGNAL_QUERIES.length && Date.now() < deadline; i += 20) {
+          const batchTerms = GLAMA_HIGH_SIGNAL_QUERIES.slice(i, i + 20);
           const settled = await Promise.allSettled(
             batchTerms.map(async (term) => {
               const params = new URLSearchParams({ first: "100", query: term });
               const res = await fetch(`${GLAMA_API}?${params}`, {
-                headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.0" },
+                headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.1" },
                 next: { revalidate: 3600 },
                 signal: AbortSignal.timeout(4500),
               });
@@ -663,14 +675,19 @@ async function fetchGlamaDirectory(apiSearch) {
   return results;
 }
 
-// 3. npm Public Registry — balanced across 20 MCP categories!
+// 3. npm Public Registry — 40 useful domain-specific MCP queries
 const NPM_BALANCED_MCP_QUERIES = [
   "mcp-server", "modelcontextprotocol", "@modelcontextprotocol", "fastmcp",
-  "mcp database", "mcp postgres", "mcp cloud", "mcp docker",
-  "mcp browser", "mcp playwright", "mcp finance", "mcp stripe",
-  "mcp crypto", "mcp design", "mcp figma", "mcp security",
-  "mcp slack", "mcp notion", "mcp search", "mcp analytics",
-  "mcp shopify", "mcp maps", "mcp media", "mcp workflow",
+  "mcp postgres", "mcp mysql", "mcp sqlite", "mcp mongodb", "mcp redis", "mcp supabase",
+  "mcp aws", "mcp azure", "mcp gcp", "mcp docker", "mcp kubernetes", "mcp cloudflare",
+  "mcp playwright", "mcp puppeteer", "mcp browser", "mcp firecrawl", "mcp scraper",
+  "mcp stripe", "mcp finance", "mcp stock", "mcp crypto", "mcp solana", "mcp ethereum",
+  "mcp figma", "mcp design", "mcp video", "mcp youtube", "mcp image",
+  "mcp shopify", "mcp hubspot", "mcp salesforce", "mcp maps", "mcp weather",
+  "mcp security", "mcp analytics", "mcp datadog", "mcp grafana",
+  "mcp slack", "mcp discord", "mcp telegram", "mcp gmail", "mcp email",
+  "mcp notion", "mcp linear", "mcp jira", "mcp obsidian", "mcp pdf", "mcp excel",
+  "mcp search", "mcp memory", "mcp rag", "mcp github", "mcp gitlab", "mcp n8n",
 ];
 
 async function fetchNpmMcpServers(apiSearch) {
@@ -678,16 +695,14 @@ async function fetchNpmMcpServers(apiSearch) {
   const requests = [];
   for (let idx = 0; idx < queries.length; idx += 1) {
     const text = queries[idx];
-    const offsets = apiSearch ? [0, 250] : idx < 4 ? [0, 250, 500] : [0, 250];
-    for (const from of offsets) {
-      requests.push({ text, from });
-    }
+    const offsets = apiSearch ? [0, 250] : idx < 4 ? [0, 250, 500, 750] : [0, 250];
+    for (const from of offsets) requests.push({ text, from });
   }
 
   const items = [];
-  const deadline = Date.now() + 15000;
-  for (let start = 0; start < requests.length && Date.now() < deadline; start += 20) {
-    const batch = requests.slice(start, start + 20);
+  const deadline = Date.now() + 16500;
+  for (let start = 0; start < requests.length && Date.now() < deadline; start += 28) {
+    const batch = requests.slice(start, start + 28);
     const settled = await Promise.allSettled(
       batch.map(async ({ text, from }) => {
         const url = new URL(NPM_SEARCH_API);
@@ -695,9 +710,9 @@ async function fetchNpmMcpServers(apiSearch) {
         url.searchParams.set("size", "250");
         url.searchParams.set("from", String(from));
         const res = await fetch(url, {
-          headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.0" },
+          headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.1" },
           next: { revalidate: 3600 },
-          signal: AbortSignal.timeout(5500),
+          signal: AbortSignal.timeout(5000),
         });
         if (!res.ok) return [];
         const payload = await res.json();
@@ -709,7 +724,7 @@ async function fetchNpmMcpServers(apiSearch) {
       if (r.status !== "fulfilled") continue;
       for (const obj of r.value) {
         const pkg = obj?.package;
-        if (!pkg?.name) continue;
+        if (!pkg?.name || JUNK_NAME_RX.test(pkg.name)) continue;
         const popScore = Math.round(Number(obj?.score?.detail?.popularity || 0) * 1800);
         const npmLink = pkg.links?.homepage || pkg.links?.npm || `https://www.npmjs.com/package/${pkg.name}`;
         const cleanTitle = pkg.name
@@ -735,9 +750,9 @@ async function fetchNpmMcpServers(apiSearch) {
   return items;
 }
 
-// 4. PulseMCP Public Directory API
+// 4. PulseMCP Directory
 async function fetchPulseMcpServers(apiSearch) {
-  const pages = apiSearch ? [0, 1] : Array.from({ length: 18 }, (_, i) => i);
+  const pages = apiSearch ? [0, 1] : Array.from({ length: 20 }, (_, i) => i);
   const settled = await Promise.allSettled(
     pages.map(async (page) => {
       const url = new URL(PULSEMCP_API);
@@ -745,7 +760,7 @@ async function fetchPulseMcpServers(apiSearch) {
       url.searchParams.set("offset", String(page * 100));
       if (apiSearch) url.searchParams.set("query", apiSearch);
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.0" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.1" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(5500),
       });
@@ -780,12 +795,18 @@ async function fetchPulseMcpServers(apiSearch) {
   return items;
 }
 
-// 5. Docker Hub Public MCP Container Registry (Non-GitHub!)
+// 5. Docker Hub MCP Containers
 async function fetchDockerHubMcps(apiSearch) {
-  const queries = apiSearch ? [`${apiSearch} mcp`] : ["mcp-server", "modelcontextprotocol", "mcp-proxy", "mcp"];
+  const queries = apiSearch
+    ? [`${apiSearch} mcp`]
+    : [
+        "mcp-server", "modelcontextprotocol", "mcp-proxy", "mcp-gateway",
+        "mcp postgres", "mcp github", "mcp browser", "mcp playwright",
+        "mcp cloud", "mcp docker", "mcp slack", "mcp notion",
+      ];
   const requests = [];
   for (const q of queries) {
-    const pages = apiSearch ? [1] : [1, 2, 3, 4];
+    const pages = apiSearch ? [1] : [1, 2, 3];
     for (const page of pages) requests.push({ q, page });
   }
 
@@ -796,7 +817,7 @@ async function fetchDockerHubMcps(apiSearch) {
       url.searchParams.set("page_size", "100");
       url.searchParams.set("page", String(page));
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.0" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.1" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(5500),
       });
@@ -837,7 +858,7 @@ async function fetchDockerHubMcps(apiSearch) {
   return items;
 }
 
-// 6. Crates.io Rust MCP Registry (Non-GitHub!)
+// 6. Crates.io Rust MCP Registry
 async function fetchCratesIoMcps(apiSearch) {
   const queries = apiSearch ? [`${apiSearch} mcp`] : ["mcp-server", "model-context-protocol", "rmcp", "mcp"];
   const requests = [];
@@ -854,7 +875,7 @@ async function fetchCratesIoMcps(apiSearch) {
       url.searchParams.set("page", String(page));
       url.searchParams.set("sort", "downloads");
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.0 (https://drive-mcp-five.vercel.app)" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.1 (https://drive-mcp-five.vercel.app)" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(5500),
       });
@@ -893,11 +914,11 @@ async function fetchCratesIoMcps(apiSearch) {
   return items;
 }
 
-// 7. Supplemental GitHub MCPs (kept lightweight so non-GitHub sources lead)
+// 7. Supplemental GitHub High-Star MCPs
 async function fetchGithubPopularMcps(apiSearch) {
   const headers = {
     accept: "application/vnd.github+json",
-    "user-agent": "DRIVE-MCP/4.0",
+    "user-agent": "DRIVE-MCP/4.1",
   };
   if (process.env.GITHUB_TOKEN) {
     headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
@@ -973,7 +994,6 @@ function serializeServer(entry) {
   const description = server.description || "MCP server indexed in DRIVE Directory.";
   const isRemote = remotes.length > 0;
   const repoStr = typeof repo === "string" ? repo : repo?.url || "";
-  // Classify ONLY on title + clean slug + description (NEVER on github.com URLs!)
   const cleanIdForCat = id.replace(/^(github|glama|npm|pulsemcp|docker|crates)\//i, "");
   const category = classifyMcpCategory(entry?.category, `${name} ${cleanIdForCat} ${description}`);
   const authType = inferAuthType(entry?.authType, isRemote, `${name} ${description}`);
@@ -1048,7 +1068,7 @@ async function getServers(query) {
 
   const [officialRes, glamaRes, npmRes, pulseRes, dockerRes, cratesRes, githubRes] =
     await Promise.allSettled([
-      fetchOfficialRegistry(apiSearch, apiSearch ? 10 : 75),
+      fetchOfficialRegistry(apiSearch, apiSearch ? 10 : 80),
       fetchGlamaDirectory(apiSearch),
       fetchNpmMcpServers(apiSearch),
       fetchPulseMcpServers(apiSearch),
@@ -1072,7 +1092,7 @@ async function getServers(query) {
     if (!key || seen.has(key)) continue;
     seen.add(key);
     all.push(entry);
-    if (all.length >= 28000) break;
+    if (all.length >= 32000) break;
   }
 
   const serialized = all.map(serializeServer);

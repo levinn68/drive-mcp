@@ -7,6 +7,7 @@ import {
   Cable,
   Check,
   Copy,
+  ExternalLink,
   KeyRound,
   LoaderCircle,
   Plus,
@@ -32,7 +33,13 @@ async function getAccessToken() {
   return session?.access_token || null;
 }
 
-export function AddMcpButton({ serverName, version, registryEntry, remoteAvailable }) {
+export function AddMcpButton({
+  serverName,
+  version,
+  registryEntry,
+  remoteAvailable,
+  onConnected,
+}) {
   const [state, setState] = useState("idle");
 
   async function add() {
@@ -69,9 +76,10 @@ export function AddMcpButton({ serverName, version, registryEntry, remoteAvailab
         return;
       }
 
+      if (typeof onConnected === "function") onConnected(result);
       window.dispatchEvent(new Event("drive:connections-changed"));
 
-      // Automatically initiate upstream MCP OAuth handshake if this is a Remote HTTP MCP
+      // Automatically initiate upstream MCP OAuth 2.1 handshake (CIMD / DCR) if Remote HTTP MCP
       const endpointUrl =
         registryEntry?.server?.remotes?.[0]?.url ||
         result?.connection?.server?.endpoint_url ||
@@ -146,7 +154,10 @@ export default function MyMcpPanel() {
   const [copiedId, setCopiedId] = useState("");
   const [authBusyId, setAuthBusyId] = useState("");
   const [bearerTarget, setBearerTarget] = useState(null);
+  const [authModeTab, setAuthModeTab] = useState("token");
   const [bearerValue, setBearerValue] = useState("");
+  const [oauthClientId, setOauthClientId] = useState("");
+  const [oauthClientSecret, setOauthClientSecret] = useState("");
   const [banner, setBanner] = useState({ type: "", text: "" });
 
   const tokenRef = useRef("");
@@ -181,7 +192,6 @@ export default function MyMcpPanel() {
   useEffect(() => {
     const initialLoad = window.setTimeout(() => {
       load();
-      // Check if returning from an upstream MCP OAuth consent screen
       const params = new URLSearchParams(window.location.search);
       const authStatus = params.get("mcp_auth");
       if (authStatus === "connected") {
@@ -253,7 +263,6 @@ export default function MyMcpPanel() {
       if (!res.ok) throw new Error(data.error || "Gagal memulai otorisasi MCP.");
 
       if (data.mode === "oauth" && data.authorizeUrl) {
-        // Redirect directly to the original MCP website's OAuth screen
         window.location.assign(data.authorizeUrl);
         return;
       }
@@ -263,8 +272,20 @@ export default function MyMcpPanel() {
         return;
       }
       if (data.mode === "bearer") {
-        setBearerTarget({ id: item.id, title, endpointUrl, note: data.message });
+        setBearerTarget({
+          id: item.id,
+          title,
+          endpointUrl,
+          note: data.message,
+          tokenPortalUrl: data.tokenPortalUrl || "",
+          tokenPortalLabel: data.tokenPortalLabel || "Buka halaman token provider",
+          supportsOAuthApp: Boolean(data.supportsOAuthApp),
+          callbackUrl: data.callbackUrl || `${window.location.origin}/api/mcp-auth/callback`,
+        });
+        setAuthModeTab("token");
         setBearerValue("");
+        setOauthClientId("");
+        setOauthClientSecret("");
       }
     } catch (err) {
       setBanner({ type: "error", text: err?.message || "Gagal otorisasi MCP." });
@@ -273,27 +294,45 @@ export default function MyMcpPanel() {
     }
   }
 
-  async function saveBearerToken(event) {
+  async function saveManualAuth(event) {
     event.preventDefault();
-    if (!bearerTarget || !bearerValue.trim()) return;
+    if (!bearerTarget) return;
     setAuthBusyId(bearerTarget.id);
+    setBanner({ type: "", text: "" });
     try {
       const token = tokenRef.current || (await getAccessToken());
+      const payload =
+        authModeTab === "oauth_app"
+          ? {
+              connectionId: bearerTarget.id,
+              endpointUrl: bearerTarget.endpointUrl,
+              serverTitle: bearerTarget.title,
+              oauthClientId: oauthClientId.trim(),
+              oauthClientSecret: oauthClientSecret.trim(),
+            }
+          : {
+              connectionId: bearerTarget.id,
+              endpointUrl: bearerTarget.endpointUrl,
+              serverTitle: bearerTarget.title,
+              bearerToken: bearerValue.trim(),
+            };
+
       const res = await fetch("/api/mcp-auth/start", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          connectionId: bearerTarget.id,
-          endpointUrl: bearerTarget.endpointUrl,
-          serverTitle: bearerTarget.title,
-          bearerToken: bearerValue.trim(),
-        }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal menyimpan API Key.");
+      if (!res.ok) throw new Error(data.error || "Gagal menyimpan kredensial.");
+
+      if (data.mode === "oauth" && data.authorizeUrl) {
+        window.location.assign(data.authorizeUrl);
+        return;
+      }
+
       setBanner({
         type: "success",
         text: `Token untuk ${bearerTarget.title} berhasil disimpan & aktif.`,
@@ -302,7 +341,7 @@ export default function MyMcpPanel() {
       setBearerValue("");
       await load();
     } catch (err) {
-      setBanner({ type: "error", text: err?.message || "Gagal menyimpan token." });
+      setBanner({ type: "error", text: err?.message || "Gagal menyimpan kredensial." });
     } finally {
       setAuthBusyId("");
     }
@@ -357,6 +396,7 @@ export default function MyMcpPanel() {
         const result = await response.json();
         throw new Error(result.error || "Could not remove connection.");
       }
+      window.dispatchEvent(new Event("drive:connections-changed"));
     } catch (err) {
       setConnections(snapshot);
       setBanner({ type: "error", text: err?.message || "Could not remove connection." });
@@ -461,32 +501,103 @@ export default function MyMcpPanel() {
       {bearerTarget && (
         <form
           className="custom-form-clean"
-          onSubmit={saveBearerToken}
+          onSubmit={saveManualAuth}
           style={{ marginBottom: 14 }}
         >
           <div className="custom-fields">
-            <label className="custom-field-label">
-              <span>
-                <KeyRound size={13} /> API KEY / BEARER TOKEN — {bearerTarget.title.toUpperCase()}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", color: "#7cd4ff", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                <KeyRound size={13} /> CONNECT — {bearerTarget.title.toUpperCase()}
               </span>
-              <input
-                type="password"
-                value={bearerValue}
-                onChange={(e) => setBearerValue(e.target.value)}
-                placeholder="Tempel API key atau Personal Access Token dari provider..."
-                required
-              />
-            </label>
+              {bearerTarget.supportsOAuthApp && (
+                <div style={{ display: "flex", gap: 6 }}>
+                  <button
+                    type="button"
+                    className={`category-chip ${authModeTab === "token" ? "is-active" : ""}`}
+                    onClick={() => setAuthModeTab("token")}
+                  >
+                    Access Token
+                  </button>
+                  <button
+                    type="button"
+                    className={`category-chip ${authModeTab === "oauth_app" ? "is-active" : ""}`}
+                    onClick={() => setAuthModeTab("oauth_app")}
+                  >
+                    OAuth App
+                  </button>
+                </div>
+              )}
+            </div>
+
             <p className="custom-form-hint" style={{ marginTop: 0 }}>
               {bearerTarget.note}
             </p>
-            <div style={{ display: "flex", gap: 8 }}>
+
+            {authModeTab === "token" ? (
+              <>
+                {bearerTarget.tokenPortalUrl && (
+                  <a
+                    href={bearerTarget.tokenPortalUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="glass-chip-btn"
+                    style={{ width: "fit-content", textDecoration: "none" }}
+                  >
+                    <ExternalLink size={12} /> {bearerTarget.tokenPortalLabel}
+                  </a>
+                )}
+                <label className="custom-field-label">
+                  <span>API KEY / PERSONAL ACCESS TOKEN</span>
+                  <input
+                    type="password"
+                    value={bearerValue}
+                    onChange={(e) => setBearerValue(e.target.value)}
+                    placeholder="Tempel token dari provider di sini..."
+                    required
+                  />
+                </label>
+              </>
+            ) : (
+              <>
+                <div className="custom-policy-pills">
+                  <span>Callback URL: {bearerTarget.callbackUrl}</span>
+                  <button
+                    type="button"
+                    className="glass-chip-btn"
+                    onClick={() => copyUrl("oauth-cb", bearerTarget.callbackUrl)}
+                  >
+                    {copiedId === "oauth-cb" ? <Check size={11} /> : <Copy size={11} />}
+                    {copiedId === "oauth-cb" ? "Copied" : "Copy Callback"}
+                  </button>
+                </div>
+                <label className="custom-field-label">
+                  <span>OAUTH CLIENT ID</span>
+                  <input
+                    value={oauthClientId}
+                    onChange={(e) => setOauthClientId(e.target.value)}
+                    placeholder="Masukkan Client ID dari OAuth App provider..."
+                    required
+                  />
+                </label>
+                <label className="custom-field-label">
+                  <span>OAUTH CLIENT SECRET (OPTIONAL)</span>
+                  <input
+                    type="password"
+                    value={oauthClientSecret}
+                    onChange={(e) => setOauthClientSecret(e.target.value)}
+                    placeholder="Masukkan Client Secret jika diminta provider..."
+                  />
+                </label>
+              </>
+            )}
+
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button
                 type="submit"
                 className="custom-submit-btn"
                 disabled={authBusyId === bearerTarget.id}
               >
-                Save Token
+                {authModeTab === "oauth_app" ? "Continue OAuth Login" : "Save Token"}
               </button>
               <button
                 type="button"

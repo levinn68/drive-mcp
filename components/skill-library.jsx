@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import {
   BookOpen,
-  Check,
   ExternalLink,
   FileArchive,
   FileText,
@@ -21,12 +20,20 @@ import {
 
 const SKILL_CATEGORIES = [
   { id: "", label: "All" },
-  { id: "development", label: "Development" },
-  { id: "ai", label: "AI" },
-  { id: "design", label: "Design" },
-  { id: "data", label: "Data" },
-  { id: "security", label: "Security" },
+  { id: "frontend", label: "Frontend & UI" },
+  { id: "backend", label: "Backend & API" },
+  { id: "ai", label: "AI & Agents" },
+  { id: "devops", label: "DevOps & Cloud" },
+  { id: "database", label: "Database & SQL" },
+  { id: "security", label: "Security & Audit" },
+  { id: "testing", label: "Testing & QA" },
+  { id: "design", label: "Design & UX" },
+  { id: "data", label: "Data & Analytics" },
+  { id: "mobile", label: "Mobile & Native" },
+  { id: "docs", label: "Docs & Writing" },
   { id: "productivity", label: "Productivity" },
+  { id: "marketing", label: "Marketing & SEO" },
+  { id: "automation", label: "Automation" },
 ];
 
 const SKILL_SUBTABS = [
@@ -40,6 +47,14 @@ function getSupabase() {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) return null;
   return createBrowserClient(url, key);
+}
+
+function normalizeSkillKey(raw) {
+  return String(raw || "")
+    .trim()
+    .toLowerCase()
+    .replace(/^https?:\/\/github\.com\//i, "")
+    .replace(/\/+$/, "");
 }
 
 export default function SkillLibrary() {
@@ -62,12 +77,23 @@ export default function SkillLibrary() {
   const [customContent, setCustomContent] = useState("");
   const [uploading, setUploading] = useState(false);
 
-  const installedRepoKeys = useMemo(() => {
-    const map = new Set();
+  const installedKeys = useMemo(() => {
+    const set = new Set();
     for (const s of mySkills) {
-      if (s.source_repo) map.add(s.source_repo.toLowerCase());
+      const repo = normalizeSkillKey(s.source_repo);
+      const name = normalizeSkillKey(s.name);
+      const pathSlug = normalizeSkillKey(
+        String(s.skill_path || "")
+          .replace(/\/SKILL\.md$/i, "")
+          .split("/")
+          .pop()
+      );
+      if (repo) set.add(repo);
+      if (name) set.add(name);
+      if (repo && pathSlug) set.add(`${repo}/${pathSlug}`);
+      if (repo && name) set.add(`${repo}/${name}`);
     }
-    return map;
+    return set;
   }, [mySkills]);
 
   const loadMySkills = useCallback(async () => {
@@ -124,7 +150,7 @@ export default function SkillLibrary() {
             slug: repo.full_name.split("/")[1] || repo.full_name,
             source: repo.full_name,
             description: repo.description || "GitHub Agent Skill repository",
-            category: "community",
+            category: "backend",
             stars: Number(repo.stars || 0),
             verified: false,
             skillCount: 1,
@@ -149,12 +175,33 @@ export default function SkillLibrary() {
     return () => window.clearTimeout(timer);
   }, [loadCatalog, loadMySkills]);
 
-  const filteredCatalog = useMemo(() => {
+  const { filteredCatalog, hiddenInstalledCount } = useMemo(() => {
     const cat = category.trim().toLowerCase();
     const q = query.trim().toLowerCase();
-    return catalog.filter((item) => {
+    let hidden = 0;
+
+    const list = catalog.filter((item) => {
+      // 1. Hide Skills that are already installed in My Skills
+      const itemId = normalizeSkillKey(item.id);
+      const itemSource = normalizeSkillKey(item.source);
+      const itemName = normalizeSkillKey(item.name);
+      const itemSlug = normalizeSkillKey(item.slug);
+      const isAlreadyInstalled =
+        (itemId && installedKeys.has(itemId)) ||
+        (itemSource && installedKeys.has(itemSource)) ||
+        (itemSource && itemSlug && installedKeys.has(`${itemSource}/${itemSlug}`)) ||
+        (itemName && installedKeys.has(itemName));
+
+      if (isAlreadyInstalled) {
+        hidden += 1;
+        return false;
+      }
+
+      // 2. Category filter
       const itemCat = String(item.category || "").toLowerCase();
-      if (cat && !itemCat.includes(cat)) return false;
+      if (cat && itemCat !== cat && !itemCat.includes(cat)) return false;
+
+      // 3. Search filter
       if (!q) return true;
       const hay = [
         item.name,
@@ -169,7 +216,9 @@ export default function SkillLibrary() {
         .toLowerCase();
       return hay.includes(q);
     });
-  }, [catalog, category, query]);
+
+    return { filteredCatalog: list, hiddenInstalledCount: hidden };
+  }, [catalog, installedKeys, category, query]);
 
   const visibleCatalog = useMemo(
     () => filteredCatalog.slice(0, visibleLimit),
@@ -213,7 +262,7 @@ export default function SkillLibrary() {
           slug: item.slug || item.name,
           name: item.name,
           description: item.description,
-          installAll: true,
+          installAll: Number(item.skillCount || 1) > 1,
         }),
       });
       const data = await res.json();
@@ -227,8 +276,8 @@ export default function SkillLibrary() {
         type: "success",
         message:
           installedCount > 1
-            ? `${item.name} (${installedCount} skills di dalamnya) otomatis terpasang & aktif di DRIVE!`
-            : `${item.name} berhasil dipasang & langsung aktif di DRIVE kamu.`,
+            ? `${item.name} (${installedCount} skills) terpasang & dipindahkan ke My Skills!`
+            : `${item.name} terpasang & dipindahkan ke My Skills!`,
       });
       await loadMySkills();
     } catch (err) {
@@ -315,7 +364,6 @@ export default function SkillLibrary() {
     const supabase = getSupabase();
     if (!supabase) return;
     const prevStatus = skill.status;
-    // DB constraint user_skills_status_check allows 'saved' | 'reviewed' | 'enabled' (NOT 'disabled')
     const nextStatus = prevStatus === "enabled" ? "saved" : "enabled";
     setMySkills((prev) =>
       prev.map((item) => (item.id === skill.id ? { ...item, status: nextStatus } : item))
@@ -399,7 +447,7 @@ export default function SkillLibrary() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search Agent Skills (react, supabase, audit...)"
+              placeholder="Search 3,000+ Skills (react, supabase, audit, nextjs...)"
               aria-label="Search Agent Skills"
             />
             <button type="submit">Search</button>
@@ -423,13 +471,18 @@ export default function SkillLibrary() {
 
           <div className="directory-toolbar">
             <div className="directory-stats">
-              <strong>{filteredCatalog.length.toLocaleString()}</strong> skill packs
+              <strong>{filteredCatalog.length.toLocaleString()}</strong> skills available
               {totalRawSkills > filteredCatalog.length && (
-                <span> ({totalRawSkills.toLocaleString()} skills)</span>
+                <span> ({totalRawSkills.toLocaleString()} indexed)</span>
               )}
               <span className="registry-live">
-                <i /> 1-Click Auto-Bundle
+                <i /> 1-Click Install
               </span>
+              {hiddenInstalledCount > 0 && (
+                <span className="hidden-connected-pill">
+                  {hiddenInstalledCount} terpasang disembunyikan
+                </span>
+              )}
             </div>
           </div>
 
@@ -450,7 +503,6 @@ export default function SkillLibrary() {
                 {visibleCatalog.map((item, idx) => {
                   const key = item.id || item.source || `${item.name}-${idx}`;
                   const isBusy = installingId === key;
-                  const isInstalled = installedRepoKeys.has(String(item.source || "").toLowerCase());
                   const repoUrl =
                     item.installUrl || (item.source ? `https://github.com/${item.source}` : "");
                   const count = Number(item.skillCount || 1);
@@ -461,7 +513,7 @@ export default function SkillLibrary() {
                         <div className="integration-icon">
                           {count > 1 ? <Layers size={15} /> : <BookOpen size={15} />}
                         </div>
-                        <span className="status">
+                        <span className={`status ${item.verified ? "is-enabled" : ""}`}>
                           {count > 1 ? (
                             `${count} skills`
                           ) : item.verified ? (
@@ -497,20 +549,16 @@ export default function SkillLibrary() {
                         <button
                           type="button"
                           disabled={isBusy}
-                          className={`skill-install-btn ${isInstalled ? "is-installed" : ""}`}
+                          className="skill-install-btn"
                           onClick={() => quickInstall(item)}
                         >
                           {isBusy ? (
                             <LoaderCircle size={13} className="spin" />
-                          ) : isInstalled ? (
-                            <Check size={13} />
                           ) : (
                             <Plus size={13} />
                           )}
                           {isBusy
                             ? "Installing..."
-                            : isInstalled
-                            ? "Terpasang"
                             : count > 1
                             ? `Install Pack (${count})`
                             : "Install"}
@@ -528,7 +576,7 @@ export default function SkillLibrary() {
                     className="load-more-button"
                     onClick={() => setVisibleLimit((prev) => prev + 48)}
                   >
-                    Load more ({filteredCatalog.length - visibleLimit} remaining)
+                    Load more ({(filteredCatalog.length - visibleLimit).toLocaleString()} remaining)
                   </button>
                 </div>
               )}

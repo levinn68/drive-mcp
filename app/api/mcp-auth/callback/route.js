@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
+import { saveUserMcpToken } from "../../../../lib/mcp-token-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,22 +17,22 @@ export async function GET(request) {
   if (oauthError) {
     const reason = oauthErrorDesc ? `${oauthError}: ${oauthErrorDesc}` : oauthError;
     return NextResponse.redirect(
-      `${origin}/?mcp_auth=error&reason=${encodeURIComponent(reason.slice(0, 160))}`
+      `${origin}/mcp?mcp_auth=error&reason=${encodeURIComponent(reason.slice(0, 160))}`
     );
   }
   if (!code || !state || !cookieRaw) {
-    return NextResponse.redirect(`${origin}/?mcp_auth=error&reason=missing_oauth_state`);
+    return NextResponse.redirect(`${origin}/mcp?mcp_auth=error&reason=missing_oauth_state`);
   }
 
   let pending;
   try {
     pending = JSON.parse(Buffer.from(cookieRaw, "base64url").toString("utf8"));
   } catch {
-    return NextResponse.redirect(`${origin}/?mcp_auth=error&reason=invalid_state`);
+    return NextResponse.redirect(`${origin}/mcp?mcp_auth=error&reason=invalid_state`);
   }
 
   if (pending.state !== state) {
-    return NextResponse.redirect(`${origin}/?mcp_auth=error&reason=state_mismatch`);
+    return NextResponse.redirect(`${origin}/mcp?mcp_auth=error&reason=state_mismatch`);
   }
 
   try {
@@ -63,11 +64,12 @@ export async function GET(request) {
     if (!tokenRes.ok || !tokenData.access_token) {
       const reason = tokenData.error_description || tokenData.error || "token_exchange_failed";
       return NextResponse.redirect(
-        `${origin}/?mcp_auth=error&reason=${encodeURIComponent(String(reason).slice(0, 160))}`
+        `${origin}/mcp?mcp_auth=error&reason=${encodeURIComponent(String(reason).slice(0, 160))}`
       );
     }
 
-    // Mark connection enabled in Supabase
+    // Mark connection enabled AND persist encrypted upstream token in user's Supabase account
+    // so AI clients (Grok, Claude, ChatGPT) can directly proxy this OAuth MCP's tools!
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     if (supabaseUrl && supabaseKey && pending.userToken && pending.connectionId) {
@@ -79,9 +81,18 @@ export async function GET(request) {
         .from("user_mcp_connections")
         .update({ enabled: true, updated_at: new Date().toISOString() })
         .eq("id", pending.connectionId);
+
+      const {
+        data: { user },
+      } = await supabase.auth.getUser(pending.userToken);
+      if (user) {
+        await saveUserMcpToken(supabase, user, pending.connectionId, tokenData.access_token, {
+          expiresIn: tokenData.expires_in,
+        });
+      }
     }
 
-    const dest = `${origin}/?mcp_auth=connected&server=${encodeURIComponent(
+    const dest = `${origin}/mcp?mcp_auth=connected&server=${encodeURIComponent(
       pending.serverTitle || "MCP"
     )}`;
     const response = NextResponse.redirect(dest);
@@ -101,6 +112,6 @@ export async function GET(request) {
     }
     return response;
   } catch {
-    return NextResponse.redirect(`${origin}/?mcp_auth=error&reason=exchange_exception`);
+    return NextResponse.redirect(`${origin}/mcp?mcp_auth=error&reason=exchange_exception`);
   }
 }

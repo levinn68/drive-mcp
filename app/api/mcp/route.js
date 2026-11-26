@@ -4,12 +4,17 @@ import { isIP } from "node:net";
 import { lookup } from "node:dns/promises";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import {
+  createSignedGoToken,
+  getUserMcpToken,
+  saveUserMcpToken,
+} from "../../../lib/mcp-token-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const SERVER_INFO = { name: "DRIVE MCP", version: "2.0.0" };
+const SERVER_INFO = { name: "DRIVE MCP", version: "2.1.0" };
 const PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26"];
 const MCP_REGISTRY = "https://registry.modelcontextprotocol.io/v0.1/servers";
 const SKILLS_REGISTRY = "https://www.skillsdirectory.com/api/registry";
@@ -18,7 +23,6 @@ const DEFAULT_APP_URL = "https://drive-mcp-five.vercel.app";
 const MAX_CONNECTIONS = 30;
 const MAX_TOOLS_PER_CONNECTION = 100;
 
-// Popular verified official Remote Streamable HTTP MCP servers
 const CURATED_REMOTE_MCPS = [
   {
     name: "com.notion/mcp",
@@ -250,6 +254,16 @@ function buildSkillUrl(appOrigin, query) {
   if (query) url.searchParams.set("q", query);
   return url.toString();
 }
+function buildOneTapAuthorizeUrl(appOrigin, { connectionId, endpointUrl, serverTitle, userToken }) {
+  if (!connectionId || !endpointUrl || !userToken) return `${appOrigin}/mcp`;
+  const signed = createSignedGoToken({
+    connectionId,
+    endpointUrl,
+    serverTitle: serverTitle || "MCP Server",
+    userToken,
+  });
+  return `${appOrigin}/api/mcp-auth/go?t=${encodeURIComponent(signed)}`;
+}
 function pickHttpRemote(remotes) {
   if (!Array.isArray(remotes)) return null;
   const preferred = remotes.find((item) => {
@@ -336,11 +350,11 @@ async function authenticate(request) {
           "WWW-Authenticate": 'Bearer error="invalid_token"',
         }),
       }
-    : { supabase, user, appOrigin };
+    : { supabase, user, token, appOrigin };
 }
 async function fetchJson(url, label, timeoutMs = 10000) {
   const upstream = await fetch(url, {
-    headers: { accept: "application/json", "user-agent": "DRIVE-MCP/2.0" },
+    headers: { accept: "application/json", "user-agent": "DRIVE-MCP/2.1" },
     cache: "no-store",
     redirect: "follow",
     signal: AbortSignal.timeout(timeoutMs),
@@ -351,7 +365,7 @@ async function fetchJson(url, label, timeoutMs = 10000) {
 function githubHeaders() {
   const headers = {
     accept: "application/vnd.github+json",
-    "user-agent": "DRIVE-MCP/2.0",
+    "user-agent": "DRIVE-MCP/2.1",
   };
   if (process.env.GITHUB_TOKEN) {
     headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
@@ -408,7 +422,7 @@ async function scanSkillContent(skillMd) {
     status: flagged ? "blocked" : "safe",
     hash,
     report: { mode: "builtin-static-check", flagged },
-    version: "drive-builtin-2.0",
+    version: "drive-builtin-2.1",
   };
 }
 
@@ -484,7 +498,9 @@ function findCuratedMcp(term) {
         needle.length >= 3 &&
         (item.name.toLowerCase().includes(needle) ||
           item.title.toLowerCase().includes(needle) ||
-          (item.aliases || []).some((alias) => alias.toLowerCase().includes(needle) || needle.includes(alias.toLowerCase())))
+          (item.aliases || []).some(
+            (alias) => alias.toLowerCase().includes(needle) || needle.includes(alias.toLowerCase())
+          ))
     ) ||
     null
   );
@@ -493,7 +509,6 @@ async function searchMcpServers(query, limit, appOrigin, supabase = null) {
   const merged = new Map();
   const needle = String(query || "").trim().toLowerCase();
 
-  // 0. Check curated official remote MCPs first
   for (const item of CURATED_REMOTE_MCPS) {
     const hay = [item.name, item.title, item.description, ...(item.aliases || [])].join(" ").toLowerCase();
     if (!needle || hay.includes(needle)) {
@@ -502,7 +517,6 @@ async function searchMcpServers(query, limit, appOrigin, supabase = null) {
     }
   }
 
-  // 1. Fast multi-source lookup from Supabase indexed catalog
   if (supabase && merged.size < limit) {
     try {
       const safeLike = query.replace(/[%_,()]/g, " ").trim();
@@ -522,7 +536,6 @@ async function searchMcpServers(query, limit, appOrigin, supabase = null) {
     } catch {}
   }
 
-  // 2. Live Official MCP Registry merge/fallback
   if (merged.size < limit) {
     try {
       const url = new URL(MCP_REGISTRY);
@@ -590,7 +603,6 @@ async function searchSkills(query, limit, appOrigin, supabase = null) {
   const seen = new Set();
   const skills = [];
 
-  // 1. Fast multi-source lookup from Supabase skill_catalog
   if (supabase) {
     try {
       const safeLike = query.replace(/[%_,()]/g, " ").trim();
@@ -625,7 +637,6 @@ async function searchSkills(query, limit, appOrigin, supabase = null) {
     } catch {}
   }
 
-  // 2. Live skills.sh search (fast & huge index)
   if (skills.length < limit) {
     try {
       const url = new URL(SKILLS_SH_SEARCH);
@@ -663,7 +674,6 @@ async function searchSkills(query, limit, appOrigin, supabase = null) {
     } catch {}
   }
 
-  // 3. Live Skills Directory merge/fallback
   if (skills.length < limit) {
     try {
       const url = new URL(SKILLS_REGISTRY);
@@ -705,11 +715,10 @@ async function searchSkills(query, limit, appOrigin, supabase = null) {
     count: skills.length,
     skills,
     marketplace_url: buildSkillUrl(appOrigin, query),
-    note: "You can directly install and activate any of these skills in the user's DRIVE workspace by calling drive_install_skill (with repository + slug, or query, or a batch skills array).",
+    note: "You can directly install and activate any of these skills in the user's DRIVE workspace by calling drive_install_skill.",
   };
 }
 
-// Directly fetch SKILL.md from GitHub (with safe fallback) and upsert into user_skills with status='enabled'
 async function resolveSkillsFromGithub(repository, slug, explicitPath, installAll = false, fallbackMeta = {}) {
   const cleanRepo = String(repository || "")
     .replace(/^https?:\/\/github\.com\//i, "")
@@ -764,7 +773,6 @@ async function resolveSkillsFromGithub(repository, slug, explicitPath, installAl
     }
   } catch {}
 
-  // Try candidate raw paths if GitHub API tree lookup was rate-limited
   if (!targetPaths.length) {
     const s = String(slug || "").trim();
     const candidates = [
@@ -797,7 +805,6 @@ async function resolveSkillsFromGithub(repository, slug, explicitPath, installAl
       } catch {}
     }
 
-    // Final graceful fallback if raw download is unavailable (ensures AI direct install still succeeds cleanly)
     const fallbackName = fallbackMeta.name || s || cleanRepo.split("/")[1];
     const fallbackDesc = fallbackMeta.description || `Agent Skill from https://github.com/${cleanRepo}`;
     const syntheticMd = [
@@ -1029,7 +1036,6 @@ async function manageSkillDirectly(supabase, userId, args, appOrigin) {
     return { ok: true, action: "removed", skill_id: targetId, name: targetName, workspace_url: `${appOrigin}/skills` };
   }
 
-  // Postgres check constraint user_skills_status_check allows 'saved' | 'reviewed' | 'enabled'
   const nextStatus = action === "enable" ? "enabled" : "saved";
   const { data, error } = await supabase
     .from("user_skills")
@@ -1056,7 +1062,9 @@ function safeToolName(value) {
 function connectionToolName(connectionId, toolName) {
   return `mcp_${connectionId.replace(/-/g, "").slice(0, 12)}__${safeToolName(toolName)}`;
 }
-async function getUserConnections(supabase, userId, { enabledOnly = false, appOrigin = DEFAULT_APP_URL } = {}) {
+
+async function getUserConnections(supabase, user, { enabledOnly = false, appOrigin = DEFAULT_APP_URL } = {}) {
+  const userId = user.id;
   let query = supabase
     .from("user_mcp_connections")
     .select("id,registry_server_id,custom_server_id,enabled,updated_at")
@@ -1102,6 +1110,7 @@ async function getUserConnections(supabase, userId, { enabledOnly = false, appOr
         if (server.status !== "verified") endpoint = "";
       }
       const name = server.server_name || server.display_name || "MCP server";
+      const hasSavedToken = Boolean(getUserMcpToken(user, row.id));
       return {
         id: row.id,
         kind: row.registry_server_id ? "registry" : "custom",
@@ -1111,23 +1120,23 @@ async function getUserConnections(supabase, userId, { enabledOnly = false, appOr
         enabled: Boolean(row.enabled),
         endpoint,
         authType,
+        authorized: authType === "none" || hasSavedToken,
         status,
-        active_in_gateway: Boolean(row.enabled && endpoint && authType === "none"),
+        active_in_gateway: Boolean(row.enabled && endpoint && (authType === "none" || hasSavedToken)),
         manage_url: `${appOrigin}/mcp`,
       };
     })
     .filter(Boolean);
 }
 
-// Probe a remote MCP endpoint to detect if it works immediately (zero-auth) or requires OAuth/Bearer auth
 async function probeRemoteMcp(endpointUrl, bearerToken = "") {
   if (!endpointUrl || !(await publicHttps(endpointUrl))) {
-    return { reachable: false, authRequired: false, toolsCount: 0 };
+    return { reachable: false, authRequired: false };
   }
   const headers = {
     "Content-Type": "application/json",
     Accept: "application/json, text/event-stream",
-    "User-Agent": "DRIVE-MCP-Gateway/2.0",
+    "User-Agent": "DRIVE-MCP-Gateway/2.1",
   };
   if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
 
@@ -1142,26 +1151,25 @@ async function probeRemoteMcp(endpointUrl, bearerToken = "") {
         params: {
           protocolVersion: "2025-03-26",
           capabilities: {},
-          clientInfo: { name: "DRIVE MCP", version: "2.0.0" },
+          clientInfo: { name: "DRIVE MCP", version: "2.1.0" },
         },
       }),
       signal: AbortSignal.timeout(6000),
     });
 
     if (res.status === 401 || res.status === 403) {
-      return { reachable: true, authRequired: true, status: res.status, toolsCount: 0 };
+      return { reachable: true, authRequired: true, status: res.status };
     }
-    if (res.ok) {
-      return { reachable: true, authRequired: false, status: res.status, toolsCount: 0 };
-    }
-    return { reachable: true, authRequired: false, status: res.status, toolsCount: 0 };
+    return { reachable: true, authRequired: false, status: res.status };
   } catch {
-    return { reachable: false, authRequired: false, toolsCount: 0 };
+    return { reachable: false, authRequired: false };
   }
 }
 
-// Directly connect and enable an MCP server in the user's DRIVE workspace
-async function connectMcpDirectly(supabase, userId, args, appOrigin) {
+async function connectMcpDirectly(context, args) {
+  const { supabase, user, token: userToken, appOrigin } = context;
+  const userId = user.id;
+
   const serverNameInput = typeof args.server_name === "string" ? args.server_name.trim().slice(0, 200) : "";
   const queryInput = typeof args.query === "string" ? args.query.trim().slice(0, 120) : "";
   const endpointInput = typeof args.endpoint_url === "string" ? args.endpoint_url.trim().slice(0, 500) : "";
@@ -1174,8 +1182,8 @@ async function connectMcpDirectly(supabase, userId, args, appOrigin) {
     throw new Error("Provide query, server_name, or endpoint_url to connect an MCP server.");
   }
 
-  // 1. Check if already connected in user's workspace
-  const existingConnections = await getUserConnections(supabase, userId, { enabledOnly: false, appOrigin });
+  // 1. Check if already connected
+  const existingConnections = await getUserConnections(supabase, user, { enabledOnly: false, appOrigin });
   const needle = lookupTerm.toLowerCase();
   const existingConn = existingConnections.find((c) => {
     if (endpointInput && c.endpoint === endpointInput) return true;
@@ -1195,24 +1203,41 @@ async function connectMcpDirectly(supabase, userId, args, appOrigin) {
         .eq("id", existingConn.id)
         .eq("user_id", userId);
     }
-    const probe = existingConn.endpoint ? await probeRemoteMcp(existingConn.endpoint, apiKey) : { authRequired: existingConn.authType !== "none" };
-    const authRequired = probe.authRequired || existingConn.authType !== "none";
+
+    let activeToken = apiKey || getUserMcpToken(user, existingConn.id);
+    if (apiKey) {
+      await saveUserMcpToken(supabase, user, existingConn.id, apiKey);
+    }
+
+    const probe = existingConn.endpoint
+      ? await probeRemoteMcp(existingConn.endpoint, activeToken)
+      : { authRequired: existingConn.authType !== "none" && !activeToken };
+    const needsAuth = probe.authRequired || (existingConn.authType !== "none" && !activeToken);
+    const directAuthorizeUrl = needsAuth
+      ? buildOneTapAuthorizeUrl(appOrigin, {
+          connectionId: existingConn.id,
+          endpointUrl: existingConn.endpoint,
+          serverTitle: existingConn.title,
+          userToken,
+        })
+      : null;
+
     return {
       connected: true,
       already_existed: true,
       enabled: desiredEnabled,
-      connection: { ...existingConn, enabled: desiredEnabled },
-      auth_required: authRequired,
-      ready: desiredEnabled && !authRequired,
-      authorize_url: authRequired ? `${appOrigin}/mcp` : null,
+      connection: { ...existingConn, enabled: desiredEnabled, authorized: !needsAuth },
+      auth_required: needsAuth,
+      ready: desiredEnabled && !needsAuth,
+      authorize_url: directAuthorizeUrl,
       workspace_url: `${appOrigin}/mcp`,
-      message: authRequired
-        ? `${existingConn.title} is connected and enabled in your DRIVE workspace. Complete 1-click provider authorization in DRIVE (${appOrigin}/mcp) if you haven't signed in to this provider yet.`
-        : `${existingConn.title} is already connected, enabled, and ready to use in your DRIVE MCP gateway.`,
+      message: needsAuth
+        ? `${existingConn.title} is connected and enabled in your DRIVE workspace. Tap this 1-click authorize link to open ${existingConn.title}'s official Allow screen directly: ${directAuthorizeUrl}`
+        : `${existingConn.title} is connected, authorized, and ready to use directly in your AI chat!`,
     };
   }
 
-  // 2. Resolve target server metadata (Curated -> DB -> Official Registry -> Custom endpoint)
+  // 2. Resolve target server
   let resolvedServer = null;
   let curatedHint = null;
 
@@ -1254,18 +1279,16 @@ async function connectMcpDirectly(supabase, userId, args, appOrigin) {
     throw new Error("Remote MCP endpoint must be a valid public HTTPS URL.");
   }
 
-  // Probe endpoint live to see if zero-auth or OAuth/Bearer
   const probe = await probeRemoteMcp(endpointUrl, apiKey);
   const authType = probe.authRequired
     ? curatedHint?.auth_mode || "oauth2"
-    : remote?.authentication?.required
+    : !apiKey && remote?.authentication?.required
     ? curatedHint?.auth_mode || "oauth2"
     : "none";
 
   let registryServerId = null;
   let customServerId = null;
 
-  // 3. Persist server in mcp_servers (if registry/curated) or user_custom_mcp_servers (fallback / custom)
   if (!endpointInput && serverKeyName) {
     const { data: existingReg } = await supabase
       .from("mcp_servers")
@@ -1282,7 +1305,13 @@ async function connectMcpDirectly(supabase, userId, args, appOrigin) {
       if (admin) {
         const remotesPayload = resolvedServer?.remotes?.length
           ? resolvedServer.remotes
-          : [{ type: "streamable_http", url: endpointUrl, authentication: authType !== "none" ? { required: true, type: authType } : undefined }];
+          : [
+              {
+                type: "streamable_http",
+                url: endpointUrl,
+                authentication: authType !== "none" ? { required: true, type: authType } : undefined,
+              },
+            ];
         const { data: imported } = await admin
           .from("mcp_servers")
           .upsert(
@@ -1312,7 +1341,6 @@ async function connectMcpDirectly(supabase, userId, args, appOrigin) {
     }
   }
 
-  // If custom endpoint OR admin upsert didn't produce registryServerId, save in user_custom_mcp_servers directly!
   if (!registryServerId) {
     const { data: existingCustom } = await supabase
       .from("user_custom_mcp_servers")
@@ -1344,7 +1372,6 @@ async function connectMcpDirectly(supabase, userId, args, appOrigin) {
     }
   }
 
-  // 4. Insert or enable user_mcp_connections row
   let existingRowQuery = supabase
     .from("user_mcp_connections")
     .select("id,enabled")
@@ -1380,7 +1407,21 @@ async function connectMcpDirectly(supabase, userId, args, appOrigin) {
     connectionRow = data;
   }
 
-  const authRequired = authType !== "none";
+  if (apiKey) {
+    await saveUserMcpToken(supabase, user, connectionRow.id, apiKey);
+  }
+
+  const savedToken = apiKey || getUserMcpToken(user, connectionRow.id);
+  const needsAuth = authType !== "none" && (!savedToken || probe.authRequired);
+  const directAuthorizeUrl = needsAuth
+    ? buildOneTapAuthorizeUrl(appOrigin, {
+        connectionId: connectionRow.id,
+        endpointUrl,
+        serverTitle: title,
+        userToken,
+      })
+    : null;
+
   return {
     connected: true,
     enabled: Boolean(connectionRow.enabled),
@@ -1388,19 +1429,19 @@ async function connectMcpDirectly(supabase, userId, args, appOrigin) {
     title,
     server_name: serverKeyName || title,
     endpoint_url: endpointUrl,
-    auth_required: authRequired,
+    auth_required: needsAuth,
     auth_mode: authType,
-    ready: Boolean(connectionRow.enabled && !authRequired),
+    ready: Boolean(connectionRow.enabled && !needsAuth),
     workspace_url: `${appOrigin}/mcp`,
-    authorize_url: authRequired ? `${appOrigin}/mcp` : null,
-    provider_token_url: authRequired ? curatedHint?.token_portal_url || null : null,
-    message: authRequired
-      ? `${title} has been directly connected and enabled in your DRIVE workspace! Because ${title} requires your personal ${authType.toUpperCase()} authorization, open ${appOrigin}/mcp (My MCPs) and tap Authorize once to grant account access.`
+    authorize_url: directAuthorizeUrl,
+    provider_token_url: needsAuth ? curatedHint?.token_portal_url || null : null,
+    message: needsAuth
+      ? `${title} has been directly connected and enabled in your DRIVE workspace! Because ${title} requires your personal ${authType.toUpperCase()} permission, tap this 1-click link to jump straight to ${title}'s Allow screen (valid 10 min): ${directAuthorizeUrl}. Once approved, all ${title} tools will work automatically here.`
       : `${title} has been directly connected, enabled, and is immediately active in your DRIVE MCP gateway!`,
   };
 }
 
-async function manageMcpDirectly(supabase, userId, args, appOrigin) {
+async function manageMcpDirectly(supabase, user, args, appOrigin) {
   const action = String(args.action || "").trim().toLowerCase();
   const connectionId = typeof args.connection_id === "string" ? args.connection_id.trim() : "";
   const nameInput = typeof args.name === "string" ? args.name.trim().toLowerCase() : "";
@@ -1409,14 +1450,15 @@ async function manageMcpDirectly(supabase, userId, args, appOrigin) {
     throw new Error('action must be one of "enable", "disable", or "remove".');
   }
 
-  const connections = await getUserConnections(supabase, userId, { enabledOnly: false, appOrigin });
+  const connections = await getUserConnections(supabase, user, { enabledOnly: false, appOrigin });
   const target = connectionId
     ? connections.find((c) => c.id === connectionId)
     : connections.find(
         (c) =>
           c.name.toLowerCase() === nameInput ||
           c.title.toLowerCase() === nameInput ||
-          (nameInput.length >= 2 && (c.name.toLowerCase().includes(nameInput) || c.title.toLowerCase().includes(nameInput)))
+          (nameInput.length >= 2 &&
+            (c.name.toLowerCase().includes(nameInput) || c.title.toLowerCase().includes(nameInput)))
       );
 
   if (!target) {
@@ -1428,7 +1470,7 @@ async function manageMcpDirectly(supabase, userId, args, appOrigin) {
       .from("user_mcp_connections")
       .delete()
       .eq("id", target.id)
-      .eq("user_id", userId);
+      .eq("user_id", user.id);
     if (error) throw new Error(`Could not remove MCP connection: ${error.message}`);
     return { ok: true, action: "removed", connection_id: target.id, title: target.title, workspace_url: `${appOrigin}/mcp` };
   }
@@ -1438,7 +1480,7 @@ async function manageMcpDirectly(supabase, userId, args, appOrigin) {
     .from("user_mcp_connections")
     .update({ enabled: nextEnabled, updated_at: new Date().toISOString() })
     .eq("id", target.id)
-    .eq("user_id", userId);
+    .eq("user_id", user.id);
   if (error) throw new Error(`Could not update MCP connection: ${error.message}`);
 
   return {
@@ -1449,14 +1491,14 @@ async function manageMcpDirectly(supabase, userId, args, appOrigin) {
   };
 }
 
-async function getConnectUrl(supabase, userId, args, appOrigin) {
+async function getConnectUrl(supabase, user, args, appOrigin) {
   const serverName = typeof args.server_name === "string" ? args.server_name.trim().slice(0, 200) : "";
   const query = typeof args.query === "string" ? args.query.trim().slice(0, 120) : "";
   const endpointUrl = typeof args.endpoint_url === "string" ? args.endpoint_url.trim().slice(0, 500) : "";
   const lookupTerm = serverName || query;
   if (!lookupTerm && !endpointUrl) throw new Error("Provide server_name, query, or endpoint_url.");
 
-  const connections = await getUserConnections(supabase, userId, { enabledOnly: false, appOrigin });
+  const connections = await getUserConnections(supabase, user, { enabledOnly: false, appOrigin });
   const needle = lookupTerm.toLowerCase();
   const existing =
     connections.find(
@@ -1501,19 +1543,23 @@ async function getConnectUrl(supabase, userId, args, appOrigin) {
   };
 }
 
-async function discoverConnectionTools(connection) {
-  if (!connection.endpoint || connection.authType !== "none" || !(await publicHttps(connection.endpoint))) return [];
-  const client = new Client({ name: "drive-mcp-gateway", version: "2.0.0" });
+async function discoverConnectionTools(connection, user) {
+  if (!connection.endpoint || !(await publicHttps(connection.endpoint))) return [];
+  const upstreamToken = getUserMcpToken(user, connection.id);
+  if (connection.authType !== "none" && !upstreamToken) return [];
+
+  const client = new Client({ name: "drive-mcp-gateway", version: "2.1.0" });
   let transport;
   try {
+    const headers = upstreamToken ? { Authorization: `Bearer ${upstreamToken}` } : undefined;
     transport = new StreamableHTTPClientTransport(new URL(connection.endpoint), {
-      requestInit: { signal: AbortSignal.timeout(10000) },
+      requestInit: { headers, signal: AbortSignal.timeout(10000) },
     });
     await client.connect(transport);
     const result = await client.listTools();
     return (result.tools || []).slice(0, MAX_TOOLS_PER_CONNECTION).map((tool) => ({
       name: connectionToolName(connection.id, tool.name),
-      description: `[${connection.name}] ${String(tool.description || tool.name).slice(0, 1000)}`,
+      description: `[${connection.title || connection.name}] ${String(tool.description || tool.name).slice(0, 1000)}`,
       inputSchema: tool.inputSchema || { type: "object", properties: {} },
       _drive: { connectionId: connection.id, originalToolName: tool.name },
     }));
@@ -1541,9 +1587,9 @@ async function getActiveSkills(supabase, userId) {
   return data || [];
 }
 
-async function buildTools(supabase, userId, appOrigin) {
-  const connections = await getUserConnections(supabase, userId, { enabledOnly: true, appOrigin });
-  const discovered = await Promise.all(connections.map(discoverConnectionTools));
+async function buildTools(supabase, user, appOrigin) {
+  const connections = await getUserConnections(supabase, user, { enabledOnly: true, appOrigin });
+  const discovered = await Promise.all(connections.map((conn) => discoverConnectionTools(conn, user)));
   const gatewayTools = [
     {
       name: "drive_install_skill",
@@ -1597,7 +1643,7 @@ async function buildTools(supabase, userId, appOrigin) {
     {
       name: "drive_connect_mcp",
       description:
-        "DIRECTLY connect, register, and enable an MCP server (such as Notion, Supabase, GitHub, Vercel, Context7, Linear, Stripe, Sentry, Figma, Cloudflare, Neon, or any custom HTTPS MCP URL) into this user's DRIVE workspace. ALWAYS call this tool when the user commands you to connect/konekin/pasang an MCP server. Never refuse or say you can only generate links.",
+        "DIRECTLY connect, register, and enable an MCP server (such as Notion, Supabase, GitHub, Vercel, Context7, Linear, Stripe, Sentry, Figma, Cloudflare, Neon, or any custom HTTPS MCP URL) into this user's DRIVE workspace. ALWAYS call this tool when the user commands you to connect/konekin/pasang an MCP server. If OAuth login is required, it returns a 1-tap authorize_url that jumps straight to the provider's Allow screen.",
       inputSchema: {
         type: "object",
         properties: {
@@ -1629,13 +1675,12 @@ async function buildTools(supabase, userId, appOrigin) {
     {
       name: "drive_list_connected_mcps",
       description:
-        "List all MCP servers connected in this user's DRIVE workspace (enabled and disabled), including their gateway status, auth requirements, and direct management URLs.",
+        "List all MCP servers connected in this user's DRIVE workspace (enabled and disabled), including their authorization status and gateway readiness.",
       inputSchema: { type: "object", properties: {}, additionalProperties: false },
     },
     {
       name: "drive_list_active_skills",
-      description:
-        "List all Agent Skills currently installed and enabled in this DRIVE account.",
+      description: "List all Agent Skills currently installed and enabled in this DRIVE account.",
       inputSchema: { type: "object", properties: {}, additionalProperties: false },
     },
     {
@@ -1699,19 +1744,27 @@ async function buildTools(supabase, userId, appOrigin) {
   return { tools: [...gatewayTools, ...discovered.flat()], connections };
 }
 
-async function callUpstreamTool(supabase, userId, encodedName, args, appOrigin) {
-  const connections = await getUserConnections(supabase, userId, { enabledOnly: true, appOrigin });
+async function callUpstreamTool(supabase, user, encodedName, args, appOrigin) {
+  const connections = await getUserConnections(supabase, user, { enabledOnly: true, appOrigin });
   const match = encodedName.match(/^mcp_([a-f0-9]{12})__(.+)$/);
   if (!match) throw new Error("Unknown tool.");
   const connection = connections.find((item) => item.id.replace(/-/g, "").slice(0, 12) === match[1]);
-  if (!connection || !connection.endpoint || connection.authType !== "none" || !(await publicHttps(connection.endpoint))) {
-    throw new Error("MCP connection is inactive or requires authentication that has not been configured.");
+  if (!connection || !connection.endpoint || !(await publicHttps(connection.endpoint))) {
+    throw new Error("MCP connection is inactive or has no valid remote endpoint.");
   }
-  const client = new Client({ name: "drive-mcp-gateway", version: "2.0.0" });
+  const upstreamToken = getUserMcpToken(user, connection.id);
+  if (connection.authType !== "none" && !upstreamToken) {
+    throw new Error(
+      `${connection.title || connection.name} requires authorization. Call drive_connect_mcp to get a 1-tap authorize link.`
+    );
+  }
+
+  const client = new Client({ name: "drive-mcp-gateway", version: "2.1.0" });
   let transport;
   try {
+    const headers = upstreamToken ? { Authorization: `Bearer ${upstreamToken}` } : undefined;
     transport = new StreamableHTTPClientTransport(new URL(connection.endpoint), {
-      requestInit: { signal: AbortSignal.timeout(20000) },
+      requestInit: { headers, signal: AbortSignal.timeout(20000) },
     });
     await client.connect(transport);
     const listed = await client.listTools();
@@ -1733,7 +1786,7 @@ async function callTool(name, args, context) {
     throw new Error("Tool arguments must be an object.");
   }
   if (name.startsWith("mcp_")) {
-    return callUpstreamTool(context.supabase, context.user.id, name, args, context.appOrigin);
+    return callUpstreamTool(context.supabase, context.user, name, args, context.appOrigin);
   }
   if (name === "drive_install_skill") {
     return installSkillsDirectly(context.supabase, context.user.id, args, context.appOrigin);
@@ -1742,13 +1795,13 @@ async function callTool(name, args, context) {
     return manageSkillDirectly(context.supabase, context.user.id, args, context.appOrigin);
   }
   if (name === "drive_connect_mcp") {
-    return connectMcpDirectly(context.supabase, context.user.id, args, context.appOrigin);
+    return connectMcpDirectly(context, args);
   }
   if (name === "drive_manage_mcp") {
-    return manageMcpDirectly(context.supabase, context.user.id, args, context.appOrigin);
+    return manageMcpDirectly(context.supabase, context.user, args, context.appOrigin);
   }
   if (name === "drive_list_connected_mcps") {
-    const connections = await getUserConnections(context.supabase, context.user.id, {
+    const connections = await getUserConnections(context.supabase, context.user, {
       enabledOnly: false,
       appOrigin: context.appOrigin,
     });
@@ -1760,7 +1813,7 @@ async function callTool(name, args, context) {
     };
   }
   if (name === "drive_get_connect_url") {
-    return getConnectUrl(context.supabase, context.user.id, args, context.appOrigin);
+    return getConnectUrl(context.supabase, context.user, args, context.appOrigin);
   }
   if (name === "drive_list_active_skills") {
     const skills = await getActiveSkills(context.supabase, context.user.id);
@@ -1832,10 +1885,10 @@ async function handleMessage(message, context) {
           "DRIVE MCP is this user's personal MCP Gateway, Multi-Source MCP Marketplace, and Agent Skills Hub.",
           "1. You CAN directly install and activate Skills on user command using drive_install_skill (supports single skill or batch `skills` array). NEVER tell the user that skill installation must be done manually.",
           "2. You CAN directly connect and enable MCP servers on user command using drive_connect_mcp (supports Notion, Supabase, GitHub, Vercel, Context7, Linear, Stripe, Sentry, Figma, Cloudflare, Neon, registry servers, and custom HTTPS endpoints). NEVER refuse or say you can only send links — ALWAYS call drive_connect_mcp first.",
-          "3. If drive_connect_mcp returns auth_required: true (for third-party OAuth providers like Notion, Supabase, or Vercel), confirm that the MCP is ALREADY connected and enabled in DRIVE, and provide the returned authorize_url for the user's 1-click provider login.",
+          "3. If drive_connect_mcp returns auth_required: true with an authorize_url, confirm that the MCP is ALREADY connected and enabled in DRIVE, and share that 1-tap authorize_url which jumps straight to the provider's official OAuth Allow screen. Once the user clicks Allow, all upstream tools become immediately available through DRIVE.",
           "4. Use drive_manage_skill and drive_manage_mcp to directly enable, pause/disable, or remove Skills and MCP connections.",
           "5. Always check drive_list_connected_mcps and drive_list_active_skills to inspect active integrations, and call drive_get_active_skill when a Skill matches the user's task.",
-          "6. Active remote MCP tools are exposed directly with the mcp_<id>__<tool> prefix.",
+          "6. Active remote MCP tools (both zero-auth and OAuth/PAT authorized) are exposed directly with the mcp_<id>__<tool> prefix.",
         ].join(" "),
       }),
     };
@@ -1847,7 +1900,7 @@ async function handleMessage(message, context) {
   if (message.method === "ping") return { response: jsonRpc(id, {}) };
   if (message.method === "tools/list") {
     try {
-      const catalog = await buildTools(context.supabase, context.user.id, context.appOrigin);
+      const catalog = await buildTools(context.supabase, context.user, context.appOrigin);
       const tools = catalog.tools.map(({ _drive, ...tool }) => tool);
       return { response: jsonRpc(id, { tools }) };
     } catch (error) {

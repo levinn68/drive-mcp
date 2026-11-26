@@ -64,7 +64,10 @@ export default function ConnectGateway({
   }, []);
 
   useEffect(() => {
-    loadSessionAndConnections();
+    const initialLoad = window.setTimeout(() => {
+      loadSessionAndConnections();
+    }, 0);
+    return () => window.clearTimeout(initialLoad);
   }, [loadSessionAndConnections]);
 
   async function signInWithGoogle() {

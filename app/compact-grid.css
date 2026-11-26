@@ -1,0 +1,493 @@
+/* DRIVE MCP — Unified iOS Liquid Glass Theme, Calibrated Lens Bubble & Tactile Motion */
+
+:root {
+  --drive-glass-bg: #060a12;
+  --drive-glass-blue: #0a84ff;
+  --drive-glass-ice: #5ac8fa;
+  --drive-glass-crystal: rgba(255, 255, 255, 0.14);
+  --drive-glass-border: rgba(255, 255, 255, 0.16);
+  --drive-glass-specular: rgba(255, 255, 255, 0.34);
+  --drive-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --drive-spring-pop: cubic-bezier(0.22, 1.15, 0.36, 1);
+}
+
+html,
+body {
+  background-color: var(--drive-glass-bg) !important;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Unify Dashboard accent colors from acid lime -> Cupertino Liquid Glass Blue/Ice */
+.top-pill-btn.is-accent,
+.primary-btn,
+.hero-actions .primary-btn {
+  background: linear-gradient(135deg, #2b95ff, #0a84ff) !important;
+  color: #f7fbff !important;
+  border: 1px solid rgba(145, 212, 255, 0.55) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.38),
+    0 8px 22px rgba(10, 132, 255, 0.32) !important;
+}
+
+.eyebrow,
+.pulse,
+.account-active-icon,
+.hero h1 span,
+.workspace-hero h1 span,
+.hero-panel h1 span {
+  color: #7cd4ff !important;
+}
+
+.pulse {
+  background: #5ac8fa !important;
+  box-shadow: 0 0 10px rgba(90, 200, 250, 0.7) !important;
+}
+
+.account-active-icon {
+  background: linear-gradient(145deg, rgba(10, 132, 255, 0.24), rgba(90, 200, 250, 0.12)) !important;
+  border-color: rgba(124, 212, 255, 0.34) !important;
+}
+
+.category-chip.is-active,
+.segmented-pill.is-active {
+  background: linear-gradient(135deg, rgba(10, 132, 255, 0.28), rgba(90, 200, 250, 0.16)) !important;
+  border-color: rgba(124, 212, 255, 0.45) !important;
+  color: #eef7ff !important;
+}
+
+/* Calibrated Liquid Glass Bottom Dock & Sliding Lens Bubble (Proportional & Smooth) */
+.liquid-navbar-3,
+.floating-dock,
+.bottom-dock {
+  height: 60px !important;
+  padding: 5px !important;
+  background: rgba(12, 18, 30, 0.78) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 14px 34px rgba(0, 0, 0, 0.42) !important;
+}
+
+.liquid-lens-pill {
+  top: 5px !important;
+  bottom: 5px !important;
+  left: 5px !important;
+  width: calc((100% - 10px) / 3) !important;
+  border-radius: 999px !important;
+  background: linear-gradient(
+    155deg,
+    rgba(255, 255, 255, 0.22),
+    rgba(90, 200, 250, 0.15) 55%,
+    rgba(255, 255, 255, 0.08)
+  ) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.42),
+    inset 0 -1px 1px rgba(90, 200, 250, 0.18),
+    0 4px 16px rgba(10, 132, 255, 0.2) !important;
+  transition:
+    transform 320ms var(--drive-spring),
+    opacity 200ms ease !important;
+  will-change: transform;
+}
+
+.liquid-navbar-3.is-gliding .liquid-lens-pill {
+  filter: brightness(1.08) !important;
+}
+
+/* Sticky OAuth Return Bar — Cupertino Liquid Glass */
+.oauth-return-bar {
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  padding: calc(8px + env(safe-area-inset-top)) 12px 8px;
+  background: linear-gradient(135deg, rgba(10, 22, 40, 0.92), rgba(7, 13, 24, 0.96));
+  border-bottom: 1px solid rgba(124, 212, 255, 0.32);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  backdrop-filter: blur(24px) saturate(190%);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+  animation: driveToastIn 220ms var(--drive-spring) both;
+}
+
+.oauth-return-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.oauth-return-copy {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #e6f2ff;
+  flex: 1 1 200px;
+}
+
+.oauth-return-icon {
+  color: #5ac8fa;
+  flex: none;
+}
+
+.oauth-return-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.oauth-return-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(145, 212, 255, 0.58);
+  background: linear-gradient(135deg, #2b95ff, #0a84ff);
+  color: #f7fbff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 18px rgba(10, 132, 255, 0.32);
+  transition: transform 110ms ease-out, filter 160ms ease;
+}
+
+.oauth-return-btn:active {
+  transform: scale(0.96);
+}
+
+.oauth-return-dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.07);
+  color: #c1ccda;
+  cursor: pointer;
+  transition: transform 100ms ease-out, background 150ms ease;
+}
+
+.oauth-return-dismiss:active {
+  transform: scale(0.94);
+}
+
+/* Strip generic landing-page filler cards & nested box clutter */
+.discover-highlights,
+.principle-grid,
+.hero-metrics,
+.hero-highlights,
+.workspace-highlights {
+  display: none !important;
+}
+
+/* Horizontal swipeable category rail */
+.mcp-category-filter,
+.skill-category-filter {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  gap: 8px !important;
+  padding: 2px 0 6px !important;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.mcp-category-filter::-webkit-scrollbar,
+.skill-category-filter::-webkit-scrollbar {
+  display: none;
+}
+
+.mcp-category-filter .category-chip,
+.skill-category-filter .segmented-pill {
+  flex: 0 0 auto !important;
+  white-space: nowrap !important;
+  transition: transform 110ms ease-out, background 180ms ease, border-color 180ms ease !important;
+}
+
+.mcp-category-filter .category-chip:active,
+.skill-category-filter .segmented-pill:active {
+  transform: scale(0.96) !important;
+}
+
+/* NO SLOP ENGINE Motion Primitives (MO-069, MO-024, MO-099, MO-031, MO-119, MO-101) */
+@keyframes driveTabIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes driveCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes driveToastIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes driveSpringPop {
+  0% {
+    transform: scale(0.94);
+  }
+  65% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.app-panel {
+  animation: driveTabIn 200ms var(--drive-spring) both;
+}
+
+.integration-grid > .integration-card:nth-child(-n+6),
+.mkt-grid > .mkt-card:nth-child(-n+6) {
+  animation: driveCardIn 240ms var(--drive-spring) both;
+}
+
+.integration-grid > .integration-card:nth-child(2),
+.mkt-grid > .mkt-card:nth-child(2) { animation-delay: 25ms; }
+.integration-grid > .integration-card:nth-child(3),
+.mkt-grid > .mkt-card:nth-child(3) { animation-delay: 50ms; }
+.integration-grid > .integration-card:nth-child(4),
+.mkt-grid > .mkt-card:nth-child(4) { animation-delay: 75ms; }
+.integration-grid > .integration-card:nth-child(5),
+.mkt-grid > .mkt-card:nth-child(5) { animation-delay: 100ms; }
+.integration-grid > .integration-card:nth-child(6),
+.mkt-grid > .mkt-card:nth-child(6) { animation-delay: 125ms; }
+
+.integration-card button,
+.server-card button,
+.glass-chip-btn {
+  transition: transform 110ms ease-out, background 170ms ease, border-color 170ms ease !important;
+}
+
+.integration-card button:active,
+.server-card button:active,
+.glass-chip-btn:active {
+  transform: scale(0.96) !important;
+}
+
+/* Desktop: crisp 3-column extension store grid */
+.integration-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+@media (max-width: 960px) {
+  .integration-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Mobile App-First Layout: flat obsidian canvas, compact hero, 2-column card grid */
+@media (max-width: 720px) {
+  .catalog-section,
+  .platform-section,
+  .my-mcps-section,
+  .skill-library-section,
+  .skill-directory-section {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    border-radius: 0 !important;
+    border-left: 0 !important;
+    border-right: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .hero,
+  .workspace-hero,
+  .hero-panel {
+    padding: 18px 16px !important;
+    border-radius: 22px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .hero h1,
+  .workspace-hero h1,
+  .hero-panel h1 {
+    font-size: 24px !important;
+    line-height: 1.12 !important;
+    letter-spacing: -0.03em !important;
+    margin-bottom: 8px !important;
+  }
+
+  .hero p,
+  .workspace-hero p,
+  .hero-panel p {
+    font-size: 13px !important;
+    line-height: 1.45 !important;
+    margin-bottom: 14px !important;
+  }
+
+  .integration-grid,
+  .server-grid,
+  .directory-grid,
+  .mcp-grid,
+  .skill-directory-grid,
+  .skill-repository-grid,
+  .skill-results-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  .integration-card,
+  .server-card,
+  .mcp-card,
+  .skill-repository-card {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    padding: 12px !important;
+    border-radius: 18px !important;
+    min-width: 0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.13) !important;
+    background: linear-gradient(155deg, rgba(22, 33, 52, 0.82), rgba(10, 16, 28, 0.92)) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 8px 20px rgba(0, 0, 0, 0.28) !important;
+    transition: transform 140ms ease-out, border-color 180ms ease !important;
+  }
+
+  .integration-card:active {
+    transform: scale(0.985) !important;
+  }
+
+  .integration-card .card-top {
+    gap: 6px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .integration-card .integration-icon {
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 10px !important;
+    color: #7cd4ff !important;
+    background: rgba(10, 132, 255, 0.16) !important;
+    border-color: rgba(124, 212, 255, 0.28) !important;
+  }
+
+  .integration-card .status {
+    font-size: 10px !important;
+    padding: 3px 7px !important;
+    color: #bfe6ff !important;
+    background: rgba(10, 132, 255, 0.16) !important;
+    border-color: rgba(124, 212, 255, 0.28) !important;
+  }
+
+  .integration-card .server-id {
+    display: none !important;
+  }
+
+  .integration-card h3,
+  .server-card h3,
+  .skill-repository-copy strong {
+    font-size: 13px !important;
+    line-height: 1.28 !important;
+    margin: 4px 0 4px !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .integration-card p,
+  .server-card p,
+  .skill-repository-copy p {
+    font-size: 11px !important;
+    line-height: 1.42 !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    margin: 0 0 10px !important;
+  }
+
+  .server-meta {
+    gap: 5px !important;
+    margin-bottom: 6px !important;
+    flex-wrap: wrap !important;
+  }
+
+  .server-card .transport-pill,
+  .server-card .version-pill {
+    font-size: 9.5px !important;
+    padding: 2px 6px !important;
+  }
+
+  .integration-card .card-bottom {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: auto !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .integration-card .server-actions {
+    display: none !important;
+  }
+
+  .integration-card button,
+  .server-card button,
+  .skill-repository-main > .glass-chip-btn {
+    width: 100% !important;
+    min-height: 36px !important;
+    padding: 0 10px !important;
+    font-size: 11.5px !important;
+    font-weight: 650 !important;
+    border-radius: 11px !important;
+    justify-content: center !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-panel,
+  .oauth-return-bar,
+  .integration-grid > .integration-card,
+  .mkt-grid > .mkt-card {
+    animation: none !important;
+  }
+  .liquid-lens-pill,
+  .integration-card,
+  .integration-card button,
+  .oauth-return-btn,
+  .oauth-return-dismiss,
+  .mcp-category-filter .category-chip,
+  .skill-category-filter .segmented-pill {
+    transition: none !important;
+  }
+}

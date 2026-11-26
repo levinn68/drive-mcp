@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { createBrowserClient } from "@supabase/ssr";
 import {
   ArrowLeft,
   BookOpen,
@@ -10,6 +11,8 @@ import {
   Copy,
   ExternalLink,
   Globe,
+  Loader2,
+  Plus,
   Search,
   ShieldCheck,
   Sparkles,
@@ -27,6 +30,9 @@ export default function MarketplaceExplorer({
   const [remoteOnly, setRemoteOnly] = useState(false);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [copiedKey, setCopiedKey] = useState("");
+  const [installingId, setInstallingId] = useState("");
+  const [installedIds, setInstalledIds] = useState({});
+  const [toast, setToast] = useState({ type: "", message: "" });
 
   const filteredMcps = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -66,14 +72,60 @@ export default function MarketplaceExplorer({
     } catch {}
   }
 
+  async function quickInstallSkill(item) {
+    setInstallingId(item.id);
+    setToast({ type: "", message: "" });
+    try {
+      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (!url || !key) throw new Error("Supabase auth belum dikonfigurasi.");
+      const supabase = createBrowserClient(url, key);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        const nextPath = `${window.location.pathname}${window.location.search}`;
+        await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(nextPath)}` },
+        });
+        return;
+      }
+
+      const repo = item.sourceUrl
+        ? item.sourceUrl.replace(/^https?:\/\/github\.com\//i, "").split("/blob/")[0]
+        : item.id.split("/").slice(0, 2).join("/");
+
+      const res = await fetch("/api/skills/quick-install", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          repository: repo,
+          slug: item.slug,
+          name: item.name,
+          description: item.description,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error([data.error, data.detail].filter(Boolean).join(": ") || "Gagal memasang Skill.");
+      setInstalledIds((prev) => ({ ...prev, [item.id]: true }));
+      setToast({ type: "success", message: `${item.name} berhasil dipasang dan langsung aktif di DRIVE MCP kamu.` });
+    } catch (err) {
+      setToast({ type: "error", message: err?.message || "Gagal memasang Skill." });
+    } finally {
+      setInstallingId("");
+    }
+  }
+
   return (
     <main className="mkt-shell">
       <nav className="mkt-nav" aria-label="Marketplace navigation">
         <Link href="/#mcp" className="mkt-nav-link">
-          <ArrowLeft size={15} /> Back to Workspace
+          <ArrowLeft size={15} /> Workspace
         </Link>
         <Link href="/connect" className="mkt-nav-link">
-          <Cable size={15} /> Direct Connect Gateway
+          <Cable size={15} /> Direct Gateway
         </Link>
       </nav>
 
@@ -83,7 +135,7 @@ export default function MarketplaceExplorer({
         </div>
         <h1 className="mkt-title">MCP &amp; Agent Skills Hub</h1>
         <p className="mkt-desc">
-          Jelajahi MCP server dan Agent Skills dari indeks multi-source DRIVE. Klik Connect untuk langsung menghubungkan MCP ke akun kamu atau salin direct gateway URL-nya.
+          Tampilan 2 kolom ringkas untuk MCP dan Skills. Klik tombol Connect atau Install untuk langsung aktif di akun DRIVE kamu.
         </p>
 
         <div className="mkt-controls">
@@ -114,7 +166,7 @@ export default function MarketplaceExplorer({
               type="search"
               className="mkt-search-input"
               aria-label={tab === "mcp" ? "Search MCP servers" : "Search Agent Skills"}
-              placeholder={tab === "mcp" ? "Cari MCP (github, figcraft, supabase, browser)..." : "Cari Skill (react, supabase, security, motion)..."}
+              placeholder={tab === "mcp" ? "Cari MCP (github, figcraft, supabase)..." : "Cari Skill (react, supabase, security)..."}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -129,14 +181,14 @@ export default function MarketplaceExplorer({
                 className={`mkt-chip ${!remoteOnly ? "is-active" : ""}`}
                 onClick={() => setRemoteOnly(false)}
               >
-                All MCPs ({mcps.length})
+                All ({mcps.length})
               </button>
               <button
                 type="button"
                 className={`mkt-chip ${remoteOnly ? "is-active" : ""}`}
                 onClick={() => setRemoteOnly(true)}
               >
-                <Globe size={13} /> 1-Click Remote Ready ({mcps.filter((m) => m.remoteReady).length})
+                <Globe size={13} /> Remote Ready ({mcps.filter((m) => m.remoteReady).length})
               </button>
             </>
           ) : (
@@ -146,19 +198,27 @@ export default function MarketplaceExplorer({
                 className={`mkt-chip ${!verifiedOnly ? "is-active" : ""}`}
                 onClick={() => setVerifiedOnly(false)}
               >
-                All Skills ({skills.length})
+                All ({skills.length})
               </button>
               <button
                 type="button"
                 className={`mkt-chip ${verifiedOnly ? "is-active" : ""}`}
                 onClick={() => setVerifiedOnly(true)}
               >
-                <ShieldCheck size={13} /> Verified Only ({skills.filter((s) => s.verified).length})
+                <ShieldCheck size={13} /> Verified ({skills.filter((s) => s.verified).length})
               </button>
             </>
           )}
         </div>
       </header>
+
+      <div aria-live="polite">
+        {toast.message && (
+          <div className={`mkt-toast ${toast.type === "error" ? "is-error" : ""}`} role={toast.type === "error" ? "alert" : "status"}>
+            {toast.message}
+          </div>
+        )}
+      </div>
 
       {tab === "mcp" ? (
         filteredMcps.length === 0 ? (
@@ -169,7 +229,7 @@ export default function MarketplaceExplorer({
               className="mkt-action is-primary"
               style={{ display: "inline-flex" }}
             >
-              <Cable size={14} /> Hubungkan sebagai Custom MCP
+              <Cable size={14} /> Custom MCP
             </Link>
           </div>
         ) : (
@@ -179,20 +239,19 @@ export default function MarketplaceExplorer({
                 <div>
                   <div className="mkt-card-badges">
                     <span className={`mkt-badge ${item.remoteReady ? "is-lime" : ""}`}>
-                      {item.remoteReady ? "Remote Ready" : "STDIO"}
+                      {item.remoteReady ? "Remote" : "STDIO"}
                     </span>
-                    <span className="mkt-badge">{item.source}</span>
                   </div>
                   <h2>{item.title}</h2>
-                  <div className="mkt-card-sub">{item.name} · v{item.version}</div>
+                  <div className="mkt-card-sub">{item.name}</div>
                   <p className="mkt-card-desc">
-                    {item.description || "Model Context Protocol server siap dihubungkan melalui DRIVE gateway."}
+                    {item.description || "MCP server siap dihubungkan via DRIVE."}
                   </p>
                 </div>
 
                 <div className="mkt-card-footer">
                   <Link href={`/connect?server=${encodeURIComponent(item.name)}`} className="mkt-action is-primary">
-                    <Cable size={13} /> Connect
+                    <Plus size={13} /> Connect
                   </Link>
                   <button
                     type="button"
@@ -201,19 +260,8 @@ export default function MarketplaceExplorer({
                     aria-label={`Copy connect URL for ${item.title}`}
                     onClick={() => copyConnectUrl(item.name)}
                   >
-                    {copiedKey === item.name ? <Check size={14} /> : <Copy size={14} />}
+                    {copiedKey === item.name ? <Check size={13} /> : <Copy size={13} />}
                   </button>
-                  {item.repositoryUrl && (
-                    <a
-                      href={item.repositoryUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="mkt-action"
-                      aria-label={`Open source repository for ${item.title}`}
-                    >
-                      <ExternalLink size={14} />
-                    </a>
-                  )}
                 </div>
               </article>
             ))}
@@ -225,50 +273,62 @@ export default function MarketplaceExplorer({
         </div>
       ) : (
         <section className="mkt-grid" aria-label="Agent Skills list">
-          {filteredSkills.map((item) => (
-            <article key={item.id} className="mkt-card">
-              <div>
-                <div className="mkt-card-badges">
-                  {item.verified && (
-                    <span className="mkt-badge is-lime">
-                      <ShieldCheck size={11} /> Verified
-                    </span>
-                  )}
-                  <span className="mkt-badge">{item.category}</span>
-                  {item.stars > 0 && (
-                    <span className="mkt-badge">
-                      <Star size={11} /> {item.stars.toLocaleString()}
-                    </span>
+          {filteredSkills.map((item) => {
+            const isInstalled = Boolean(installedIds[item.id]);
+            const isBusy = installingId === item.id;
+            return (
+              <article key={item.id} className="mkt-card">
+                <div>
+                  <div className="mkt-card-badges">
+                    {item.verified && (
+                      <span className="mkt-badge is-lime">
+                        <ShieldCheck size={10} /> Verified
+                      </span>
+                    )}
+                    {item.stars > 0 && (
+                      <span className="mkt-badge">
+                        <Star size={10} /> {item.stars.toLocaleString()}
+                      </span>
+                    )}
+                  </div>
+                  <h2>{item.name}</h2>
+                  <div className="mkt-card-sub">{item.category} · {item.slug}</div>
+                  <p className="mkt-card-desc">
+                    {item.description || "Agent Skill siap dipasang 1-klik ke DRIVE."}
+                  </p>
+                </div>
+
+                <div className="mkt-card-footer">
+                  <button
+                    type="button"
+                    disabled={isBusy}
+                    className={`mkt-action ${isInstalled ? "is-installed" : "is-primary"}`}
+                    onClick={() => quickInstallSkill(item)}
+                  >
+                    {isBusy ? (
+                      <Loader2 size={13} className="spin" />
+                    ) : isInstalled ? (
+                      <Check size={13} />
+                    ) : (
+                      <Plus size={13} />
+                    )}
+                    {isBusy ? "Installing..." : isInstalled ? "Terpasang" : "Install"}
+                  </button>
+                  {item.sourceUrl && (
+                    <a
+                      href={item.sourceUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mkt-action"
+                      aria-label={`Open source for ${item.name}`}
+                    >
+                      <ExternalLink size={13} />
+                    </a>
                   )}
                 </div>
-                <h2>{item.name}</h2>
-                <div className="mkt-card-sub">{item.author || item.source} · {item.slug}</div>
-                <p className="mkt-card-desc">
-                  {item.description || "Agent Skill siap diinspeksi, dipindai, dan diaktifkan di DRIVE."}
-                </p>
-              </div>
-
-              <div className="mkt-card-footer">
-                <Link
-                  href={`/?tab=skills&q=${encodeURIComponent(item.slug)}#skills`}
-                  className="mkt-action is-primary"
-                >
-                  <BookOpen size={13} /> Open in Skills
-                </Link>
-                {item.sourceUrl && (
-                  <a
-                    href={item.sourceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="mkt-action"
-                    aria-label={`Open source for ${item.name}`}
-                  >
-                    <ExternalLink size={14} />
-                  </a>
-                )}
-              </div>
-            </article>
-          ))}
+              </article>
+            );
+          })}
         </section>
       )}
     </main>

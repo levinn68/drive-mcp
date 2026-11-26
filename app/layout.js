@@ -4,13 +4,20 @@ import OAuthReturnBanner from "../components/oauth-return-banner";
 
 export const metadata = {
   title: "DRIVE | One Hub. Every Connection.",
-  description: "Discover, evaluate and manage MCP servers from one secure directory.",
+  description: "Universal MCP & Agent Skills Hub — connect 13,000+ MCP servers and Agent Skills from one Liquid Glass workspace.",
+  icons: {
+    icon: "/drive-logo.svg",
+    apple: "/drive-logo.svg",
+  },
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <head><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" /></head>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta name="theme-color" content="#08080a" />
+      </head>
       <body>
         <OAuthReturnBanner />
         {children}

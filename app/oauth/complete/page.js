@@ -1,8 +1,10 @@
 "use client";
 
+import "../consent/consent.css";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, CheckCircle2, LayoutGrid, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, CheckCircle2, LayoutGrid } from "lucide-react";
+import DriveLogo from "../../../components/drive-logo";
 
 export default function OAuthCompletePage() {
   const [callback, setCallback] = useState("");
@@ -28,50 +30,54 @@ export default function OAuthCompletePage() {
   }, []);
 
   const dashboardHref = callback
-    ? `/?oauth_callback=${encodeURIComponent(callback)}${clientName ? `&oauth_client=${encodeURIComponent(clientName)}` : ""}`
-    : "/";
+    ? `/mcp?oauth_callback=${encodeURIComponent(callback)}${
+        clientName ? `&oauth_client=${encodeURIComponent(clientName)}` : ""
+      }`
+    : "/mcp";
 
   return (
-    <main style={{ minHeight: "100svh", display: "grid", placeItems: "center", padding: "24px", background: "radial-gradient(ellipse at 50% -10%,rgba(10,132,255,.22),transparent 50%),radial-gradient(circle at 100% 100%,rgba(90,200,250,.12),transparent 40%),#060a12", color: "#f5f9ff" }}>
-      <section style={{ width: "min(100%,500px)", padding: "30px", borderRadius: "28px", border: "1px solid rgba(255,255,255,.16)", background: "linear-gradient(155deg,rgba(20,30,48,.92),rgba(9,14,24,.96))", backdropFilter: "blur(28px) saturate(190%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.22),0 28px 90px rgba(0,0,0,.52)" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "24px" }}>
-          <div style={{ width: 46, height: 46, borderRadius: 15, display: "grid", placeItems: "center", background: "linear-gradient(145deg,rgba(10,132,255,.26),rgba(90,200,250,.14))", border: "1px solid rgba(124,212,255,.36)", color: "#8cdbff" }}>
-            <ShieldCheck size={24} />
+    <main className="oauth-page">
+      <div className="oauth-ambient" aria-hidden="true">
+        <span className="oauth-orb is-a" />
+        <span className="oauth-orb is-b" />
+      </div>
+
+      <section className="oauth-card">
+        <div className="oauth-brand">
+          <div className="oauth-brand-mark">
+            <DriveLogo size={28} />
           </div>
-          <div>
-            <strong style={{ letterSpacing: ".18em" }}>DRIVE</strong>
-            <div style={{ fontSize: 12, color: "#9eb0c4" }}>One hub. Every connection.</div>
+          <div className="oauth-brand-copy">
+            <div>DRIVE</div>
+            <small>One hub. Every connection.</small>
           </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#7cd4ff", fontSize: 12, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase" }}>
-          <CheckCircle2 size={16} /> Access approved
+
+        <div className="oauth-welcome-pill" style={{ color: "#86efac", borderColor: "rgba(48,209,88,0.34)", background: "rgba(48,209,88,0.14)" }}>
+          <CheckCircle2 size={14} /> Access approved
         </div>
-        <h1 style={{ fontSize: 28, lineHeight: 1.15, letterSpacing: "-.03em", margin: "12px 0 10px" }}>
-          Koneksi disetujui.
-        </h1>
-        <p style={{ color: "#b7c6d8", lineHeight: 1.6, fontSize: 14, marginBottom: 24 }}>
-          Kamu bisa langsung kembali ke {clientName || "AI provider"} sekarang, atau buka Dashboard DRIVE dulu untuk mengatur MCP &amp; Skills (tombol <strong>Kembali ke {clientName || "Provider"}</strong> akan tetap tampil di bagian atas Dashboard).
+        <h1 className="oauth-title">Connection approved.</h1>
+        <p className="oauth-subtitle" style={{ marginBottom: 22 }}>
+          You can return directly to {clientName || "your AI client"} now, or open the DRIVE
+          Dashboard first to manage your MCPs &amp; Skills.
         </p>
-        <div style={{ display: "grid", gap: 12 }}>
+
+        <div className="oauth-actions" style={{ marginTop: 0 }}>
           {callback ? (
-            <a
-              href={callback}
-              style={{ minHeight: 50, borderRadius: 15, display: "flex", alignItems: "center", justifyContent: "center", gap: 9, background: "linear-gradient(135deg,#2b95ff,#0a84ff)", border: "1px solid rgba(145,212,255,.55)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.35),0 8px 22px rgba(10,132,255,.32)", color: "#f7fbff", fontWeight: 700, textDecoration: "none" }}
-            >
-              Selesai &amp; Kembali ke {clientName || "Provider"} <ArrowUpRight size={17} />
+            <a href={callback} className="oauth-submit-button" style={{ textDecoration: "none" }}>
+              Finish &amp; Return to {clientName || "Provider"} <ArrowUpRight size={16} />
             </a>
           ) : (
-            <div role="alert" style={{ padding: 14, borderRadius: 14, background: "rgba(255,69,58,.14)", color: "#fca5a5", fontSize: 13 }}>
-              URL callback provider tidak ditemukan. Ulangi koneksi dari AI provider kamu.
+            <div role="alert" className="oauth-error">
+              Provider callback URL is missing. Please restart the connection from your AI client.
             </div>
           )}
-          <Link
-            href={dashboardHref}
-            style={{ minHeight: 50, borderRadius: 15, display: "flex", alignItems: "center", justifyContent: "center", gap: 9, border: "1px solid rgba(255,255,255,.18)", background: "rgba(255,255,255,.07)", color: "#eef4ff", fontWeight: 650, textDecoration: "none" }}
-          >
-            <LayoutGrid size={16} /> Buka Dashboard DRIVE dulu
+          <Link href={dashboardHref} className="oauth-secondary-button" style={{ textDecoration: "none" }}>
+            <LayoutGrid size={15} /> Open DRIVE Dashboard
           </Link>
         </div>
+
+        <p className="oauth-footer">DRIVE · Secure connection authorization</p>
       </section>
     </main>
   );

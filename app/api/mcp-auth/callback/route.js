@@ -9,12 +9,14 @@ export async function GET(request) {
   const code = url.searchParams.get("code") || "";
   const state = url.searchParams.get("state") || "";
   const oauthError = url.searchParams.get("error") || "";
+  const oauthErrorDesc = url.searchParams.get("error_description") || "";
   const origin = url.origin;
 
   const cookieRaw = request.cookies.get("drive_upstream_oauth")?.value || "";
   if (oauthError) {
+    const reason = oauthErrorDesc ? `${oauthError}: ${oauthErrorDesc}` : oauthError;
     return NextResponse.redirect(
-      `${origin}/?mcp_auth=error&reason=${encodeURIComponent(oauthError)}`
+      `${origin}/?mcp_auth=error&reason=${encodeURIComponent(reason.slice(0, 160))}`
     );
   }
   if (!code || !state || !cookieRaw) {
@@ -43,6 +45,9 @@ export async function GET(request) {
     if (pending.clientSecret) {
       form.set("client_secret", pending.clientSecret);
     }
+    if (pending.resource) {
+      form.set("resource", pending.resource);
+    }
 
     const tokenRes = await fetch(pending.tokenEndpoint, {
       method: "POST",
@@ -58,7 +63,7 @@ export async function GET(request) {
     if (!tokenRes.ok || !tokenData.access_token) {
       const reason = tokenData.error_description || tokenData.error || "token_exchange_failed";
       return NextResponse.redirect(
-        `${origin}/?mcp_auth=error&reason=${encodeURIComponent(reason)}`
+        `${origin}/?mcp_auth=error&reason=${encodeURIComponent(String(reason).slice(0, 160))}`
       );
     }
 

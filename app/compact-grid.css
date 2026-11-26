@@ -1,50 +1,54 @@
-/* DRIVE MCP — Authentic iOS 26 Liquid Glass v2.8 (Cupertino Aurora Mesh + Translucent Crystal Glass + Rich Account + Zero Black Bottom) */
+/* DRIVE MCP — Authentic Apple iOS 26 Neutral Titanium Liquid Glass v2.9 (Space-Black Studio Canvas + Clear Smoked-Crystal Glass + 90/10 Apple Color Restraint) */
 
 :root {
   color-scheme: dark;
-  --glass-fill: rgba(255, 255, 255, 0.085);
-  --glass-fill-strong: rgba(255, 255, 255, 0.13);
-  --glass-blur: 36px;
-  --glass-saturate: 215%;
-  --glass-edge: rgba(255, 255, 255, 0.22);
-  --glass-specular-top: rgba(255, 255, 255, 0.42);
-  --glass-specular-bottom: rgba(140, 210, 255, 0.12);
-  --glass-shadow: 0 18px 42px -12px rgba(2, 8, 24, 0.52);
-  --apple-blue: #007aff;
-  --apple-blue-hi: #389bff;
-  --apple-cyan: #5ac8fa;
-  --apple-green: #34c759;
+  /* Apple Neutral Titanium Glass Tokens */
+  --ios-canvas: #0b0b0e;
+  --ios-glass-card: rgba(30, 30, 34, 0.58);
+  --ios-glass-elevated: rgba(42, 42, 48, 0.64);
+  --ios-glass-bar: rgba(28, 28, 32, 0.62);
+  --ios-glass-lens: rgba(255, 255, 255, 0.16);
+  --ios-glass-edge: rgba(255, 255, 255, 0.14);
+  --ios-glass-edge-strong: rgba(255, 255, 255, 0.22);
+  --ios-specular-top: rgba(255, 255, 255, 0.3);
+  --ios-specular-lens: rgba(255, 255, 255, 0.52);
+  --ios-text-primary: #ffffff;
+  --ios-text-secondary: rgba(235, 235, 245, 0.68);
+  --ios-text-tertiary: rgba(235, 235, 245, 0.46);
+  /* Apple System Accents (used sparingly — 10% rule) */
+  --apple-blue: #0a84ff;
+  --apple-blue-hi: #3098ff;
+  --apple-green: #30d158;
   --apple-amber: #ffd60a;
+  --apple-red: #ff453a;
   --drive-spring: cubic-bezier(0.22, 1, 0.36, 1);
   --drive-spring-pop: cubic-bezier(0.22, 1.15, 0.36, 1);
-  --lime: #5ac8fa !important;
-  --accent: #007aff !important;
-  --accent-soft: rgba(0, 122, 255, 0.22) !important;
+  --lime: #ffffff !important;
+  --accent: #0a84ff !important;
+  --accent-soft: rgba(255, 255, 255, 0.12) !important;
 }
 
 [hidden] {
   display: none !important;
 }
 
-/* Living iPhone Midnight Aurora Mesh Canvas — gives Liquid Glass real color to refract */
+/* Refined Apple Space-Black & Silver-Titanium Studio Canvas (zero loud blue/purple wash) */
 html,
 body {
   min-height: 100svh;
-  background-color: #081226 !important;
+  background-color: #09090c !important;
   background-image:
-    radial-gradient(circle at 14% 8%, rgba(56, 155, 255, 0.36) 0%, transparent 42%),
-    radial-gradient(circle at 86% 16%, rgba(138, 92, 246, 0.32) 0%, transparent 44%),
-    radial-gradient(circle at 52% 54%, rgba(14, 165, 233, 0.22) 0%, transparent 50%),
-    radial-gradient(circle at 18% 88%, rgba(59, 130, 246, 0.28) 0%, transparent 46%),
-    radial-gradient(circle at 84% 92%, rgba(168, 85, 247, 0.26) 0%, transparent 46%),
-    linear-gradient(180deg, #0b1936 0%, #0a142b 52%, #0d1a38 100%) !important;
+    radial-gradient(ellipse 80% 42% at 50% -6%, rgba(255, 255, 255, 0.085) 0%, transparent 65%),
+    radial-gradient(circle at 12% 32%, rgba(200, 210, 225, 0.055) 0%, transparent 44%),
+    radial-gradient(circle at 88% 76%, rgba(190, 200, 218, 0.05) 0%, transparent 46%),
+    linear-gradient(180deg, #111115 0%, #09090c 48%, #0e0e12 100%) !important;
   background-attachment: fixed !important;
-  color: #f6faff !important;
+  color: var(--ios-text-primary) !important;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
 }
 
-/* Remove any dark bottom vignette/overlay inherited from older stylesheets */
+/* Remove any inherited dark bottom scrim/vignette */
 body::after,
 body::before,
 .drive-app::after,
@@ -70,7 +74,7 @@ body::before,
   display: none !important;
 }
 
-/* 2. App-First Workspace Shell & Clean iOS Liquid Glass Topbar */
+/* 2. App-First Workspace Shell & Clean Apple Liquid Glass Topbar */
 .drive-app {
   max-width: 1120px !important;
   margin: 0 auto !important;
@@ -87,22 +91,21 @@ body::before,
   align-items: center !important;
   justify-content: space-between !important;
   gap: 10px !important;
-  padding: 8px 10px !important;
+  padding: 7px 9px !important;
   margin-bottom: 12px !important;
   border-radius: 999px !important;
   background: linear-gradient(
-    145deg,
-    rgba(255, 255, 255, 0.14),
-    rgba(160, 210, 255, 0.08) 55%,
-    rgba(255, 255, 255, 0.06)
+    180deg,
+    rgba(255, 255, 255, 0.1) 0%,
+    rgba(32, 32, 36, 0.68) 100%
   ) !important;
-  border: 1px solid rgba(255, 255, 255, 0.24) !important;
-  -webkit-backdrop-filter: blur(34px) saturate(215%) !important;
-  backdrop-filter: blur(34px) saturate(215%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  -webkit-backdrop-filter: blur(40px) saturate(180%) !important;
+  backdrop-filter: blur(40px) saturate(180%) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.42),
-    inset 0 -1px 0 rgba(120, 200, 255, 0.14),
-    0 12px 32px rgba(3, 10, 28, 0.34) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.34),
+    inset 0 -0.5px 0 rgba(255, 255, 255, 0.08),
+    0 12px 32px rgba(0, 0, 0, 0.45) !important;
 }
 
 .app-brand {
@@ -113,8 +116,8 @@ body::before,
   border: 0 !important;
   padding: 0 2px !important;
   color: #ffffff !important;
-  font-weight: 750 !important;
-  letter-spacing: 0.15em !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.14em !important;
   font-size: 13px !important;
   cursor: pointer !important;
   flex: none !important;
@@ -127,16 +130,16 @@ body::before,
   border-radius: 999px !important;
   display: grid !important;
   place-items: center !important;
-  color: #a6e3ff !important;
-  background: linear-gradient(145deg, rgba(0, 122, 255, 0.36), rgba(90, 200, 250, 0.18)) !important;
-  border: 1px solid rgba(166, 227, 255, 0.44) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45) !important;
+  color: #ffffff !important;
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.24) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4) !important;
 }
 
 .app-top-actions {
   display: flex !important;
   align-items: center !important;
-  gap: 8px !important;
+  gap: 7px !important;
   flex-wrap: nowrap !important;
 }
 
@@ -149,10 +152,10 @@ body::before,
   border-radius: 999px !important;
   font-size: 12px !important;
   font-weight: 600 !important;
-  color: #eef6ff !important;
-  background: rgba(255, 255, 255, 0.1) !important;
-  border: 1px solid rgba(255, 255, 255, 0.22) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28) !important;
+  color: rgba(255, 255, 255, 0.92) !important;
+  background: rgba(255, 255, 255, 0.09) !important;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
   cursor: pointer !important;
   white-space: nowrap !important;
   transition: transform 110ms ease-out, background 160ms ease !important;
@@ -162,7 +165,7 @@ body::before,
   transform: scale(0.95) !important;
 }
 
-/* 3. iOS Liquid Glass Segmented Sub-Tabs */
+/* 3. iOS 26 Clear Liquid Glass Segmented Sub-Tabs */
 .drive-mcp-workspace {
   display: flex;
   flex-direction: column;
@@ -181,11 +184,11 @@ body::before,
   width: min(100%, 400px);
   padding: 4px;
   border-radius: 999px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.05));
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  -webkit-backdrop-filter: blur(28px) saturate(200%);
-  backdrop-filter: blur(28px) saturate(200%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 8px 24px rgba(3, 10, 28, 0.24);
+  background: rgba(32, 32, 36, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  backdrop-filter: blur(32px) saturate(180%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 8px 24px rgba(0, 0, 0, 0.32);
 }
 
 .drive-subtabs.is-2 {
@@ -200,9 +203,9 @@ body::before,
   left: 4px;
   width: calc((100% - 8px) / 3);
   border-radius: 999px;
-  background: linear-gradient(145deg, rgba(56, 155, 255, 0.42), rgba(90, 200, 250, 0.22));
-  border: 1px solid rgba(170, 228, 255, 0.52);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5), 0 4px 16px rgba(0, 122, 255, 0.28);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.11));
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.45), 0 4px 12px rgba(0, 0, 0, 0.28);
   transform: translateX(calc(var(--sub-index, 0) * 100%));
   transition: transform 240ms var(--drive-spring);
   pointer-events: none;
@@ -220,7 +223,7 @@ body::before,
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: rgba(226, 240, 255, 0.72);
+  color: var(--ios-text-secondary);
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
@@ -235,14 +238,14 @@ body::before,
   transform: scale(0.96);
 }
 
-/* Instant 0ms panels (zero transform stacking context) */
+/* Instant 0ms panels */
 .app-panel,
 .drive-subpanel {
   animation: none !important;
   transform: none !important;
 }
 
-/* Rounded Pill Badges (Zero Square/Boxy Badges) */
+/* Crisp Rounded Apple Glass Pills */
 .transport-pill,
 .version-pill,
 .status,
@@ -257,45 +260,45 @@ body::before,
   padding: 3px 9px !important;
   border-radius: 999px !important;
   font-size: 10.5px !important;
-  font-weight: 650 !important;
+  font-weight: 600 !important;
   line-height: 1.25 !important;
   max-width: 100% !important;
   white-space: nowrap !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  background: rgba(255, 255, 255, 0.1) !important;
-  color: #dbeafe !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
+  background: rgba(255, 255, 255, 0.075) !important;
+  color: rgba(235, 235, 245, 0.84) !important;
 }
 
 .transport-pill.is-auth-none {
-  color: #86efac !important;
-  background: rgba(52, 199, 89, 0.2) !important;
-  border-color: rgba(134, 239, 172, 0.42) !important;
+  color: #6ee7b7 !important;
+  background: rgba(48, 209, 88, 0.14) !important;
+  border-color: rgba(48, 209, 88, 0.3) !important;
 }
 
 .transport-pill.is-auth-oauth {
-  color: #93e0ff !important;
-  background: rgba(0, 122, 255, 0.24) !important;
-  border-color: rgba(147, 224, 255, 0.46) !important;
+  color: #7cc4ff !important;
+  background: rgba(10, 132, 255, 0.16) !important;
+  border-color: rgba(10, 132, 255, 0.32) !important;
 }
 
 .transport-pill.is-auth-pat {
   color: #fde68a !important;
-  background: rgba(255, 214, 10, 0.18) !important;
-  border-color: rgba(253, 230, 138, 0.42) !important;
+  background: rgba(255, 214, 10, 0.13) !important;
+  border-color: rgba(255, 214, 10, 0.28) !important;
 }
 
 .version-pill.is-star-pill {
   color: #fef08a !important;
-  background: rgba(255, 214, 10, 0.16) !important;
-  border-color: rgba(254, 240, 138, 0.38) !important;
+  background: rgba(255, 214, 10, 0.12) !important;
+  border-color: rgba(255, 214, 10, 0.26) !important;
 }
 
 .status.is-enabled,
 .integration-card .status.is-enabled,
 .my-mcp-row-title .status.is-enabled {
-  color: #86efac !important;
-  background: rgba(52, 199, 89, 0.2) !important;
-  border-color: rgba(134, 239, 172, 0.44) !important;
+  color: #6ee7b7 !important;
+  background: rgba(48, 209, 88, 0.15) !important;
+  border-color: rgba(48, 209, 88, 0.32) !important;
 }
 
 /* Explanation Language ID/EN Toggle Pill */
@@ -304,8 +307,8 @@ body::before,
   align-items: center;
   padding: 2px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   flex: none;
 }
 
@@ -318,7 +321,7 @@ body::before,
   border: 0;
   border-radius: 999px;
   background: transparent;
-  color: rgba(226, 240, 255, 0.72);
+  color: var(--ios-text-secondary);
   font-size: 11px;
   font-weight: 700;
   cursor: pointer;
@@ -332,9 +335,9 @@ body::before,
 }
 
 .lang-toggle-group button.is-active {
-  background: linear-gradient(135deg, var(--apple-blue-hi), var(--apple-blue));
+  background: rgba(255, 255, 255, 0.22);
   color: #ffffff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 2px 8px rgba(0, 122, 255, 0.36);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
 }
 
 .directory-toolbar {
@@ -345,7 +348,7 @@ body::before,
   flex-wrap: wrap !important;
 }
 
-/* Portal Skill Inspector Modal — Fixed Full Viewport, Pinned Header, Single Scrollable Body */
+/* Portal Skill Inspector Modal — Apple Liquid Glass Sheet */
 .skill-inspector-backdrop {
   position: fixed;
   inset: 0;
@@ -354,7 +357,7 @@ body::before,
   align-items: center;
   justify-content: center;
   padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom));
-  background: rgba(5, 12, 28, 0.72);
+  background: rgba(0, 0, 0, 0.68);
   -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
 }
@@ -366,11 +369,11 @@ body::before,
   flex-direction: column;
   overflow: hidden;
   border-radius: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.26);
-  background: linear-gradient(155deg, rgba(24, 42, 74, 0.92), rgba(11, 20, 40, 0.96));
-  -webkit-backdrop-filter: blur(36px) saturate(210%);
-  backdrop-filter: blur(36px) saturate(210%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34), 0 28px 68px rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(165deg, rgba(36, 36, 40, 0.92), rgba(20, 20, 24, 0.96));
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  backdrop-filter: blur(40px) saturate(180%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), 0 28px 68px rgba(0, 0, 0, 0.7);
 }
 
 .skill-inspector-head {
@@ -380,7 +383,7 @@ body::before,
   justify-content: space-between;
   gap: 12px;
   padding: 16px 18px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .skill-inspector-head h3 {
@@ -395,7 +398,7 @@ body::before,
   display: block;
   margin-top: 3px;
   font-size: 11.5px;
-  color: #a5bdd8;
+  color: var(--ios-text-secondary);
   overflow-wrap: anywhere;
 }
 
@@ -418,7 +421,7 @@ body::before,
   font-size: 11.5px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #7cd4ff;
+  color: rgba(235, 235, 245, 0.72);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -428,7 +431,7 @@ body::before,
   margin: 0;
   font-size: 13px;
   line-height: 1.55;
-  color: #e6f1ff;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .skill-tree-list {
@@ -436,8 +439,8 @@ body::before,
   gap: 5px;
   padding: 10px;
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(6, 14, 30, 0.56);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.34);
 }
 
 .skill-tree-row {
@@ -451,7 +454,7 @@ body::before,
 }
 
 .skill-tree-row:hover {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .skill-tree-name {
@@ -462,32 +465,32 @@ body::before,
 }
 
 .skill-tree-name .is-folder {
-  color: #7cd4ff;
+  color: var(--apple-blue-hi);
   flex: none;
 }
 
 .skill-tree-name .is-file {
-  color: #a5bdd8;
+  color: var(--ios-text-secondary);
   flex: none;
 }
 
 .skill-tree-name code {
-  color: #eef6ff;
+  color: #f5f5f7;
   font-size: 11.5px;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
 
 .skill-tree-row small {
-  color: #8ba5c2;
+  color: var(--ios-text-tertiary);
   font-size: 10.5px;
   flex: none;
 }
 
 .skill-preview-details {
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(6, 14, 30, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.3);
   padding: 10px 12px;
 }
 
@@ -495,7 +498,7 @@ body::before,
   cursor: pointer;
   font-size: 12px;
   font-weight: 600;
-  color: #8cdbff;
+  color: #ffffff;
 }
 
 .skill-preview-details pre {
@@ -506,10 +509,10 @@ body::before,
   word-break: break-word;
   font-size: 11px;
   line-height: 1.5;
-  color: #c7d9ec;
+  color: rgba(235, 235, 245, 0.78);
 }
 
-/* My MCPs Liquid Glass Cards & Tools Drawer */
+/* My MCPs Smoked-Crystal Glass Cards & Tools Drawer */
 .my-mcp-summary-strip {
   display: flex;
   align-items: center;
@@ -519,11 +522,11 @@ body::before,
   padding: 12px 14px;
   margin-bottom: 12px;
   border-radius: 24px;
-  border: 1px solid var(--glass-edge);
-  background: linear-gradient(150deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.04));
-  -webkit-backdrop-filter: blur(26px) saturate(195%);
-  backdrop-filter: blur(26px) saturate(195%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 10px 26px rgba(3, 10, 28, 0.24);
+  border: 1px solid var(--ios-glass-edge);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(28, 28, 32, 0.62));
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 10px 24px rgba(0, 0, 0, 0.32);
 }
 
 .my-mcp-counts {
@@ -542,13 +545,13 @@ body::before,
 }
 
 .my-mcp-counts strong.is-accent {
-  color: #7cd4ff;
+  color: var(--apple-blue-hi);
 }
 
 .my-mcp-counts span {
   font-size: 10px;
   letter-spacing: 0.1em;
-  color: #a4bdd8;
+  color: var(--ios-text-tertiary);
 }
 
 .my-mcp-filters {
@@ -565,11 +568,11 @@ body::before,
 .my-mcp-row-card {
   padding: 14px;
   border-radius: 24px;
-  border: 1px solid var(--glass-edge);
-  background: linear-gradient(150deg, rgba(255, 255, 255, 0.11), rgba(160, 210, 255, 0.05) 55%, rgba(255, 255, 255, 0.04));
-  -webkit-backdrop-filter: blur(26px) saturate(195%);
-  backdrop-filter: blur(26px) saturate(195%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32), 0 12px 28px rgba(3, 10, 28, 0.26);
+  border: 1px solid var(--ios-glass-edge);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.075), rgba(26, 26, 30, 0.64));
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 12px 28px rgba(0, 0, 0, 0.34);
 }
 
 .my-mcp-row-main {
@@ -603,7 +606,7 @@ body::before,
   margin: 0 0 9px;
   font-size: 12px;
   line-height: 1.45;
-  color: #b7cde4;
+  color: var(--ios-text-secondary);
   overflow: visible;
   text-overflow: clip;
   white-space: normal;
@@ -621,7 +624,7 @@ body::before,
 .mcp-tools-drawer {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -637,7 +640,7 @@ body::before,
 
 .mcp-tools-head strong {
   font-size: 12.5px;
-  color: #7cd4ff;
+  color: #ffffff;
 }
 
 .mcp-tools-status {
@@ -647,7 +650,7 @@ body::before,
   gap: 10px;
   flex-wrap: wrap;
   font-size: 12px;
-  color: #d0e2f5;
+  color: var(--ios-text-secondary);
   line-height: 1.45;
 }
 
@@ -656,8 +659,8 @@ body::before,
   min-height: 36px;
   padding: 7px 14px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(8, 18, 38, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.34);
   color: #ffffff;
   font-size: 12.5px;
 }
@@ -673,15 +676,15 @@ body::before,
 .mcp-tool-item {
   padding: 10px 12px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(8, 18, 38, 0.42);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.28);
 }
 
 .mcp-tool-item code {
   display: block;
   font-size: 12px;
   font-weight: 700;
-  color: #8cdbff;
+  color: #ffffff;
   overflow-wrap: anywhere;
   word-break: break-word;
 }
@@ -690,7 +693,7 @@ body::before,
   margin: 4px 0 0;
   font-size: 11.5px;
   line-height: 1.45;
-  color: #bed2e8;
+  color: var(--ios-text-secondary);
   white-space: normal;
   overflow-wrap: anywhere;
   word-break: break-word;
@@ -703,15 +706,15 @@ body::before,
   height: 28px;
   padding: 3px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(120, 120, 128, 0.34);
   cursor: pointer;
   transition: background 180ms ease, border-color 180ms ease;
 }
 
 .ios-toggle.is-on {
   background: var(--apple-green);
-  border-color: rgba(134, 239, 172, 0.7);
+  border-color: rgba(134, 239, 172, 0.5);
 }
 
 .ios-toggle-thumb {
@@ -737,14 +740,14 @@ body::before,
   gap: 8px;
   padding: 20px 14px;
   border-radius: 22px;
-  border: 1.5px dashed rgba(147, 224, 255, 0.42);
-  background: rgba(0, 122, 255, 0.1);
-  color: #eef6ff;
+  border: 1.5px dashed rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.04);
+  color: #ffffff;
 }
 
 .custom-upload-drop small {
   font-size: 12px;
-  color: #b7cde4;
+  color: var(--ios-text-secondary);
   max-width: 420px;
   line-height: 1.45;
 }
@@ -764,17 +767,17 @@ body::before,
   padding: 5px 12px;
   border-radius: 999px;
   font-size: 11.5px;
-  color: #86efac;
-  background: rgba(52, 199, 89, 0.2);
-  border: 1px solid rgba(134, 239, 172, 0.4);
+  color: #6ee7b7;
+  background: rgba(48, 209, 88, 0.16);
+  border: 1px solid rgba(48, 209, 88, 0.34);
 }
 
 .custom-skill-textarea {
   width: 100%;
   padding: 11px 13px;
   border-radius: 18px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(8, 18, 38, 0.48);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.34);
   color: #ffffff;
   font-size: 12.5px;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -786,19 +789,18 @@ body::before,
 .account-glass-panel,
 .account-active-card {
   border-radius: 26px !important;
-  border: 1px solid var(--glass-edge) !important;
+  border: 1px solid var(--ios-glass-edge) !important;
   background: linear-gradient(
-    150deg,
-    rgba(255, 255, 255, 0.12),
-    rgba(160, 210, 255, 0.05) 50%,
-    rgba(255, 255, 255, 0.04)
+    165deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(28, 28, 32, 0.62) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(28px) saturate(200%) !important;
-  backdrop-filter: blur(28px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(180%) !important;
+  backdrop-filter: blur(32px) saturate(180%) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.34),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.06),
-    0 14px 32px rgba(3, 10, 28, 0.28) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    inset 0 -0.5px 0 rgba(255, 255, 255, 0.05),
+    0 14px 32px rgba(0, 0, 0, 0.36) !important;
 }
 
 .account-profile-card {
@@ -848,10 +850,10 @@ body::before,
   border-radius: 12px;
   display: grid;
   place-items: center;
-  color: #93e0ff;
-  background: linear-gradient(145deg, rgba(0, 122, 255, 0.3), rgba(90, 200, 250, 0.14));
-  border: 1px solid rgba(147, 224, 255, 0.4);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.11);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
 }
 
 .account-panel-title h3 {
@@ -865,7 +867,7 @@ body::before,
   display: block;
   margin-top: 2px;
   font-size: 11.5px;
-  color: #aec5df;
+  color: var(--ios-text-secondary);
   line-height: 1.4;
 }
 
@@ -873,13 +875,13 @@ body::before,
   margin-top: 12px;
   padding: 11px 14px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(6, 14, 30, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.34);
 }
 
 .account-gateway-box code {
   font-size: 12px;
-  color: #93e0ff;
+  color: #e5e5ea;
   overflow-wrap: anywhere;
   word-break: break-all;
 }
@@ -895,7 +897,7 @@ body::before,
   justify-content: space-between;
   gap: 12px;
   padding: 12px 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .ios-settings-row:first-child {
@@ -917,7 +919,7 @@ body::before,
   display: block;
   margin-top: 2px;
   font-size: 11.5px;
-  color: #aec5df;
+  color: var(--ios-text-secondary);
 }
 
 .account-quick-grid {
@@ -934,20 +936,20 @@ body::before,
   min-height: 48px;
   padding: 0 15px;
   border-radius: 20px;
-  border: 1px solid var(--glass-edge);
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
-  -webkit-backdrop-filter: blur(24px) saturate(190%);
-  backdrop-filter: blur(24px) saturate(190%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  color: #f4f9ff;
+  border: 1px solid var(--ios-glass-edge);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.08), rgba(28, 28, 32, 0.6));
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  backdrop-filter: blur(28px) saturate(180%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  color: #ffffff;
   font-size: 12.5px;
-  font-weight: 650;
+  font-weight: 600;
   cursor: pointer;
   transition: transform 110ms ease-out, background 160ms ease;
 }
 
 .account-quick-tile svg {
-  color: #8cdbff;
+  color: rgba(255, 255, 255, 0.8);
   flex: none;
 }
 
@@ -970,9 +972,9 @@ body::before,
   border-radius: 999px;
   display: grid;
   place-items: center;
-  color: #93e0ff;
-  background: linear-gradient(145deg, rgba(0, 122, 255, 0.34), rgba(90, 200, 250, 0.16));
-  border: 1px solid rgba(147, 224, 255, 0.44);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
 }
 
 .account-profile-meta {
@@ -996,7 +998,7 @@ body::before,
   display: block;
   margin-top: 2px;
   font-size: 11.5px;
-  color: #b4cbe4;
+  color: var(--ios-text-secondary);
   line-height: 1.4;
 }
 
@@ -1005,9 +1007,9 @@ body::before,
   border-radius: 999px;
   font-size: 10px;
   font-weight: 700;
-  color: #86efac;
-  background: rgba(52, 199, 89, 0.2);
-  border: 1px solid rgba(134, 239, 172, 0.42);
+  color: #6ee7b7;
+  background: rgba(48, 209, 88, 0.16);
+  border: 1px solid rgba(48, 209, 88, 0.34);
 }
 
 .account-auth-btn {
@@ -1017,8 +1019,8 @@ body::before,
   min-height: 36px;
   padding: 0 14px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.09);
   color: #ffffff;
   font-size: 12px;
   font-weight: 600;
@@ -1027,10 +1029,10 @@ body::before,
 }
 
 .account-auth-btn.is-primary {
-  background: linear-gradient(135deg, var(--apple-blue-hi), var(--apple-blue));
-  border-color: rgba(170, 224, 255, 0.62);
+  background: linear-gradient(180deg, var(--apple-blue-hi), var(--apple-blue));
+  border-color: rgba(255, 255, 255, 0.28);
   color: #ffffff;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.44), 0 6px 20px rgba(0, 122, 255, 0.36);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38), 0 6px 18px rgba(10, 132, 255, 0.28);
 }
 
 .account-auth-btn:active {
@@ -1040,11 +1042,11 @@ body::before,
 .custom-form-clean {
   padding: 16px;
   border-radius: 26px;
-  border: 1px solid var(--glass-edge);
-  background: linear-gradient(150deg, rgba(255, 255, 255, 0.11), rgba(255, 255, 255, 0.04));
-  -webkit-backdrop-filter: blur(28px) saturate(200%);
-  backdrop-filter: blur(28px) saturate(200%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.32), 0 14px 32px rgba(3, 10, 28, 0.28);
+  border: 1px solid var(--ios-glass-edge);
+  background: linear-gradient(165deg, rgba(255, 255, 255, 0.075), rgba(28, 28, 32, 0.64));
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  backdrop-filter: blur(32px) saturate(180%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 14px 32px rgba(0, 0, 0, 0.36);
 }
 
 .custom-fields {
@@ -1064,7 +1066,7 @@ body::before,
   font-size: 10.5px;
   font-weight: 700;
   letter-spacing: 0.1em;
-  color: #b4cbe4;
+  color: var(--ios-text-secondary);
 }
 
 .custom-field-label input {
@@ -1072,8 +1074,8 @@ body::before,
   min-height: 44px;
   padding: 10px 14px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(8, 18, 38, 0.48);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.34);
   color: #ffffff;
   font-size: 13.5px;
 }
@@ -1092,9 +1094,9 @@ body::before,
   padding: 5px 11px;
   border-radius: 999px;
   font-size: 11px;
-  color: #d6e8fb;
-  background: rgba(255, 255, 255, 0.09);
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(235, 235, 245, 0.82);
+  background: rgba(255, 255, 255, 0.075);
+  border: 1px solid rgba(255, 255, 255, 0.14);
   overflow-wrap: anywhere;
   word-break: break-word;
 }
@@ -1107,13 +1109,13 @@ body::before,
   min-height: 44px;
   padding: 0 18px;
   border-radius: 999px;
-  border: 1px solid rgba(170, 224, 255, 0.62);
-  background: linear-gradient(135deg, var(--apple-blue-hi), var(--apple-blue));
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: linear-gradient(180deg, var(--apple-blue-hi), var(--apple-blue));
   color: #ffffff;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 650;
   cursor: pointer;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.44), 0 8px 22px rgba(0, 122, 255, 0.36);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.36), 0 6px 18px rgba(10, 132, 255, 0.28);
   transition: transform 110ms ease-out;
 }
 
@@ -1137,23 +1139,24 @@ body::before,
 
 .custom-form-alert.is-success {
   color: #dcfce7;
-  background: rgba(52, 199, 89, 0.2);
-  border: 1px solid rgba(134, 239, 172, 0.42);
+  background: rgba(48, 209, 88, 0.16);
+  border: 1px solid rgba(48, 209, 88, 0.34);
 }
 
 .custom-form-alert.is-error {
   color: #fee2e2;
-  background: rgba(255, 59, 48, 0.2);
-  border: 1px solid rgba(252, 165, 165, 0.42);
+  background: rgba(255, 69, 58, 0.16);
+  border: 1px solid rgba(255, 69, 58, 0.34);
 }
 
 .custom-form-hint {
   margin: 12px 0 0;
   font-size: 12px;
   line-height: 1.5;
-  color: #b4cbe4;
+  color: var(--ios-text-secondary);
 }
 
+/* Primary CTA Buttons — Crisp Apple System Blue */
 .skill-install-btn,
 .add-mcp-btn {
   display: inline-flex !important;
@@ -1164,13 +1167,13 @@ body::before,
   min-height: 36px !important;
   padding: 0 14px !important;
   border-radius: 999px !important;
-  border: 1px solid rgba(170, 224, 255, 0.62) !important;
-  background: linear-gradient(135deg, var(--apple-blue-hi), var(--apple-blue)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.26) !important;
+  background: linear-gradient(180deg, var(--apple-blue-hi), var(--apple-blue)) !important;
   color: #ffffff !important;
   font-size: 12px !important;
-  font-weight: 700 !important;
+  font-weight: 650 !important;
   cursor: pointer !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42), 0 6px 18px rgba(0, 122, 255, 0.34) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.34), 0 4px 14px rgba(10, 132, 255, 0.24) !important;
   transition: transform 110ms ease-out !important;
 }
 
@@ -1181,42 +1184,42 @@ body::before,
 
 .skill-install-btn.is-installed,
 .add-mcp-btn.is-installed {
-  background: rgba(52, 199, 89, 0.22) !important;
-  border-color: rgba(134, 239, 172, 0.48) !important;
-  color: #86efac !important;
+  background: rgba(48, 209, 88, 0.18) !important;
+  border-color: rgba(48, 209, 88, 0.38) !important;
+  color: #6ee7b7 !important;
   box-shadow: none !important;
   animation: driveSpringPop 260ms var(--drive-spring-pop) both;
 }
 
-/* 5. Unified Cupertino Liquid Glass Blue/Crystal Accents */
+/* 5. Apple System Accent Pills & Frosted Inputs */
 .top-pill-btn.is-accent,
 .primary-btn,
 .hero-actions .primary-btn,
 .catalog-search button,
 .load-more-button {
-  background: linear-gradient(135deg, var(--apple-blue-hi), var(--apple-blue)) !important;
+  background: linear-gradient(180deg, var(--apple-blue-hi), var(--apple-blue)) !important;
   color: #ffffff !important;
-  border: 1px solid rgba(170, 224, 255, 0.62) !important;
+  border: 1px solid rgba(255, 255, 255, 0.26) !important;
   border-radius: 999px !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.44),
-    0 6px 20px rgba(0, 122, 255, 0.36) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.36),
+    0 4px 14px rgba(10, 132, 255, 0.26) !important;
 }
 
 .catalog-search {
   border-radius: 999px !important;
-  background: rgba(255, 255, 255, 0.09) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  -webkit-backdrop-filter: blur(22px) saturate(190%) !important;
-  backdrop-filter: blur(22px) saturate(190%) !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+  background: rgba(34, 34, 38, 0.66) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18) !important;
 }
 
 .glass-chip-btn {
   border-radius: 999px !important;
-  background: rgba(255, 255, 255, 0.1) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  color: #eef6ff !important;
+  background: rgba(255, 255, 255, 0.085) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
 }
 
 .eyebrow,
@@ -1225,21 +1228,23 @@ body::before,
 .catalog-section h1 span,
 .platform-section h1 span,
 .glass-link {
-  color: #8cdbff !important;
+  color: rgba(235, 235, 245, 0.72) !important;
 }
 
 .pulse,
 .context-dot,
 .registry-live i {
-  background: #5ac8fa !important;
-  box-shadow: 0 0 10px rgba(90, 200, 250, 0.85) !important;
+  background: var(--apple-green) !important;
+  box-shadow: 0 0 8px rgba(48, 209, 88, 0.65) !important;
 }
 
 .account-active-icon {
-  background: linear-gradient(145deg, rgba(0, 122, 255, 0.3), rgba(90, 200, 250, 0.14)) !important;
-  border-color: rgba(147, 224, 255, 0.42) !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  color: #ffffff !important;
 }
 
+/* Neutral Frosted Titanium Category Chips (Active = Crisp Milky White Glass) */
 .category-chip,
 .segmented-pill {
   border-radius: 999px !important;
@@ -1248,29 +1253,29 @@ body::before,
   display: inline-flex !important;
   align-items: center !important;
   gap: 4px !important;
-  background: rgba(255, 255, 255, 0.08) !important;
-  border: 1px solid rgba(255, 255, 255, 0.18) !important;
-  color: #d6e8fb !important;
-  -webkit-backdrop-filter: blur(18px) saturate(180%) !important;
-  backdrop-filter: blur(18px) saturate(180%) !important;
+  background: rgba(38, 38, 42, 0.62) !important;
+  border: 1px solid rgba(255, 255, 255, 0.13) !important;
+  color: rgba(235, 235, 245, 0.78) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(160%) !important;
+  backdrop-filter: blur(20px) saturate(160%) !important;
 }
 
 .category-chip.is-active,
 .category-chip:hover,
 .segmented-pill.is-active {
-  background: linear-gradient(135deg, rgba(56, 155, 255, 0.36), rgba(90, 200, 250, 0.2)) !important;
-  border-color: rgba(166, 227, 255, 0.56) !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+  border-color: rgba(255, 255, 255, 0.34) !important;
   color: #ffffff !important;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.36) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.38) !important;
 }
 
 .category-chip.is-more-chip {
-  color: #93e0ff !important;
-  border-color: rgba(147, 224, 255, 0.38) !important;
-  background: rgba(0, 122, 255, 0.16) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
 }
 
-/* 6. Floating Translucent iPhone iOS 26 Liquid Glass Bottom Dock (NO Black Bar Behind It!) */
+/* 6. Authentic Apple iOS 26 Clear Liquid Glass Floating Bottom Dock */
 .bottom-dock-stage {
   position: fixed !important;
   left: 0 !important;
@@ -1297,18 +1302,17 @@ body::before,
   padding: 6px !important;
   border-radius: 999px !important;
   background: linear-gradient(
-    145deg,
-    rgba(255, 255, 255, 0.16),
-    rgba(166, 220, 255, 0.1) 50%,
-    rgba(255, 255, 255, 0.08)
+    180deg,
+    rgba(255, 255, 255, 0.13) 0%,
+    rgba(30, 30, 34, 0.72) 100%
   ) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  -webkit-backdrop-filter: blur(38px) saturate(225%) !important;
-  backdrop-filter: blur(38px) saturate(225%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.22) !important;
+  -webkit-backdrop-filter: blur(42px) saturate(190%) !important;
+  backdrop-filter: blur(42px) saturate(190%) !important;
   box-shadow:
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.48),
-    inset 0 -1px 1px rgba(130, 205, 255, 0.22),
-    0 18px 42px rgba(2, 10, 28, 0.42) !important;
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.38),
+    inset 0 -0.5px 1px rgba(255, 255, 255, 0.1),
+    0 18px 44px rgba(0, 0, 0, 0.58) !important;
   touch-action: pan-y !important;
   user-select: none !important;
 }
@@ -1321,16 +1325,15 @@ body::before,
   width: calc((100% - 12px) / 3) !important;
   border-radius: 999px !important;
   background: linear-gradient(
-    155deg,
-    rgba(255, 255, 255, 0.32),
-    rgba(110, 210, 255, 0.24) 55%,
-    rgba(0, 122, 255, 0.2)
+    180deg,
+    rgba(255, 255, 255, 0.26) 0%,
+    rgba(255, 255, 255, 0.12) 100%
   ) !important;
-  border: 1px solid rgba(255, 255, 255, 0.44) !important;
+  border: 1px solid rgba(255, 255, 255, 0.36) !important;
   box-shadow:
-    inset 0 1.5px 1px rgba(255, 255, 255, 0.62),
-    inset 0 -1px 1px rgba(90, 200, 250, 0.28),
-    0 4px 16px rgba(0, 122, 255, 0.28) !important;
+    inset 0 1.5px 1px rgba(255, 255, 255, 0.56),
+    inset 0 -1px 1px rgba(255, 255, 255, 0.12),
+    0 4px 14px rgba(0, 0, 0, 0.3) !important;
   transform: translateX(calc(var(--lens-index, 0) * 100%)) !important;
   transition: transform 240ms var(--drive-spring), filter 160ms ease !important;
   pointer-events: none !important;
@@ -1340,7 +1343,7 @@ body::before,
 .liquid-navbar-3.is-gliding .liquid-lens-pill,
 .liquid-navbar-3.is-dragging .liquid-lens-pill {
   transform: translateX(calc(var(--lens-index, 0) * 100%)) scaleX(1.04) scaleY(0.96) !important;
-  filter: brightness(1.1) !important;
+  filter: brightness(1.08) !important;
 }
 
 .liquid-navbar-3 .dock-item {
@@ -1354,7 +1357,7 @@ body::before,
   gap: 2px !important;
   border: 0 !important;
   background: transparent !important;
-  color: rgba(230, 242, 255, 0.72) !important;
+  color: rgba(235, 235, 245, 0.62) !important;
   cursor: pointer !important;
   transition: color 140ms ease, transform 100ms ease-out !important;
 }
@@ -1366,7 +1369,7 @@ body::before,
 
 .liquid-navbar-3 .dock-item.active .dock-icon,
 .liquid-navbar-3 .dock-item.is-active .dock-icon {
-  color: #a6e3ff !important;
+  color: #ffffff !important;
 }
 
 .liquid-navbar-3 .dock-item:active {
@@ -1375,7 +1378,7 @@ body::before,
 
 .liquid-navbar-3 .dock-label {
   font-size: 10px !important;
-  font-weight: 650 !important;
+  font-weight: 600 !important;
   letter-spacing: 0.01em !important;
   line-height: 1 !important;
 }
@@ -1386,11 +1389,11 @@ body::before,
   top: 0;
   z-index: 95;
   padding: calc(8px + env(safe-area-inset-top)) 12px 8px;
-  background: linear-gradient(135deg, rgba(16, 36, 70, 0.88), rgba(10, 22, 46, 0.92));
-  border-bottom: 1px solid rgba(147, 224, 255, 0.36);
-  -webkit-backdrop-filter: blur(28px) saturate(210%);
-  backdrop-filter: blur(28px) saturate(210%);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38);
+  background: rgba(24, 24, 28, 0.84);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+  backdrop-filter: blur(32px) saturate(180%);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
   animation: driveToastIn 220ms var(--drive-spring) both;
 }
 
@@ -1417,9 +1420,9 @@ body::before,
   border-radius: 10px;
   display: grid;
   place-items: center;
-  color: #93e0ff;
-  background: rgba(0, 122, 255, 0.24);
-  border: 1px solid rgba(147, 224, 255, 0.4);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .oauth-return-copy strong {
@@ -1431,7 +1434,7 @@ body::before,
 .oauth-return-copy small {
   display: block;
   font-size: 11px;
-  color: #b4cbe4;
+  color: var(--ios-text-secondary);
 }
 
 .oauth-return-actions {
@@ -1447,15 +1450,15 @@ body::before,
   min-height: 34px;
   padding: 0 13px;
   border-radius: 999px;
-  border: 1px solid rgba(170, 224, 255, 0.6);
-  background: linear-gradient(135deg, var(--apple-blue-hi), var(--apple-blue));
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  background: linear-gradient(180deg, var(--apple-blue-hi), var(--apple-blue));
   color: #ffffff;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 650;
   text-decoration: none;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42), 0 6px 18px rgba(0, 122, 255, 0.34);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.36), 0 4px 14px rgba(10, 132, 255, 0.28);
   transition: transform 110ms ease-out;
 }
 
@@ -1467,15 +1470,15 @@ body::before,
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.1);
-  color: #e6f2ff;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.09);
+  color: #ffffff;
   cursor: pointer;
   display: grid;
   place-items: center;
 }
 
-/* 8. Flat Canvas Sections & Stacked Multi-Row Category Grid (Max 3 Rows, NO Side Scroll) */
+/* 8. Flat Canvas Sections & Stacked Multi-Row Category Grid */
 .catalog-section,
 .platform-section,
 .my-mcps-section,
@@ -1509,7 +1512,7 @@ body::before,
 .platform-section .section-intro {
   font-size: 12.5px !important;
   line-height: 1.45 !important;
-  color: #b4cbe4 !important;
+  color: var(--ios-text-secondary) !important;
   margin: 0 !important;
 }
 
@@ -1553,7 +1556,7 @@ body::before,
   }
 }
 
-/* ZERO-CLIP RESPONSIVE iOS 26 LIQUID GLASS SQUIRCLE CARDS */
+/* ZERO-CLIP APPLE SMOKED-CRYSTAL LIQUID GLASS SQUIRCLE CARDS */
 .integration-card,
 .server-card,
 .skill-repository-card {
@@ -1563,19 +1566,19 @@ body::before,
   min-width: 0 !important;
   overflow: visible !important;
   border-radius: 26px !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.14) !important;
   background: linear-gradient(
-    150deg,
-    rgba(255, 255, 255, 0.11),
-    rgba(160, 210, 255, 0.05) 48%,
-    rgba(255, 255, 255, 0.04)
+    165deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(28, 28, 32, 0.6) 45%,
+    rgba(20, 20, 24, 0.7) 100%
   ) !important;
-  -webkit-backdrop-filter: blur(26px) saturate(195%) !important;
-  backdrop-filter: blur(26px) saturate(195%) !important;
+  -webkit-backdrop-filter: blur(32px) saturate(180%) !important;
+  backdrop-filter: blur(32px) saturate(180%) !important;
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.34),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.06),
-    0 14px 32px rgba(3, 10, 28, 0.28) !important;
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    inset 0 -0.5px 0 rgba(255, 255, 255, 0.05),
+    0 14px 32px rgba(0, 0, 0, 0.38) !important;
 }
 
 .integration-card h3,
@@ -1602,7 +1605,7 @@ body::before,
   white-space: normal !important;
   overflow-wrap: anywhere !important;
   word-break: break-word !important;
-  color: #bfd4ea !important;
+  color: var(--ios-text-secondary) !important;
 }
 
 .integration-card .card-top {
@@ -1624,6 +1627,7 @@ body::before,
 
 .integration-card .server-actions a {
   border-radius: 999px !important;
+  color: var(--ios-text-secondary) !important;
 }
 
 @media (min-width: 721px) {
@@ -1705,9 +1709,9 @@ body::before,
     height: 28px !important;
     border-radius: 10px !important;
     flex: none !important;
-    color: #93e0ff !important;
-    background: linear-gradient(145deg, rgba(0, 122, 255, 0.28), rgba(90, 200, 250, 0.14)) !important;
-    border-color: rgba(147, 224, 255, 0.4) !important;
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.1) !important;
+    border-color: rgba(255, 255, 255, 0.18) !important;
   }
 
   .integration-card .server-id {

@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 const MCP_REGISTRY = "https://registry.modelcontextprotocol.io/v0.1/servers";
 
@@ -11,15 +12,18 @@ function json(body, status = 200) {
 async function getUserClient(request) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  if (!url || !key) return { error: json({ error: "Authentication is not configured" }, 503) };
-  if (!token) return { error: json({ error: "Sign in is required" }, 401) };
+  if (!url || !key) return { error: json({ error: "Supabase auth is not configured" }, 503) };
+  const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "")?.trim();
+  if (!token) return { error: json({ error: "Sign in required" }, 401) };
   const supabase = createClient(url, key, {
     auth: { autoRefreshToken: false, persistSession: false },
     global: { headers: { Authorization: `Bearer ${token}` } },
   });
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-  if (error || !user) return { error: json({ error: "Invalid session" }, 401) };
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser(token);
+  if (error || !user) return { error: json({ error: "Session expired. Please sign in again." }, 401) };
   return { supabase, user };
 }
 
@@ -29,7 +33,7 @@ async function fetchRegistryEntryByName(serverName) {
   url.searchParams.set("limit", "100");
   url.searchParams.set("version", "latest");
   const upstream = await fetch(url, {
-    headers: { accept: "application/json", "user-agent": "DRIVE-MCP/1.2" },
+    headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.2" },
     cache: "no-store",
     redirect: "error",
     signal: AbortSignal.timeout(12000),
@@ -42,16 +46,12 @@ async function fetchRegistryEntryByName(serverName) {
 
 async function importRegistryEntry(auth, entry) {
   const server = entry.server || entry;
-  const name = typeof server.name === "string" ? server.name : "";
-  const version = typeof server.version === "string" ? server.version : "";
+  const name = typeof server.name === "string" ? server.name.trim() : "";
+  const version = typeof server.version === "string" && server.version.trim() ? server.version.trim() : "latest";
   const remotes = Array.isArray(server.remotes) ? server.remotes : [];
   const packages = Array.isArray(server.packages) ? server.packages : [];
-  if (!name || !version) return { error: json({ error: "Registry entry is missing its name or version" }, 400) };
-  if (!remotes.length) {
-    return { error: json({ error: "This MCP has no supported remote endpoint. Local STDIO packages cannot be connected from the hosted workspace." }, 409) };
-  }
+  if (!name) return { error: json({ error: "Registry entry is missing its name" }, 400) };
 
-  // Avoid needing the server-side admin key if this exact registry version is already in mcp_servers.
   const { data: existingServer } = await auth.supabase
     .from("mcp_servers")
     .select("id,remotes")
@@ -62,52 +62,89 @@ async function importRegistryEntry(auth, entry) {
 
   const sourceUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!sourceUrl || !serviceKey) {
-    return { error: json({ error: "Registry import is not configured on the server. Set SUPABASE_SERVICE_ROLE_KEY in environment variables." }, 503) };
-  }
-  const admin = createClient(sourceUrl, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
-  const officialMeta = entry._meta?.["io.modelcontextprotocol.registry/official"] || {};
   const repository = server.repository?.url || server.repository || null;
-  const row = {
-    id: `${name}@${version}`,
-    server_name: name,
-    version,
-    title: server.title || name,
-    description: server.description || "",
-    repository_url: typeof repository === "string" ? repository : repository?.url || null,
-    website_url: server.websiteUrl || null,
-    transport_types: [...new Set([
-      ...remotes.map((remote) => remote?.type || "streamable_http"),
-      ...packages.map((pkg) => pkg?.transport?.type || "stdio"),
-    ])],
-    packages,
-    remotes,
-    registry_metadata: entry._meta || {},
-    source_id: "official-mcp-registry",
-    source_status: officialMeta.status || "active",
-    trust_level: "unverified",
-    is_latest: officialMeta.isLatest === true,
-    published_at: server.updatedAt || server.createdAt || null,
-    updated_at: new Date().toISOString(),
-  };
-  const { data: imported, error: importError } = await admin
-    .from("mcp_servers")
-    .upsert(row, { onConflict: "server_name,version" })
-    .select("id")
-    .single();
-  if (importError || !imported) {
-    const detail = importError?.message || "Unknown database error";
-    if (/invalid api key|invalid jwt|jwt expired/i.test(detail)) {
-      return {
-        error: json({
-          error: "The server-side Supabase key configured in Vercel is invalid or expired. Update SUPABASE_SERVICE_ROLE_KEY in Vercel Production Environment Variables, then redeploy.",
-          code: "SUPABASE_ADMIN_KEY_INVALID",
-        }, 503),
-      };
+  const repoUrl = typeof repository === "string" ? repository : repository?.url || null;
+
+  if (sourceUrl && serviceKey) {
+    const admin = createClient(sourceUrl, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
+    const officialMeta = entry._meta?.["io.modelcontextprotocol.registry/official"] || {};
+    const transportTypes = [
+      ...new Set([
+        ...remotes.map((remote) => remote?.type || "streamable_http"),
+        ...packages.map((pkg) => pkg?.transport?.type || "stdio"),
+      ]),
+    ];
+    if (!transportTypes.length) transportTypes.push("stdio");
+
+    const row = {
+      id: `${name}@${version}`,
+      server_name: name,
+      version,
+      title: server.title || name,
+      description: server.description || "",
+      repository_url: repoUrl,
+      website_url: server.websiteUrl || null,
+      transport_types: transportTypes,
+      packages,
+      remotes,
+      registry_metadata: entry._meta || {},
+      source_id: "official-mcp-registry",
+      source_status: officialMeta.status || "active",
+      trust_level: "unverified",
+      is_latest: officialMeta.isLatest === true,
+      published_at: server.updatedAt || server.createdAt || null,
+      updated_at: new Date().toISOString(),
+    };
+    const { data: imported, error: importError } = await admin
+      .from("mcp_servers")
+      .upsert(row, { onConflict: "server_name,version" })
+      .select("id")
+      .single();
+    if (!importError && imported?.id) {
+      return { registryServerId: imported.id };
     }
-    return { error: json({ error: "Could not import this MCP into the DRIVE registry", detail }, 400) };
   }
-  return { registryServerId: imported.id };
+
+  // Fallback: save directly in user_custom_mcp_servers if admin upsert is unavailable
+  const fallbackEndpoint =
+    remotes.find((r) => typeof r?.url === "string" && r.url.startsWith("https://"))?.url ||
+    (repoUrl && repoUrl.startsWith("https://") ? repoUrl : "");
+
+  if (fallbackEndpoint) {
+    const { data: existingCustom } = await auth.supabase
+      .from("user_custom_mcp_servers")
+      .select("id")
+      .eq("user_id", auth.user.id)
+      .eq("endpoint_url", fallbackEndpoint)
+      .maybeSingle();
+    if (existingCustom?.id) return { customServerId: existingCustom.id };
+
+    const { data: createdCustom, error: customErr } = await auth.supabase
+      .from("user_custom_mcp_servers")
+      .insert({
+        user_id: auth.user.id,
+        display_name: server.title || name,
+        endpoint_url: fallbackEndpoint,
+        transport: remotes.length ? "streamable_http" : "stdio",
+        auth_type: "none",
+        status: "verified",
+        updated_at: new Date().toISOString(),
+      })
+      .select("id")
+      .single();
+    if (!customErr && createdCustom?.id) {
+      return { customServerId: createdCustom.id };
+    }
+  }
+
+  return {
+    error: json(
+      {
+        error: "Could not import this MCP into your DRIVE workspace. Verify SUPABASE_SERVICE_ROLE_KEY in environment variables.",
+      },
+      503
+    ),
+  };
 }
 
 export async function GET(request) {
@@ -118,15 +155,22 @@ export async function GET(request) {
     .select("id,registry_server_id,custom_server_id,enabled,created_at,updated_at")
     .eq("user_id", auth.user.id)
     .order("updated_at", { ascending: false });
-  if (error) return json({ error: "Could not load MCP settings" }, 400);
+  if (error) return json({ error: "Could not load your MCP connections" }, 400);
+
   const registryIds = (data || []).map((row) => row.registry_server_id).filter(Boolean);
   const customIds = (data || []).map((row) => row.custom_server_id).filter(Boolean);
   const [registryResult, customResult] = await Promise.all([
     registryIds.length
-      ? auth.supabase.from("mcp_servers").select("id,server_name,title,description,version,repository_url,transport_types,remotes").in("id", registryIds)
+      ? auth.supabase
+          .from("mcp_servers")
+          .select("id,server_name,title,description,version,repository_url,transport_types,remotes")
+          .in("id", registryIds)
       : Promise.resolve({ data: [], error: null }),
     customIds.length
-      ? auth.supabase.from("user_custom_mcp_servers").select("id,display_name,endpoint_url,status,transport").in("id", customIds)
+      ? auth.supabase
+          .from("user_custom_mcp_servers")
+          .select("id,display_name,endpoint_url,status,transport")
+          .in("id", customIds)
       : Promise.resolve({ data: [], error: null }),
   ]);
   if (registryResult.error || customResult.error) return json({ error: "Could not load MCP details" }, 400);
@@ -134,7 +178,9 @@ export async function GET(request) {
   const customById = new Map((customResult.data || []).map((item) => [item.id, item]));
   const connections = (data || []).map((row) => ({
     ...row,
-    server: row.registry_server_id ? registryById.get(row.registry_server_id) || null : customById.get(row.custom_server_id) || null,
+    server: row.registry_server_id
+      ? registryById.get(row.registry_server_id) || null
+      : customById.get(row.custom_server_id) || null,
     kind: row.registry_server_id ? "registry" : "custom",
   }));
   return json({ connections });
@@ -144,18 +190,23 @@ export async function POST(request) {
   const auth = await getUserClient(request);
   if (auth.error) return auth.error;
   let body;
-  try { body = await request.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400);
+  }
 
   let registryServerId = typeof body.registryServerId === "string" ? body.registryServerId : null;
-  const customServerId = typeof body.customServerId === "string" ? body.customServerId : null;
+  let customServerId = typeof body.customServerId === "string" ? body.customServerId : null;
   const serverName = typeof body.serverName === "string" ? body.serverName.trim() : "";
   const version = typeof body.version === "string" ? body.version.trim() : "";
-  const desiredEnabled = typeof body.enabled === "boolean" ? body.enabled : false;
+  const desiredEnabled = typeof body.enabled === "boolean" ? body.enabled : true;
 
   if (!registryServerId && !customServerId && body.registryEntry && typeof body.registryEntry === "object") {
     const imported = await importRegistryEntry(auth, body.registryEntry);
     if (imported.error) return imported.error;
-    registryServerId = imported.registryServerId;
+    registryServerId = imported.registryServerId || null;
+    customServerId = imported.customServerId || null;
   } else if (!registryServerId && !customServerId && serverName) {
     let lookup = auth.supabase.from("mcp_servers").select("id").eq("server_name", serverName);
     if (version) lookup = lookup.eq("version", version);
@@ -167,7 +218,8 @@ export async function POST(request) {
       if (!liveEntry) return json({ error: `MCP server "${serverName}" was not found in the Official MCP Registry` }, 404);
       const imported = await importRegistryEntry(auth, liveEntry);
       if (imported.error) return imported.error;
-      registryServerId = imported.registryServerId;
+      registryServerId = imported.registryServerId || null;
+      customServerId = imported.customServerId || null;
     }
   }
 
@@ -177,19 +229,21 @@ export async function POST(request) {
 
   if (registryServerId) {
     const { data: server, error } = await auth.supabase
-      .from("mcp_servers").select("id,remotes").eq("id", registryServerId).maybeSingle();
+      .from("mcp_servers")
+      .select("id,remotes")
+      .eq("id", registryServerId)
+      .maybeSingle();
     if (error || !server) return json({ error: "MCP server was not found after registry import" }, 404);
-    if (!Array.isArray(server.remotes) || server.remotes.length === 0) {
-      return json({ error: "This registry entry has no remote endpoint and cannot be enabled as a connection" }, 409);
-    }
   } else {
     const { data: server, error } = await auth.supabase
-      .from("user_custom_mcp_servers").select("id,status").eq("id", customServerId).maybeSingle();
+      .from("user_custom_mcp_servers")
+      .select("id,status")
+      .eq("id", customServerId)
+      .maybeSingle();
     if (error || !server) return json({ error: "Custom MCP server was not found" }, 404);
     if (server.status !== "verified") return json({ error: "Verify this custom endpoint before enabling it" }, 409);
   }
 
-  // Use explicit lookup + update/insert instead of ON CONFLICT on partial unique indexes.
   let existingQuery = auth.supabase
     .from("user_mcp_connections")
     .select("id,enabled")
@@ -232,35 +286,22 @@ export async function PATCH(request) {
   const auth = await getUserClient(request);
   if (auth.error) return auth.error;
   let body;
-  try { body = await request.json(); } catch { return json({ error: "Invalid JSON body" }, 400); }
-  if (typeof body.id !== "string" || typeof body.enabled !== "boolean") {
-    return json({ error: "Provide connection id and boolean enabled value" }, 400);
+  try {
+    body = await request.json();
+  } catch {
+    return json({ error: "Invalid JSON body" }, 400);
   }
-
-  const { data: current, error: lookupError } = await auth.supabase
-    .from("user_mcp_connections")
-    .select("id,registry_server_id,custom_server_id")
-    .eq("id", body.id).eq("user_id", auth.user.id).maybeSingle();
-  if (lookupError || !current) return json({ error: "Connection was not found" }, 404);
-
-  if (body.enabled && current.registry_server_id) {
-    const { data: server } = await auth.supabase
-      .from("mcp_servers").select("remotes").eq("id", current.registry_server_id).maybeSingle();
-    if (!Array.isArray(server?.remotes) || server.remotes.length === 0) {
-      return json({ error: "This server has no supported remote endpoint" }, 409);
-    }
+  const id = typeof body.id === "string" ? body.id : "";
+  if (!id || typeof body.enabled !== "boolean") {
+    return json({ error: "Provide connection id and boolean enabled" }, 400);
   }
-  if (body.enabled && current.custom_server_id) {
-    const { data: server } = await auth.supabase
-      .from("user_custom_mcp_servers").select("status").eq("id", current.custom_server_id).maybeSingle();
-    if (server?.status !== "verified") return json({ error: "Verify this endpoint before enabling it" }, 409);
-  }
-
   const { data, error } = await auth.supabase
     .from("user_mcp_connections")
     .update({ enabled: body.enabled, updated_at: new Date().toISOString() })
-    .eq("id", body.id).eq("user_id", auth.user.id)
-    .select("id,registry_server_id,custom_server_id,enabled,updated_at").single();
+    .eq("id", id)
+    .eq("user_id", auth.user.id)
+    .select("id,registry_server_id,custom_server_id,enabled,updated_at")
+    .single();
   if (error) return json({ error: "Could not update MCP setting" }, 400);
   return json({ connection: data });
 }

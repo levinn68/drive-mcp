@@ -14,8 +14,8 @@ const PULSEMCP_API = "https://api.pulsemcp.com/v0beta/servers";
 const DOCKER_HUB_API = "https://hub.docker.com/v2/search/repositories/";
 const CRATES_IO_API = "https://crates.io/api/v1/crates";
 
-const TARGET_MCP_COUNT = 21500;
-const PER_CATEGORY_PASS1_CAP = 2400;
+const TARGET_MCP_COUNT = 22500;
+const PER_CATEGORY_PASS1_CAP = 2500;
 
 const JUNK_NAME_RX = /^(test|demo|hello[-_]?world|example|sample|my[-_]?first|foo|bar|tmp|temp)[-_0-9]*$/i;
 
@@ -60,8 +60,8 @@ const VERIFIED_POPULAR_MCPS = [
       name: "com.openai/docs-mcp",
       title: "OpenAI Docs MCP",
       version: "free",
-      description: "Zero-auth public OpenAI API, Responses, and Agents SDK documentation search.",
-      repository: { url: "https://developers.openai.com/api/docs/guides/tools-connectors-mcp" },
+      description: "Official OpenAI developer documentation search & API reference MCP (zero auth).",
+      repository: { url: "https://developers.openai.com" },
       remotes: [{ type: "streamable-http", url: "https://developers.openai.com/mcp" }],
     },
   },
@@ -120,9 +120,9 @@ const VERIFIED_POPULAR_MCPS = [
       name: "com.vercel/vercel-mcp",
       title: "Vercel MCP",
       version: "official",
-      description: "Official Vercel MCP — deployments, build logs, projects, domains, and env vars.",
-      repository: { url: "https://vercel.com/docs/mcp" },
-      remotes: [{ type: "streamable-http", url: "https://mcp.vercel.com/" }],
+      description: "Official Vercel MCP — deployments, projects, domains, build logs, and env management.",
+      repository: { url: "https://vercel.com/docs/mcp/vercel-mcp" },
+      remotes: [{ type: "streamable-http", url: "https://mcp.vercel.com" }],
     },
   },
   {
@@ -135,7 +135,7 @@ const VERIFIED_POPULAR_MCPS = [
       name: "com.stripe/stripe-mcp",
       title: "Stripe MCP",
       version: "official",
-      description: "Official Stripe remote MCP — payments, customers, invoices, and subscriptions.",
+      description: "Official Stripe MCP — payments, customers, invoices, subscriptions, and docs.",
       repository: { url: "https://docs.stripe.com/mcp" },
       remotes: [{ type: "streamable-http", url: "https://mcp.stripe.com" }],
     },
@@ -150,7 +150,7 @@ const VERIFIED_POPULAR_MCPS = [
       name: "com.figma/figma-mcp",
       title: "Figma Dev Mode MCP",
       version: "official",
-      description: "Official Figma remote MCP — inspect frames, design tokens, and components.",
+      description: "Official Figma remote MCP — inspect design frames, components, tokens, and code.",
       repository: { url: "https://developers.figma.com/docs/figma-mcp-server/" },
       remotes: [{ type: "streamable-http", url: "https://mcp.figma.com/mcp" }],
     },
@@ -165,9 +165,9 @@ const VERIFIED_POPULAR_MCPS = [
       name: "co.hf/huggingface-mcp",
       title: "Hugging Face MCP",
       version: "official",
-      description: "Official Hugging Face remote MCP — search models, datasets, papers, and Spaces.",
+      description: "Search models, datasets, Spaces, and run Hugging Face inference directly via MCP.",
       repository: { url: "https://huggingface.co/mcp" },
-      remotes: [{ type: "streamable-http", url: "https://hf.co/mcp" }],
+      remotes: [{ type: "streamable-http", url: "https://huggingface.co/mcp" }],
     },
   },
   {
@@ -180,7 +180,7 @@ const VERIFIED_POPULAR_MCPS = [
       name: "com.notion/notion-mcp",
       title: "Notion MCP",
       version: "official",
-      description: "Official Notion remote MCP — search workspace, read pages, and update databases.",
+      description: "Official Notion remote MCP — search pages, edit docs, query databases, and comments.",
       repository: { url: "https://developers.notion.com/docs/mcp" },
       remotes: [{ type: "streamable-http", url: "https://mcp.notion.com/mcp" }],
     },
@@ -225,8 +225,8 @@ const VERIFIED_POPULAR_MCPS = [
       name: "com.slack/slack-mcp",
       title: "Slack Workspace MCP",
       version: "official",
-      description: "Connect Slack channels, search threads, post updates, and summarize team activity.",
-      repository: { url: "https://docs.slack.dev/ai/mcp-server" },
+      description: "Read channels, search messages, and send updates across Slack workspaces.",
+      repository: { url: "https://api.slack.com" },
       remotes: [{ type: "streamable-http", url: "https://mcp.slack.com/mcp" }],
     },
   },
@@ -240,7 +240,7 @@ const VERIFIED_POPULAR_MCPS = [
       name: "app.linear/linear-mcp",
       title: "Linear MCP",
       version: "official",
-      description: "Official Linear remote MCP — issues, cycles, projects, and team workflows.",
+      description: "Official Linear MCP — issues, projects, cycles, teams, and sprint workflows.",
       repository: { url: "https://linear.app/docs/mcp" },
       remotes: [{ type: "streamable-http", url: "https://mcp.linear.app/mcp" }],
     },
@@ -270,7 +270,7 @@ const VERIFIED_POPULAR_MCPS = [
       name: "dev.sentry/sentry-mcp",
       title: "Sentry MCP",
       version: "official",
-      description: "Official Sentry remote MCP — live error tracking, stack traces, and issue triage.",
+      description: "Official Sentry MCP — inspect stack traces, error groups, and release health.",
       repository: { url: "https://docs.sentry.io/product/sentry-mcp/" },
       remotes: [{ type: "streamable-http", url: "https://mcp.sentry.dev/mcp" }],
     },
@@ -285,7 +285,7 @@ const VERIFIED_POPULAR_MCPS = [
       name: "com.prisma/prisma-mcp",
       title: "Prisma Postgres MCP",
       version: "official",
-      description: "Official Prisma MCP — inspect schemas, run migrations, and manage Prisma Postgres.",
+      description: "Official Prisma MCP — manage Prisma Postgres databases, backups, and schemas.",
       repository: { url: "https://www.prisma.io/docs/orm/more/ai-tools/mcp-server" },
       remotes: [{ type: "streamable-http", url: "https://mcp.prisma.io/mcp" }],
     },
@@ -300,7 +300,7 @@ const VERIFIED_POPULAR_MCPS = [
       name: "tech.neon/neon-mcp",
       title: "Neon Postgres MCP",
       version: "official",
-      description: "Official Neon serverless Postgres MCP — branches, SQL queries, and schemas.",
+      description: "Official Neon serverless Postgres MCP — branching, SQL queries, and migrations.",
       repository: { url: "https://neon.tech/docs/ai/neon-mcp-server" },
       remotes: [{ type: "streamable-http", url: "https://mcp.neon.tech/mcp" }],
     },
@@ -345,7 +345,7 @@ const VERIFIED_POPULAR_MCPS = [
       name: "com.posthog/posthog-mcp",
       title: "PostHog Analytics MCP",
       version: "official",
-      description: "Official PostHog MCP — product analytics, feature flags, funnels, and session insights.",
+      description: "Query product analytics, funnels, feature flags, and session insights via MCP.",
       repository: { url: "https://posthog.com/docs/model-context-protocol" },
       remotes: [{ type: "streamable-http", url: "https://mcp.posthog.com/mcp" }],
     },
@@ -360,8 +360,8 @@ const VERIFIED_POPULAR_MCPS = [
       name: "com.paypal/paypal-mcp",
       title: "PayPal MCP",
       version: "official",
-      description: "Official PayPal remote MCP — orders, invoices, disputes, and payment links.",
-      repository: { url: "https://developer.paypal.com/tools/mcp-server/" },
+      description: "Official PayPal MCP — invoices, orders, disputes, and payment links.",
+      repository: { url: "https://mcp.paypal.com" },
       remotes: [{ type: "streamable-http", url: "https://mcp.paypal.com/mcp" }],
     },
   },
@@ -375,9 +375,9 @@ const VERIFIED_POPULAR_MCPS = [
       name: "com.datadog/datadog-mcp",
       title: "Datadog Observability MCP",
       version: "official",
-      description: "Query Datadog logs, APM traces, metrics, dashboards, and incident alerts.",
-      repository: { url: "https://docs.datadoghq.com/bits_ai/mcp_server/" },
-      remotes: [{ type: "streamable-http", url: "https://mcp.datadoghq.com/api/unstable/mcp-server/mcp" }],
+      description: "Inspect monitors, logs, APM traces, and production metrics directly from AI.",
+      repository: { url: "https://docs.datadoghq.com" },
+      remotes: [{ type: "streamable-http", url: "https://mcp.datadoghq.com/mcp" }],
     },
   },
   {
@@ -390,8 +390,8 @@ const VERIFIED_POPULAR_MCPS = [
       name: "com.netlify/netlify-mcp",
       title: "Netlify Deploy MCP",
       version: "official",
-      description: "Official Netlify remote MCP — sites, deployments, forms, and serverless functions.",
-      repository: { url: "https://docs.netlify.com/welcome/build-with-ai/netlify-mcp-server/" },
+      description: "Create sites, manage deploys, env vars, and serverless functions on Netlify.",
+      repository: { url: "https://docs.netlify.com" },
       remotes: [{ type: "streamable-http", url: "https://netlify-mcp.netlify.app/mcp" }],
     },
   },
@@ -420,9 +420,9 @@ const VERIFIED_POPULAR_MCPS = [
       name: "com.hubspot/hubspot-mcp",
       title: "HubSpot CRM MCP",
       version: "official",
-      description: "Official HubSpot MCP — contacts, deals, companies, and CRM pipeline automation.",
-      repository: { url: "https://developers.hubspot.com/mcp" },
-      remotes: [{ type: "streamable-http", url: "https://mcp.hubspot.com/" }],
+      description: "Search CRM contacts, deals, companies, and engagement notes in HubSpot.",
+      repository: { url: "https://developers.hubspot.com" },
+      remotes: [{ type: "streamable-http", url: "https://mcp.hubspot.com/mcp" }],
     },
   },
   {
@@ -435,8 +435,8 @@ const VERIFIED_POPULAR_MCPS = [
       name: "io.snyk/snyk-mcp",
       title: "Snyk Security MCP",
       version: "official",
-      description: "Scan dependencies, containers, and code for CVEs and security vulnerabilities.",
-      repository: { url: "https://docs.snyk.io/integrations/developer-guardrails-for-agentic-workflows" },
+      description: "Scan dependencies, containers, and IaC code for CVEs and security vulnerabilities.",
+      repository: { url: "https://docs.snyk.io" },
       remotes: [{ type: "streamable-http", url: "https://mcp.snyk.io/mcp" }],
     },
   },
@@ -450,8 +450,8 @@ const VERIFIED_POPULAR_MCPS = [
       name: "com.asana/asana-mcp",
       title: "Asana Tasks MCP",
       version: "official",
-      description: "Official Asana remote MCP — manage tasks, projects, timelines, and team updates.",
-      repository: { url: "https://developers.asana.com/docs/using-asanas-model-context-protocol-mcp-server" },
+      description: "Official Asana MCP — tasks, projects, timelines, and team collaboration.",
+      repository: { url: "https://developers.asana.com/docs/mcp-server" },
       remotes: [{ type: "streamable-http", url: "https://mcp.asana.com/sse" }],
     },
   },
@@ -465,8 +465,8 @@ const VERIFIED_POPULAR_MCPS = [
       name: "com.webflow/webflow-mcp",
       title: "Webflow Sites & CMS MCP",
       version: "official",
-      description: "Official Webflow remote MCP — manage CMS collections, pages, and site publishing.",
-      repository: { url: "https://developers.webflow.com/data/docs/ai-tools" },
+      description: "Manage Webflow CMS collections, pages, and site publishing via MCP.",
+      repository: { url: "https://developers.webflow.com" },
       remotes: [{ type: "streamable-http", url: "https://mcp.webflow.com/mcp" }],
     },
   },
@@ -480,9 +480,9 @@ const VERIFIED_POPULAR_MCPS = [
       name: "com.intercom/intercom-mcp",
       title: "Intercom Support MCP",
       version: "official",
-      description: "Official Intercom MCP — search customer conversations, tickets, and help articles.",
-      repository: { url: "https://developers.intercom.com/docs/guides/mcp" },
-      remotes: [{ type: "streamable-http", url: "https://mcp.intercom.com/mcp" }],
+      description: "Official Intercom MCP — customer conversations, contacts, and help center docs.",
+      repository: { url: "https://developers.intercom.com" },
+      remotes: [{ type: "streamable-http", url: "https://mcp.intercom.com/sse" }],
     },
   },
   {
@@ -495,8 +495,8 @@ const VERIFIED_POPULAR_MCPS = [
       name: "com.squareup/square-mcp",
       title: "Square Commerce MCP",
       version: "official",
-      description: "Official Square MCP — catalog items, orders, payments, inventory, and customers.",
-      repository: { url: "https://developer.squareup.com/docs/mcp" },
+      description: "Official Square MCP — POS catalog, orders, payments, and inventory management.",
+      repository: { url: "https://developer.squareup.com" },
       remotes: [{ type: "streamable-http", url: "https://mcp.squareup.com/sse" }],
     },
   },
@@ -526,8 +526,9 @@ const MCP_CATEGORY_RULES = [
 
 function classifyMcpCategory(explicitCategory, text) {
   if (explicitCategory) return explicitCategory;
+  const hay = String(text || "");
   for (const rule of MCP_CATEGORY_RULES) {
-    if (rule.rx.test(text)) return rule.id;
+    if (rule.rx.test(hay)) return rule.id;
   }
   return "coding";
 }
@@ -542,10 +543,10 @@ function inferAuthType(explicitAuthType, isRemote, text) {
 }
 
 // 1. Official MCP Registry
-async function fetchOfficialRegistry(apiSearch, maxPages = 80) {
+async function fetchOfficialRegistry(apiSearch, maxPages = 85) {
   const results = [];
   let cursor = "";
-  const deadline = Date.now() + 16500;
+  const deadline = Date.now() + 17000;
   for (let i = 0; i < maxPages && Date.now() < deadline; i += 1) {
     const params = new URLSearchParams({ limit: "100", version: "latest" });
     if (apiSearch.length >= 2) params.set("search", apiSearch);
@@ -553,7 +554,7 @@ async function fetchOfficialRegistry(apiSearch, maxPages = 80) {
 
     try {
       const response = await fetch(`${REGISTRY}/v0.1/servers?${params}`, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.1" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.2" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(4500),
       });
@@ -564,7 +565,7 @@ async function fetchOfficialRegistry(apiSearch, maxPages = 80) {
         results.push({ ...item, sourceLabel: "Official Registry" });
       }
       cursor = payload?.metadata?.nextCursor || "";
-      if (!cursor || results.length >= 8000) break;
+      if (!cursor || results.length >= 8500) break;
     } catch {
       break;
     }
@@ -572,41 +573,41 @@ async function fetchOfficialRegistry(apiSearch, maxPages = 80) {
   return results;
 }
 
-// 2. Glama MCP Registry (130,000+ real MCP servers) — 65 parallel high-value domain queries + general pages
+// 2. Glama MCP Registry (130,000+ real MCP servers) — 112 high-value domain queries + general sweep
 const GLAMA_HIGH_SIGNAL_QUERIES = [
-  "postgres", "mysql", "sqlite", "mongodb", "redis", "supabase", "firebase", "snowflake",
-  "aws", "azure", "gcp", "kubernetes", "docker", "terraform", "cloudflare", "vercel",
-  "playwright", "puppeteer", "browser", "scraper", "firecrawl", "selenium", "crawl",
-  "stripe", "paypal", "finance", "stock", "trading", "accounting", "invoice", "bank",
-  "crypto", "ethereum", "solana", "binance", "blockchain", "defi", "wallet",
-  "figma", "blender", "unity", "design", "svg", "3d", "canva", "webflow",
-  "youtube", "spotify", "video", "audio", "ffmpeg", "image", "whisper", "tts",
-  "shopify", "woocommerce", "amazon", "ecommerce", "inventory",
-  "hubspot", "salesforce", "zendesk", "crm", "seo", "marketing", "ads",
-  "maps", "weather", "flight", "travel", "geo",
-  "security", "snyk", "pentest", "owasp", "vault", "auth",
-  "datadog", "grafana", "prometheus", "posthog", "excel", "sheets", "analytics",
-  "slack", "discord", "telegram", "gmail", "outlook", "email", "twitter", "reddit", "linkedin",
-  "n8n", "zapier", "workflow", "homeassistant", "iot",
-  "notion", "linear", "jira", "confluence", "obsidian", "calendar", "pdf", "drive",
-  "search", "arxiv", "wikipedia", "docs", "memory", "rag", "vector", "ollama", "huggingface",
+  "postgres", "mysql", "sqlite", "mongodb", "redis", "supabase", "firebase", "snowflake", "bigquery", "duckdb", "neo4j", "qdrant",
+  "aws", "azure", "gcp", "kubernetes", "docker", "terraform", "cloudflare", "vercel", "netlify", "railway", "linux", "ssh",
+  "playwright", "puppeteer", "browser", "scraper", "firecrawl", "selenium", "crawl", "chrome", "fetch", "http",
+  "stripe", "paypal", "finance", "stock", "trading", "accounting", "invoice", "bank", "plaid", "quickbooks", "forex",
+  "crypto", "ethereum", "solana", "binance", "blockchain", "defi", "wallet", "bitcoin", "polygon", "web3",
+  "figma", "blender", "unity", "design", "svg", "3d", "canva", "webflow", "mermaid", "excalidraw", "diagram",
+  "youtube", "spotify", "video", "audio", "ffmpeg", "image", "whisper", "tts", "music", "podcast", "ocr",
+  "shopify", "woocommerce", "amazon", "ecommerce", "inventory", "stripe", "square",
+  "hubspot", "salesforce", "zendesk", "crm", "seo", "marketing", "ads", "analytics", "mailchimp",
+  "maps", "weather", "flight", "travel", "geo", "hotel", "calendar", "time",
+  "security", "snyk", "pentest", "owasp", "vault", "auth", "clerk", "semgrep", "audit",
+  "datadog", "grafana", "prometheus", "posthog", "excel", "sheets", "csv", "pandas", "jupyter",
+  "slack", "discord", "telegram", "whatsapp", "gmail", "outlook", "email", "twitter", "reddit", "linkedin", "teams",
+  "n8n", "zapier", "workflow", "homeassistant", "iot", "cron", "webhook", "queue",
+  "notion", "linear", "jira", "confluence", "obsidian", "pdf", "drive", "airtable", "trello", "asana", "clickup",
+  "search", "arxiv", "wikipedia", "docs", "memory", "rag", "vector", "ollama", "huggingface", "github", "gitlab", "git",
 ];
 
 async function fetchGlamaDirectory(apiSearch) {
   const results = [];
-  const deadline = Date.now() + 17500;
+  const deadline = Date.now() + 18500;
 
   const generalTask = (async () => {
     const out = [];
     let cursor = "";
-    const maxPages = apiSearch ? 8 : 30;
+    const maxPages = apiSearch ? 8 : 34;
     for (let i = 0; i < maxPages && Date.now() < deadline; i += 1) {
       const params = new URLSearchParams({ first: "100" });
       if (apiSearch.length >= 2) params.set("query", apiSearch);
       if (cursor) params.set("after", cursor);
       try {
         const res = await fetch(`${GLAMA_API}?${params}`, {
-          headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.1" },
+          headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.2" },
           next: { revalidate: 3600 },
           signal: AbortSignal.timeout(4500),
         });
@@ -615,7 +616,7 @@ async function fetchGlamaDirectory(apiSearch) {
         const batch = Array.isArray(payload?.servers) ? payload.servers : [];
         out.push(...batch);
         cursor = payload?.pageInfo?.hasNextPage ? payload?.pageInfo?.endCursor || "" : "";
-        if (!cursor || out.length >= 3000) break;
+        if (!cursor || out.length >= 3400) break;
       } catch {
         break;
       }
@@ -627,13 +628,13 @@ async function fetchGlamaDirectory(apiSearch) {
     ? Promise.resolve([])
     : (async () => {
         const out = [];
-        for (let i = 0; i < GLAMA_HIGH_SIGNAL_QUERIES.length && Date.now() < deadline; i += 20) {
-          const batchTerms = GLAMA_HIGH_SIGNAL_QUERIES.slice(i, i + 20);
+        for (let i = 0; i < GLAMA_HIGH_SIGNAL_QUERIES.length && Date.now() < deadline; i += 24) {
+          const batchTerms = GLAMA_HIGH_SIGNAL_QUERIES.slice(i, i + 24);
           const settled = await Promise.allSettled(
             batchTerms.map(async (term) => {
               const params = new URLSearchParams({ first: "100", query: term });
               const res = await fetch(`${GLAMA_API}?${params}`, {
-                headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.1" },
+                headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.2" },
                 next: { revalidate: 3600 },
                 signal: AbortSignal.timeout(4500),
               });
@@ -651,7 +652,7 @@ async function fetchGlamaDirectory(apiSearch) {
 
   const [genRows, catRows] = await Promise.all([generalTask, categoryTask]);
   for (const item of [...genRows, ...catRows]) {
-    if (!item?.name) continue;
+    if (!item?.name || JUNK_NAME_RX.test(item.name)) continue;
     const slug = item.slug || item.id || item.name;
     const repoUrl = item.url || item.repository?.url || `https://glama.ai/mcp/servers/${slug}`;
     const stars = Number(item.repository?.stargazersCount || item.stars || 0);
@@ -675,19 +676,20 @@ async function fetchGlamaDirectory(apiSearch) {
   return results;
 }
 
-// 3. npm Public Registry — 40 useful domain-specific MCP queries
+// 3. npm Public Registry — 76 useful domain-specific MCP queries
 const NPM_BALANCED_MCP_QUERIES = [
   "mcp-server", "modelcontextprotocol", "@modelcontextprotocol", "fastmcp",
-  "mcp postgres", "mcp mysql", "mcp sqlite", "mcp mongodb", "mcp redis", "mcp supabase",
-  "mcp aws", "mcp azure", "mcp gcp", "mcp docker", "mcp kubernetes", "mcp cloudflare",
-  "mcp playwright", "mcp puppeteer", "mcp browser", "mcp firecrawl", "mcp scraper",
-  "mcp stripe", "mcp finance", "mcp stock", "mcp crypto", "mcp solana", "mcp ethereum",
-  "mcp figma", "mcp design", "mcp video", "mcp youtube", "mcp image",
-  "mcp shopify", "mcp hubspot", "mcp salesforce", "mcp maps", "mcp weather",
-  "mcp security", "mcp analytics", "mcp datadog", "mcp grafana",
-  "mcp slack", "mcp discord", "mcp telegram", "mcp gmail", "mcp email",
-  "mcp notion", "mcp linear", "mcp jira", "mcp obsidian", "mcp pdf", "mcp excel",
-  "mcp search", "mcp memory", "mcp rag", "mcp github", "mcp gitlab", "mcp n8n",
+  "mcp-client", "mcp-proxy", "mcp-bridge", "mcp-tool",
+  "mcp postgres", "mcp mysql", "mcp sqlite", "mcp mongodb", "mcp redis", "mcp supabase", "mcp firebase", "mcp prisma",
+  "mcp aws", "mcp azure", "mcp gcp", "mcp docker", "mcp kubernetes", "mcp cloudflare", "mcp vercel", "mcp terraform",
+  "mcp playwright", "mcp puppeteer", "mcp browser", "mcp firecrawl", "mcp scraper", "mcp fetch",
+  "mcp stripe", "mcp paypal", "mcp finance", "mcp stock", "mcp crypto", "mcp solana", "mcp ethereum", "mcp web3",
+  "mcp figma", "mcp design", "mcp video", "mcp youtube", "mcp image", "mcp audio", "mcp ffmpeg",
+  "mcp shopify", "mcp hubspot", "mcp salesforce", "mcp crm", "mcp maps", "mcp weather", "mcp travel",
+  "mcp security", "mcp auth", "mcp analytics", "mcp datadog", "mcp grafana", "mcp sentry",
+  "mcp slack", "mcp discord", "mcp telegram", "mcp whatsapp", "mcp gmail", "mcp email", "mcp twitter",
+  "mcp notion", "mcp linear", "mcp jira", "mcp obsidian", "mcp pdf", "mcp excel", "mcp calendar",
+  "mcp search", "mcp memory", "mcp rag", "mcp github", "mcp gitlab", "mcp n8n", "mcp filesystem", "mcp terminal",
 ];
 
 async function fetchNpmMcpServers(apiSearch) {
@@ -695,14 +697,14 @@ async function fetchNpmMcpServers(apiSearch) {
   const requests = [];
   for (let idx = 0; idx < queries.length; idx += 1) {
     const text = queries[idx];
-    const offsets = apiSearch ? [0, 250] : idx < 4 ? [0, 250, 500, 750] : [0, 250];
+    const offsets = apiSearch ? [0, 250] : idx < 12 ? [0, 250, 500] : [0, 250];
     for (const from of offsets) requests.push({ text, from });
   }
 
   const items = [];
-  const deadline = Date.now() + 16500;
-  for (let start = 0; start < requests.length && Date.now() < deadline; start += 28) {
-    const batch = requests.slice(start, start + 28);
+  const deadline = Date.now() + 18000;
+  for (let start = 0; start < requests.length && Date.now() < deadline; start += 36) {
+    const batch = requests.slice(start, start + 36);
     const settled = await Promise.allSettled(
       batch.map(async ({ text, from }) => {
         const url = new URL(NPM_SEARCH_API);
@@ -710,7 +712,7 @@ async function fetchNpmMcpServers(apiSearch) {
         url.searchParams.set("size", "250");
         url.searchParams.set("from", String(from));
         const res = await fetch(url, {
-          headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.1" },
+          headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.2" },
           next: { revalidate: 3600 },
           signal: AbortSignal.timeout(5000),
         });
@@ -752,7 +754,7 @@ async function fetchNpmMcpServers(apiSearch) {
 
 // 4. PulseMCP Directory
 async function fetchPulseMcpServers(apiSearch) {
-  const pages = apiSearch ? [0, 1] : Array.from({ length: 20 }, (_, i) => i);
+  const pages = apiSearch ? [0, 1] : Array.from({ length: 24 }, (_, i) => i);
   const settled = await Promise.allSettled(
     pages.map(async (page) => {
       const url = new URL(PULSEMCP_API);
@@ -760,7 +762,7 @@ async function fetchPulseMcpServers(apiSearch) {
       url.searchParams.set("offset", String(page * 100));
       if (apiSearch) url.searchParams.set("query", apiSearch);
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.1" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.2" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(5500),
       });
@@ -774,7 +776,7 @@ async function fetchPulseMcpServers(apiSearch) {
   for (const r of settled) {
     if (r.status !== "fulfilled") continue;
     for (const s of r.value) {
-      if (!s?.name) continue;
+      if (!s?.name || JUNK_NAME_RX.test(s.name)) continue;
       const stars = Number(s.github_stars || s.estimated_downloads || 0);
       const targetUrl = s.url || s.source_code_url || "";
       items.push({
@@ -803,6 +805,8 @@ async function fetchDockerHubMcps(apiSearch) {
         "mcp-server", "modelcontextprotocol", "mcp-proxy", "mcp-gateway",
         "mcp postgres", "mcp github", "mcp browser", "mcp playwright",
         "mcp cloud", "mcp docker", "mcp slack", "mcp notion",
+        "mcp redis", "mcp aws", "mcp kubernetes", "mcp database",
+        "mcp search", "mcp python",
       ];
   const requests = [];
   for (const q of queries) {
@@ -817,7 +821,7 @@ async function fetchDockerHubMcps(apiSearch) {
       url.searchParams.set("page_size", "100");
       url.searchParams.set("page", String(page));
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.1" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.2" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(5500),
       });
@@ -833,7 +837,7 @@ async function fetchDockerHubMcps(apiSearch) {
     for (const repo of r.value) {
       const name = String(repo?.repo_name || "").trim();
       const desc = String(repo?.short_description || "").trim();
-      if (!name) continue;
+      if (!name || JUNK_NAME_RX.test(name.split("/")[1] || name)) continue;
       if (!/\bmcp\b|model[- ]?context[- ]?protocol/i.test(`${name} ${desc}`)) continue;
       const pulls = Number(repo.pull_count || 0);
       const stars = Math.max(Number(repo.star_count || 0) * 10, Math.round(Math.sqrt(pulls) * 4));
@@ -860,7 +864,9 @@ async function fetchDockerHubMcps(apiSearch) {
 
 // 6. Crates.io Rust MCP Registry
 async function fetchCratesIoMcps(apiSearch) {
-  const queries = apiSearch ? [`${apiSearch} mcp`] : ["mcp-server", "model-context-protocol", "rmcp", "mcp"];
+  const queries = apiSearch
+    ? [`${apiSearch} mcp`]
+    : ["mcp-server", "model-context-protocol", "rmcp", "mcp", "mcp-client", "mcp-sdk", "mcp-core", "mcp-tools"];
   const requests = [];
   for (const q of queries) {
     const pages = apiSearch ? [1] : [1, 2, 3];
@@ -875,7 +881,7 @@ async function fetchCratesIoMcps(apiSearch) {
       url.searchParams.set("page", String(page));
       url.searchParams.set("sort", "downloads");
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.1 (https://drive-mcp-five.vercel.app)" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.2 (https://drive-mcp-five.vercel.app)" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(5500),
       });
@@ -891,7 +897,7 @@ async function fetchCratesIoMcps(apiSearch) {
     for (const c of r.value) {
       const name = String(c?.name || "").trim();
       const desc = String(c?.description || "").trim();
-      if (!name) continue;
+      if (!name || JUNK_NAME_RX.test(name)) continue;
       if (!/\bmcp\b|model[- ]?context[- ]?protocol/i.test(`${name} ${desc}`)) continue;
       const downloads = Number(c.downloads || 0);
       const stars = Math.round(Math.sqrt(downloads) * 3);
@@ -918,7 +924,7 @@ async function fetchCratesIoMcps(apiSearch) {
 async function fetchGithubPopularMcps(apiSearch) {
   const headers = {
     accept: "application/vnd.github+json",
-    "user-agent": "DRIVE-MCP/4.1",
+    "user-agent": "DRIVE-MCP/4.2",
   };
   if (process.env.GITHUB_TOKEN) {
     headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
@@ -985,10 +991,10 @@ async function fetchGithubPopularMcps(apiSearch) {
 }
 
 function serializeServer(entry) {
-  const server = entry?.server ?? entry ?? {};
+  const server = entry?.server || entry || {};
   const remotes = Array.isArray(server.remotes) ? server.remotes : [];
   const packages = Array.isArray(server.packages) ? server.packages : [];
-  const repo = server.repository?.url || server.repository || "";
+  const repo = server.repository;
   const name = server.title || server.name || "Unnamed MCP";
   const id = server.name || "";
   const description = server.description || "MCP server indexed in DRIVE Directory.";
@@ -1068,7 +1074,7 @@ async function getServers(query) {
 
   const [officialRes, glamaRes, npmRes, pulseRes, dockerRes, cratesRes, githubRes] =
     await Promise.allSettled([
-      fetchOfficialRegistry(apiSearch, apiSearch ? 10 : 80),
+      fetchOfficialRegistry(apiSearch, apiSearch ? 10 : 85),
       fetchGlamaDirectory(apiSearch),
       fetchNpmMcpServers(apiSearch),
       fetchPulseMcpServers(apiSearch),
@@ -1088,11 +1094,12 @@ async function getServers(query) {
   ];
 
   for (const entry of combined) {
-    const key = String(entry?.server?.name || entry?.name || "").toLowerCase();
+    const server = entry?.server || entry;
+    const key = String(server?.name || "").toLowerCase();
     if (!key || seen.has(key)) continue;
     seen.add(key);
     all.push(entry);
-    if (all.length >= 32000) break;
+    if (all.length >= 38000) break;
   }
 
   const serialized = all.map(serializeServer);
@@ -1115,16 +1122,13 @@ export async function renderWorkspaceHome(searchParams, forcedTab = "mcp") {
   const params = await searchParams;
   const query = typeof params?.q === "string" ? params.q : "";
 
-  const data = await getServers(query);
-  const servers = data.servers;
-
-  const connections = <MyMcpPanel />;
+  const { servers, unavailable } = await getServers(query);
 
   const discover = (
     <McpDirectoryGrid
       initialServers={servers}
       initialQuery={query}
-      unavailable={data.unavailable}
+      unavailable={unavailable}
     />
   );
 
@@ -1142,11 +1146,12 @@ export async function renderWorkspaceHome(searchParams, forcedTab = "mcp") {
     </section>
   );
 
+  const myMcps = <MyMcpPanel />;
   const skills = <SkillLibrary />;
 
   return (
     <WorkspaceTabs
-      connections={connections}
+      myMcps={myMcps}
       discover={discover}
       add={add}
       skills={skills}

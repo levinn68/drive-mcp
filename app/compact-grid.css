@@ -1,4 +1,4 @@
-/* DRIVE MCP — App-First Cupertino Liquid Glass v2.4 (Zero-Clip Cards + OAuth 2.1 CIMD + 3K Catalog) */
+/* DRIVE MCP — App-First Cupertino Liquid Glass v2.5 (Zero-Clip Cards + MCP Tools Drawer + OAuth DCR/CIMD) */
 
 :root {
   --drive-glass-bg: #060a12;
@@ -190,7 +190,7 @@ body {
   animation: driveTabIn 200ms var(--drive-spring) both;
 }
 
-/* My MCPs Instant iOS Switch & Zero-Clip Cards */
+/* My MCPs Instant iOS Switch, Zero-Clip Cards & Tools Drawer */
 .my-mcp-summary-strip {
   display: flex;
   align-items: center;
@@ -285,6 +285,86 @@ body {
   align-items: center;
   gap: 6px;
   flex-wrap: wrap;
+}
+
+/* MCP Tools Drawer */
+.mcp-tools-drawer {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: driveTabIn 180ms var(--drive-spring) both;
+}
+
+.mcp-tools-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mcp-tools-head strong {
+  font-size: 12.5px;
+  color: #7cd4ff;
+}
+
+.mcp-tools-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: #b7c8dc;
+  line-height: 1.45;
+}
+
+.mcp-tools-search {
+  width: 100%;
+  min-height: 36px;
+  padding: 7px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(6, 11, 20, 0.65);
+  color: #f4f8ff;
+  font-size: 12.5px;
+}
+
+.mcp-tools-list {
+  display: grid;
+  gap: 8px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.mcp-tool-item {
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(6, 11, 20, 0.56);
+}
+
+.mcp-tool-item code {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  color: #8cdbff;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.mcp-tool-item p {
+  margin: 4px 0 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #a9bdd4;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .ios-toggle {
@@ -533,19 +613,6 @@ body {
   font-size: 12px;
   line-height: 1.5;
   color: #9cb0c7;
-}
-
-.hidden-connected-pill {
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 9px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #86efac;
-  background: rgba(48, 209, 88, 0.14);
-  border: 1px solid rgba(48, 209, 88, 0.32);
-  margin-left: 6px;
 }
 
 .skill-install-btn,
@@ -938,9 +1005,7 @@ body {
 .integration-grid > .integration-card:nth-child(6),
 .mkt-grid > .mkt-card:nth-child(6) { animation-delay: 125ms; }
 
-/* ==========================================================================
-   ZERO-CLIP RESPONSIVE CARD SYSTEM (NO SLOP ENGINE: NS-09-01 + NS-24-04)
-   ========================================================================== */
+/* ZERO-CLIP RESPONSIVE CARD SYSTEM (NO SLOP ENGINE: NS-09-01 + NS-24-04) */
 .integration-card,
 .server-card,
 .skill-repository-card {
@@ -1157,6 +1222,7 @@ body {
   .drive-subpanel,
   .oauth-return-bar,
   .custom-form-alert,
+  .mcp-tools-drawer,
   .skill-install-btn.is-installed,
   .add-mcp-btn.is-installed,
   .integration-grid > .integration-card,

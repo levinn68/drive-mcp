@@ -175,13 +175,12 @@ export default function SkillLibrary() {
     return () => window.clearTimeout(timer);
   }, [loadCatalog, loadMySkills]);
 
-  const { filteredCatalog, hiddenInstalledCount } = useMemo(() => {
+  const filteredCatalog = useMemo(() => {
     const cat = category.trim().toLowerCase();
     const q = query.trim().toLowerCase();
-    let hidden = 0;
 
-    const list = catalog.filter((item) => {
-      // 1. Hide Skills that are already installed in My Skills
+    return catalog.filter((item) => {
+      // 1. Hide Skills already installed in My Skills
       const itemId = normalizeSkillKey(item.id);
       const itemSource = normalizeSkillKey(item.source);
       const itemName = normalizeSkillKey(item.name);
@@ -193,7 +192,6 @@ export default function SkillLibrary() {
         (itemName && installedKeys.has(itemName));
 
       if (isAlreadyInstalled) {
-        hidden += 1;
         return false;
       }
 
@@ -216,8 +214,6 @@ export default function SkillLibrary() {
         .toLowerCase();
       return hay.includes(q);
     });
-
-    return { filteredCatalog: list, hiddenInstalledCount: hidden };
   }, [catalog, installedKeys, category, query]);
 
   const visibleCatalog = useMemo(
@@ -478,11 +474,6 @@ export default function SkillLibrary() {
               <span className="registry-live">
                 <i /> 1-Click Install
               </span>
-              {hiddenInstalledCount > 0 && (
-                <span className="hidden-connected-pill">
-                  {hiddenInstalledCount} terpasang disembunyikan
-                </span>
-              )}
             </div>
           </div>
 

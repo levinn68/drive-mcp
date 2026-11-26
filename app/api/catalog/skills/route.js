@@ -3,6 +3,8 @@ import { NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const revalidate = 3600;
 
+const NPM_SEARCH_API = "https://registry.npmjs.org/-/v1/search";
+
 const CURATED_POPULAR_SKILLS = [
   {
     id: "vercel-labs/agent-skills/react-best-practices",
@@ -15,6 +17,7 @@ const CURATED_POPULAR_SKILLS = [
     stars: 18500,
     installs: 120000,
     verified: true,
+    sourceLabel: "Official",
   },
   {
     id: "vercel-labs/agent-skills/web-design-guidelines",
@@ -27,6 +30,7 @@ const CURATED_POPULAR_SKILLS = [
     stars: 16200,
     installs: 98000,
     verified: true,
+    sourceLabel: "Official",
   },
   {
     id: "anthropics/skills/frontend-design",
@@ -39,6 +43,7 @@ const CURATED_POPULAR_SKILLS = [
     stars: 24000,
     installs: 145000,
     verified: true,
+    sourceLabel: "Official",
   },
   {
     id: "anthropics/skills/mcp-builder",
@@ -51,6 +56,7 @@ const CURATED_POPULAR_SKILLS = [
     stars: 22400,
     installs: 110000,
     verified: true,
+    sourceLabel: "Official",
   },
   {
     id: "anthropics/skills/webapp-testing",
@@ -63,6 +69,7 @@ const CURATED_POPULAR_SKILLS = [
     stars: 19500,
     installs: 88000,
     verified: true,
+    sourceLabel: "Official",
   },
   {
     id: "supabase/agent-skills/supabase-postgres-best-practices",
@@ -75,6 +82,7 @@ const CURATED_POPULAR_SKILLS = [
     stars: 14800,
     installs: 76000,
     verified: true,
+    sourceLabel: "Official",
   },
   {
     id: "remotion-dev/skills/remotion-best-practices",
@@ -87,6 +95,7 @@ const CURATED_POPULAR_SKILLS = [
     stars: 11200,
     installs: 54000,
     verified: true,
+    sourceLabel: "Official",
   },
   {
     id: "expo/skills/building-native-ui",
@@ -99,6 +108,7 @@ const CURATED_POPULAR_SKILLS = [
     stars: 10400,
     installs: 49000,
     verified: true,
+    sourceLabel: "Official",
   },
   {
     id: "cloudflare/skills/workers-best-practices",
@@ -111,6 +121,7 @@ const CURATED_POPULAR_SKILLS = [
     stars: 9800,
     installs: 46000,
     verified: true,
+    sourceLabel: "Official",
   },
   {
     id: "stripe/ai/stripe-best-practices",
@@ -123,6 +134,7 @@ const CURATED_POPULAR_SKILLS = [
     stars: 12100,
     installs: 61000,
     verified: true,
+    sourceLabel: "Official",
   },
   {
     id: "trailofbits/skills/security-audit",
@@ -135,6 +147,7 @@ const CURATED_POPULAR_SKILLS = [
     stars: 13200,
     installs: 52000,
     verified: true,
+    sourceLabel: "Official",
   },
   {
     id: "obra/superpowers/systematic-debugging",
@@ -147,6 +160,7 @@ const CURATED_POPULAR_SKILLS = [
     stars: 15600,
     installs: 74000,
     verified: true,
+    sourceLabel: "Official",
   },
 ];
 
@@ -163,6 +177,10 @@ const SKILLS_SH_TOPICS = [
   "notion", "linear", "jira", "slack", "discord", "email", "calendar", "crm", "shopify",
   "web3", "solana", "ethereum", "terraform", "linux", "bash", "nginx", "ci", "deploy",
   "architecture", "review", "clean", "plan", "research", "writing", "copywriting", "brand",
+  "fastapi", "django", "rails", "laravel", "php", "csharp", "dotnet", "cpp", "zig", "elixir",
+  "firebase", "neon", "planetscale", "clickhouse", "snowflake", "dbt", "airflow", "kafka",
+  "sentry", "datadog", "grafana", "prometheus", "opentelemetry", "accessibility", "i18n",
+  "saas", "landing", "pricing", "onboarding", "growth", "product", "pitch", "startup",
 ];
 
 const AWESOME_README_URLS = [
@@ -221,19 +239,20 @@ function formatTitle(raw, fallback) {
   return base.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+// Non-GitHub source 1: skills.sh leaderboard & search API
 async function fetchSkillsShSearch(q) {
-  const headers = { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/2.7" };
+  const headers = { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/2.8" };
   const queries = q ? [q] : SKILLS_SH_TOPICS;
   const rows = [];
-  const deadline = Date.now() + 10500;
+  const deadline = Date.now() + 11500;
 
-  for (let start = 0; start < queries.length && Date.now() < deadline; start += 22) {
-    const batch = queries.slice(start, start + 22);
+  for (let start = 0; start < queries.length && Date.now() < deadline; start += 24) {
+    const batch = queries.slice(start, start + 24);
     const settled = await Promise.allSettled(
       batch.map(async (term) => {
         const url = new URL("https://skills.sh/api/search");
         url.searchParams.set("q", term);
-        url.searchParams.set("limit", q ? "250" : "200");
+        url.searchParams.set("limit", "250");
         const res = await fetch(url, {
           headers,
           next: { revalidate: q ? 900 : 3600 },
@@ -253,51 +272,105 @@ async function fetchSkillsShSearch(q) {
         rows.push(...r.value);
       }
     }
-    if (rows.length >= 14000) break;
+    if (rows.length >= 18000) break;
   }
   return rows;
 }
 
+// Non-GitHub source 2: skillsdirectory.com public registry
 async function fetchSkillsDirectory(q) {
-  const totalPages = q ? 10 : 45;
+  const totalPages = q ? 12 : 55;
   const allRows = [];
-  const deadline = Date.now() + 10000;
-  for (let start = 0; start < totalPages && Date.now() < deadline; start += 15) {
-    const batch = Array.from({ length: Math.min(15, totalPages - start) }, (_, i) => start + i);
+  const deadline = Date.now() + 11000;
+  for (let start = 0; start < totalPages && Date.now() < deadline; start += 18) {
+    const batch = Array.from({ length: Math.min(18, totalPages - start) }, (_, i) => start + i);
     const settled = await Promise.allSettled(
       batch.map(async (page) => {
         const url = new URL("https://www.skillsdirectory.com/api/registry");
+        url.searchParams.set("page", String(page));
         url.searchParams.set("limit", "100");
-        url.searchParams.set("offset", String(page * 100));
         url.searchParams.set("sort", "stars");
         if (q) url.searchParams.set("q", q);
         const res = await fetch(url, {
-          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/2.7" },
+          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/2.8" },
           next: { revalidate: q ? 900 : 3600 },
           signal: AbortSignal.timeout(5500),
         });
         if (!res.ok) return [];
         const payload = await res.json();
-        return payload.skills || payload.data || [];
+        return Array.isArray(payload.skills) ? payload.skills : [];
       })
     );
-    let anyRows = false;
     for (const r of settled) {
-      if (r.status === "fulfilled" && r.value.length) {
-        anyRows = true;
-        allRows.push(...r.value);
-      }
+      if (r.status === "fulfilled" && r.value.length) allRows.push(...r.value);
     }
-    if (!anyRows) break;
   }
   return allRows;
+}
+
+// Non-GitHub source 3: npm public registry for published agent skill & rule packs
+async function fetchNpmSkillPackages(q) {
+  const queries = q
+    ? [`${q} agent skill`]
+    : ["agent-skill", "claude-skill", "codex-skill", "cursor-rules", "ai-agent-skills", "skill-md"];
+
+  const requests = [];
+  for (const text of queries) {
+    const offsets = q ? [0] : [0, 250];
+    for (const from of offsets) {
+      requests.push({ text, from });
+    }
+  }
+
+  const settled = await Promise.allSettled(
+    requests.map(async ({ text, from }) => {
+      const url = new URL(NPM_SEARCH_API);
+      url.searchParams.set("text", text);
+      url.searchParams.set("size", "250");
+      url.searchParams.set("from", String(from));
+      const res = await fetch(url, {
+        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/2.8" },
+        next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(6000),
+      });
+      if (!res.ok) return [];
+      const payload = await res.json();
+      return Array.isArray(payload?.objects) ? payload.objects : [];
+    })
+  );
+
+  const parsed = [];
+  for (const r of settled) {
+    if (r.status !== "fulfilled") continue;
+    for (const obj of r.value) {
+      const pkg = obj?.package;
+      if (!pkg?.name) continue;
+      const popScore = Math.round(Number(obj?.score?.detail?.popularity || 0) * 1400);
+      const repoUrl = pkg.links?.repository || "";
+      const ghMatch = repoUrl.match(/github\.com\/([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)/i);
+      const cleanSource = ghMatch ? ghMatch[1].replace(/\.git$/i, "") : `npm/${pkg.name}`;
+      parsed.push({
+        repository: cleanSource,
+        name: pkg.name.replace(/^@[^/]+\//, ""),
+        slug: pkg.name.replace(/^@/, "").replace(/[^a-z0-9-]+/gi, "-").toLowerCase(),
+        description: pkg.description || `Published npm Agent Skill package (${pkg.name}).`,
+        author: pkg.publisher?.username || "npm",
+        stars: popScore,
+        installs: popScore,
+        verified: popScore >= 300,
+        sourceLabel: "npm",
+        installUrl: pkg.links?.homepage || pkg.links?.npm || `https://www.npmjs.com/package/${pkg.name}`,
+      });
+    }
+  }
+  return parsed;
 }
 
 async function fetchAwesomeReadmes(q) {
   const settled = await Promise.allSettled(
     AWESOME_README_URLS.map(async (readmeUrl) => {
       const res = await fetch(readmeUrl, {
-        headers: { "user-agent": "DRIVE-Skills-Catalog/2.7" },
+        headers: { "user-agent": "DRIVE-Skills-Catalog/2.8" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(6000),
       });
@@ -320,6 +393,7 @@ async function fetchAwesomeReadmes(q) {
           stars: 250,
           installs: 150,
           verified: true,
+          sourceLabel: "Curated",
         });
       }
       return parsed;
@@ -333,14 +407,16 @@ export async function GET(request) {
   const q = (searchParams.get("q") || "").trim().slice(0, 100).toLowerCase();
 
   try {
-    const [shRes, dirRes, awesomeRes] = await Promise.allSettled([
+    const [shRes, dirRes, npmRes, awesomeRes] = await Promise.allSettled([
       fetchSkillsShSearch(q),
       fetchSkillsDirectory(q),
+      fetchNpmSkillPackages(q),
       fetchAwesomeReadmes(q),
     ]);
 
     const shRows = shRes.status === "fulfilled" ? shRes.value : [];
     const dirRows = dirRes.status === "fulfilled" ? dirRes.value : [];
+    const npmRows = npmRes.status === "fulfilled" ? npmRes.value : [];
     const awesomeRows = awesomeRes.status === "fulfilled" ? awesomeRes.value : [];
 
     const uniqueSkills = new Map();
@@ -378,8 +454,9 @@ export async function GET(request) {
         return;
       }
 
+      // Cap per single repo to 15 so one monorepo doesn't flood the top screen
       const repoCount = perRepoCount.get(repoKey) || 0;
-      if (!bypassRepoCap && repoCount >= 50) return;
+      if (!bypassRepoCap && repoCount >= 15) return;
       perRepoCount.set(repoKey, repoCount + 1);
 
       const displayName = formatTitle(rawName, cleanRepo.split("/")[1]);
@@ -390,21 +467,26 @@ export async function GET(request) {
         `Popular Agent Skill from ${cleanRepo}${installs ? ` · ${installs.toLocaleString()} installs` : ""}.`
       );
       const category = classifySkillCategory(item.category, `${displayName} ${slug} ${cleanRepo} ${desc}`);
+      const defaultUrl = cleanRepo.startsWith("npm/")
+        ? `https://www.npmjs.com/package/${cleanRepo.slice(4)}`
+        : `https://github.com/${cleanRepo}`;
+      const targetUrl = item.installUrl || defaultUrl;
 
       uniqueSkills.set(skillKey, {
         id: skillKey,
         name: displayName,
         slug: slug || cleanRepo.split("/")[1] || rawName,
         source: cleanRepo,
+        sourceLabel: item.sourceLabel || (cleanRepo.startsWith("npm/") ? "npm" : "skills.sh"),
         description: desc,
         category,
         author: item.author || cleanRepo.split("/")[0] || null,
         stars,
         installs,
         verified: Boolean(item.verified) || installs >= 1000 || stars >= 500,
-        installUrl: `https://github.com/${cleanRepo}`,
-        url: `https://github.com/${cleanRepo}`,
-        sourceType: "github",
+        installUrl: targetUrl,
+        url: targetUrl,
+        sourceType: cleanRepo.startsWith("npm/") ? "npm" : "registry",
         skillCount: 1,
       });
     }
@@ -425,6 +507,7 @@ export async function GET(request) {
         installs: item.installs || 0,
         stars: item.stars || item.installs || 0,
         verified: Boolean(item.verified) || Number(item.installs || 0) >= 500,
+        sourceLabel: "skills.sh",
       });
     }
 
@@ -438,7 +521,13 @@ export async function GET(request) {
         stars: item.stars || 0,
         installs: item.installs || 0,
         verified: Boolean(item.verified) || Number(item.stars || 0) >= 300,
+        sourceLabel: "SkillsDirectory",
+        installUrl: item.url || undefined,
       });
+    }
+
+    for (const item of npmRows) {
+      upsert(item.repository, item);
     }
 
     for (const item of awesomeRows) {
@@ -451,7 +540,7 @@ export async function GET(request) {
         const scoreB = b.installs * 2 + b.stars;
         return scoreB - scoreA;
       })
-      .slice(0, 8200);
+      .slice(0, 10500);
 
     const categoryCounts = {};
     for (const item of items) {
@@ -463,23 +552,25 @@ export async function GET(request) {
         items,
         count: items.length,
         totalRawSkills,
-        target: 8000,
+        target: 10000,
         categories: categoryCounts,
-        source: "skills.sh + Skills Directory + Awesome Agent Skills",
+        source: "skills.sh + Skills Directory + npm + Curated Agent Skills",
         query: q || null,
       },
       {
         headers: {
-          "Cache-Control": q
-            ? "public, s-maxage=900, stale-while-revalidate=3600"
-            : "public, s-maxage=3600, stale-while-revalidate=86400",
+          "Cache-Control": "public, s-maxage=1800, stale-while-revalidate=3600",
         },
       }
     );
   } catch (error) {
     return NextResponse.json(
-      { error: "Could not load Skills catalog", detail: String(error?.message || "").slice(0, 240) },
-      { status: 502 }
+      {
+        items: CURATED_POPULAR_SKILLS,
+        count: CURATED_POPULAR_SKILLS.length,
+        error: error?.message || "Failed to load skills catalog",
+      },
+      { status: 200 }
     );
   }
 }

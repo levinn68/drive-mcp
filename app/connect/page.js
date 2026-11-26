@@ -94,6 +94,7 @@ export default async function ConnectPage({ searchParams }) {
 
   return (
     <ConnectGateway
+      key={`${serverParam}|${queryParam}|${endpointParam}`}
       serverParam={serverParam}
       queryParam={queryParam}
       endpointParam={endpointParam}

@@ -55,13 +55,6 @@ export default function ConnectGateway({
   const [customEndpoint, setCustomEndpoint] = useState(endpointParam || "");
   const [customBusy, setCustomBusy] = useState(false);
 
-  useEffect(() => {
-    setSelectedEntry(initialEntry);
-    setSearchInput(serverParam || queryParam || "");
-    setCustomName(serverParam || queryParam || "");
-    setCustomEndpoint(endpointParam || "");
-  }, [initialEntry, serverParam, queryParam, endpointParam]);
-
   const loadSessionAndConnections = useCallback(async () => {
     setAuthLoading(true);
     try {
@@ -94,7 +87,10 @@ export default function ConnectGateway({
   }, []);
 
   useEffect(() => {
-    loadSessionAndConnections();
+    const initialLoad = window.setTimeout(() => {
+      loadSessionAndConnections();
+    }, 0);
+    return () => window.clearTimeout(initialLoad);
   }, [loadSessionAndConnections]);
 
   async function signInWithGoogle() {

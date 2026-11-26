@@ -1,15 +1,22 @@
-/* Compact 2-column mobile grid & sticky OAuth return bar for DRIVE MCP */
+/* DRIVE MCP — No-Slop App-First Cupertino Dark Glass & 2-Column Mobile Grid */
 
+html,
+body {
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Sticky OAuth Return Bar */
 .oauth-return-bar {
   position: sticky;
   top: 0;
   z-index: 90;
   padding: calc(8px + env(safe-area-inset-top)) 12px 8px;
-  background: linear-gradient(135deg, rgba(16, 30, 22, 0.94), rgba(10, 18, 28, 0.96));
+  background: linear-gradient(135deg, rgba(14, 28, 20, 0.95), rgba(9, 16, 26, 0.97));
   border-bottom: 1px solid rgba(215, 255, 139, 0.35);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  backdrop-filter: blur(20px) saturate(180%);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  -webkit-backdrop-filter: blur(22px) saturate(185%);
+  backdrop-filter: blur(22px) saturate(185%);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38);
 }
 
 .oauth-return-inner {
@@ -48,7 +55,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  min-height: 38px;
+  min-height: 36px;
   padding: 0 14px;
   border-radius: 999px;
   border: 1px solid rgba(215, 255, 139, 0.75);
@@ -73,7 +80,96 @@
   cursor: pointer;
 }
 
+/* Strip generic landing-page filler cards & nested box clutter */
+.discover-highlights,
+.principle-grid,
+.hero-metrics,
+.hero-highlights,
+.workspace-highlights {
+  display: none !important;
+}
+
+/* Horizontal swipeable category rail instead of multi-row chip wall */
+.mcp-category-filter,
+.skill-category-filter {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  gap: 8px !important;
+  padding: 2px 0 6px !important;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.mcp-category-filter::-webkit-scrollbar,
+.skill-category-filter::-webkit-scrollbar {
+  display: none;
+}
+
+.mcp-category-filter .category-chip,
+.skill-category-filter .segmented-pill {
+  flex: 0 0 auto !important;
+  white-space: nowrap !important;
+}
+
+/* Desktop: crisp 3-column extension store grid */
+.integration-grid {
+  display: grid !important;
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 14px !important;
+}
+
+@media (max-width: 960px) {
+  .integration-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+/* Mobile App-First Layout: flat obsidian canvas, compact hero, 2-column card grid */
 @media (max-width: 720px) {
+  /* Remove heavy outer section boxes-inside-boxes on mobile */
+  .catalog-section,
+  .platform-section,
+  .my-mcps-section,
+  .skill-library-section,
+  .skill-directory-section {
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    border-radius: 0 !important;
+    border-left: 0 !important;
+    border-right: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  /* Compact the giant marketing hero so My MCPs & Directory appear immediately */
+  .hero,
+  .workspace-hero,
+  .hero-panel {
+    padding: 18px 16px !important;
+    border-radius: 22px !important;
+    margin-bottom: 14px !important;
+  }
+
+  .hero h1,
+  .workspace-hero h1,
+  .hero-panel h1 {
+    font-size: 24px !important;
+    line-height: 1.12 !important;
+    letter-spacing: -0.03em !important;
+    margin-bottom: 8px !important;
+  }
+
+  .hero p,
+  .workspace-hero p,
+  .hero-panel p {
+    font-size: 13px !important;
+    line-height: 1.45 !important;
+    margin-bottom: 14px !important;
+  }
+
+  /* True 2-column compact card grid for MCPs and Skills */
+  .integration-grid,
   .server-grid,
   .directory-grid,
   .mcp-grid,
@@ -85,24 +181,55 @@
     gap: 10px !important;
   }
 
+  .integration-card,
   .server-card,
   .mcp-card,
   .skill-repository-card {
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
     padding: 12px !important;
     border-radius: 18px !important;
     min-width: 0 !important;
+    border: 1px solid rgba(255, 255, 255, 0.11) !important;
+    background: linear-gradient(155deg, rgba(24, 34, 48, 0.86), rgba(11, 17, 27, 0.94)) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 8px 20px rgba(0, 0, 0, 0.24) !important;
   }
 
+  .integration-card .card-top {
+    gap: 6px !important;
+    margin-bottom: 8px !important;
+  }
+
+  .integration-card .integration-icon {
+    width: 30px !important;
+    height: 30px !important;
+    border-radius: 10px !important;
+  }
+
+  .integration-card .status {
+    font-size: 10px !important;
+    padding: 3px 7px !important;
+  }
+
+  /* Hide clunky nested ID bar inside cards on mobile */
+  .integration-card .server-id {
+    display: none !important;
+  }
+
+  .integration-card h3,
   .server-card h3,
   .skill-repository-copy strong {
     font-size: 13px !important;
     line-height: 1.28 !important;
+    margin: 4px 0 4px !important;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
 
+  .integration-card p,
   .server-card p,
   .skill-repository-copy p {
     font-size: 11px !important;
@@ -111,34 +238,43 @@
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    margin: 6px 0 8px !important;
+    margin: 0 0 10px !important;
   }
 
-  .server-meta,
-  .server-card-footer,
-  .server-actions,
-  .server-card-actions {
-    gap: 6px !important;
+  .server-meta {
+    gap: 5px !important;
+    margin-bottom: 6px !important;
     flex-wrap: wrap !important;
   }
 
   .server-card .transport-pill,
   .server-card .version-pill {
-    font-size: 10px !important;
-    padding: 3px 7px !important;
+    font-size: 9.5px !important;
+    padding: 2px 6px !important;
   }
 
+  .integration-card .card-bottom {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 6px !important;
+    padding-top: 8px !important;
+    margin-top: auto !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .integration-card .server-actions {
+    display: none !important;
+  }
+
+  .integration-card button,
   .server-card button,
   .skill-repository-main > .glass-chip-btn {
+    width: 100% !important;
     min-height: 36px !important;
     padding: 0 10px !important;
-    font-size: 11px !important;
+    font-size: 11.5px !important;
+    font-weight: 650 !important;
     border-radius: 11px !important;
-  }
-
-  .discover-highlights {
-    display: grid !important;
-    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
-    gap: 8px !important;
+    justify-content: center !important;
   }
 }

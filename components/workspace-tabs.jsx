@@ -24,10 +24,16 @@ import {
 import { useDriveLang } from "./lang-context";
 
 const NAV_ITEMS = [
-  { id: "mcp", label: "MCP Hub", short: "MCP", icon: Cable },
-  { id: "skills", label: "Skills Library", short: "Skills", icon: BookOpen },
-  { id: "account", label: "Account", short: "Account", icon: LockKeyhole },
+  { id: "mcp", label: "MCP Hub", short: "MCP", path: "/mcp", icon: Cable },
+  { id: "skills", label: "Skills Library", short: "Skills", path: "/skills", icon: BookOpen },
+  { id: "account", label: "Account", short: "Account", path: "/acc", icon: LockKeyhole },
 ];
+
+const TAB_TO_PATH = {
+  mcp: "/mcp",
+  skills: "/skills",
+  account: "/acc",
+};
 
 const MCP_SUBTABS = [
   { id: "discover", label: "Directory" },
@@ -35,21 +41,13 @@ const MCP_SUBTABS = [
   { id: "custom", label: "+ Custom" },
 ];
 
-const HASH_TO_TAB = {
-  "#mcp": "mcp",
-  "#home": "mcp",
-  "#my-mcps": "mcp",
-  "#connections": "mcp",
-  "#directory": "mcp",
-  "#discover": "mcp",
-  "#custom": "mcp",
-  "#add": "mcp",
-  "#skills": "skills",
-  "#my-skills": "skills",
-  "#account": "account",
-  "#security": "account",
-  "#settings": "account",
-};
+function pathToTab(pathname) {
+  const clean = String(pathname || "").toLowerCase().replace(/\/+$/, "");
+  if (clean === "/skills") return "skills";
+  if (clean === "/acc" || clean === "/account") return "account";
+  if (clean === "/mcp" || clean === "" || clean === "/") return "mcp";
+  return null;
+}
 
 function getSupabaseClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -137,7 +135,7 @@ function AccountStatusPanel({ onNavigate, serverCount = 0 }) {
       await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/")}`,
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/mcp")}`,
         },
       });
     } catch (e) {
@@ -183,7 +181,6 @@ function AccountStatusPanel({ onNavigate, serverCount = 0 }) {
         </button>
       </div>
 
-      {/* 1. Profile & Sync Card */}
       <article className="account-profile-card">
         <div className="account-profile-left">
           <span className="account-profile-avatar">
@@ -229,7 +226,6 @@ function AccountStatusPanel({ onNavigate, serverCount = 0 }) {
 
       {error && <p className="skill-inline-error">{error}</p>}
 
-      {/* 2. Active MCPs & Active Skills Overview Grid */}
       <div className="account-active-grid">
         <article
           className="account-active-card is-interactive"
@@ -279,7 +275,6 @@ function AccountStatusPanel({ onNavigate, serverCount = 0 }) {
         </article>
       </div>
 
-      {/* 3. DRIVE Universal MCP Gateway Card */}
       <article className="account-glass-panel">
         <div className="account-panel-head">
           <div className="account-panel-title">
@@ -308,7 +303,6 @@ function AccountStatusPanel({ onNavigate, serverCount = 0 }) {
         </div>
       </article>
 
-      {/* 4. iOS Grouped Settings: Explanation Language & Security */}
       <article className="account-glass-panel">
         <div className="account-panel-head" style={{ marginBottom: 10 }}>
           <div className="account-panel-title">
@@ -362,13 +356,12 @@ function AccountStatusPanel({ onNavigate, serverCount = 0 }) {
               <small>Official Registry, Glama, npm, PulseMCP &amp; skills.sh</small>
             </div>
             <span className="version-pill">
-              <Layers size={10} /> {serverCount ? `${serverCount.toLocaleString()} MCPs` : "10,000+"}
+              <Layers size={10} /> {serverCount ? `${serverCount.toLocaleString()} MCPs` : "13,000+"}
             </span>
           </div>
         </div>
       </article>
 
-      {/* 5. Quick Workspace Actions */}
       <div className="account-quick-grid">
         <button
           type="button"
@@ -442,7 +435,8 @@ export default function WorkspaceTabs({
     MCP_SUBTABS.findIndex((item) => item.id === mcpView)
   );
 
-  const selectTab = useCallback((nextTab) => {
+  // Instant 0ms SPA tab switch + clean URL sync (/mcp, /skills, /acc)
+  const selectTab = useCallback((nextTab, pushUrl = true) => {
     setActive((prev) => {
       if (prev !== nextTab) {
         setIsAnimatingLens(true);
@@ -451,45 +445,60 @@ export default function WorkspaceTabs({
       }
       return nextTab;
     });
+    if (pushUrl && typeof window !== "undefined") {
+      const targetPath = TAB_TO_PATH[nextTab] || "/mcp";
+      const search = nextTab === "mcp" ? window.location.search : "";
+      const nextUrl = `${targetPath}${search}`;
+      if (window.location.pathname !== targetPath) {
+        try {
+          window.history.pushState({ tab: nextTab }, "", nextUrl);
+        } catch {}
+      }
+    }
   }, []);
 
   const handleAccountNavigate = useCallback(
     (tab, sub) => {
-      selectTab(tab);
+      selectTab(tab, true);
       if (tab === "mcp" && sub) setMcpView(sub);
     },
     [selectTab]
   );
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
+    const syncFromLocation = () => {
       const params = new URLSearchParams(window.location.search);
       if (params.get("mcp_auth")) {
         setActive("mcp");
         setMcpView("my");
+        return;
       }
-      const hash = window.location.hash.toLowerCase();
-      if (!hash) return;
-      const mapped = HASH_TO_TAB[hash];
-      if (mapped) setActive(mapped);
-      if (hash === "#my-mcps" || hash === "#connections") setMcpView("my");
-      else if (hash === "#custom" || hash === "#add") setMcpView("custom");
-      else if (hash === "#directory" || hash === "#discover") setMcpView("discover");
-      const cleanUrl = `${window.location.pathname}${window.location.search}`;
-      window.history.replaceState(null, "", cleanUrl);
-    }, 0);
+      const mapped = pathToTab(window.location.pathname);
+      if (mapped) {
+        setActive(mapped);
+      }
+      if (window.location.pathname === "/" && !window.location.search) {
+        try {
+          window.history.replaceState({ tab: "mcp" }, "", "/mcp");
+        } catch {}
+      }
+    };
+
+    const timer = window.setTimeout(syncFromLocation, 0);
+    window.addEventListener("popstate", syncFromLocation);
 
     const onOpenAuth = () => {
-      setActive("mcp");
+      selectTab("mcp", true);
       setMcpView("my");
     };
     window.addEventListener("drive:open-mcp-auth", onOpenAuth);
     return () => {
       window.clearTimeout(timer);
+      window.removeEventListener("popstate", syncFromLocation);
       window.removeEventListener("drive:open-mcp-auth", onOpenAuth);
       if (glideTimerRef.current) window.clearTimeout(glideTimerRef.current);
     };
-  }, []);
+  }, [selectTab]);
 
   function getPointerTabIndex(clientX) {
     const dock = dockRef.current;
@@ -530,16 +539,16 @@ export default function WorkspaceTabs({
     setIsDragging(false);
     setDragIndex(null);
     const target = NAV_ITEMS[Math.min(NAV_ITEMS.length - 1, Math.max(0, finalIdx))];
-    if (target) selectTab(target.id);
+    if (target) selectTab(target.id, true);
   }
 
   function handleKeyDown(event) {
     if (event.key === "ArrowRight") {
       event.preventDefault();
-      selectTab(NAV_ITEMS[(activeIndex + 1) % NAV_ITEMS.length].id);
+      selectTab(NAV_ITEMS[(activeIndex + 1) % NAV_ITEMS.length].id, true);
     } else if (event.key === "ArrowLeft") {
       event.preventDefault();
-      selectTab(NAV_ITEMS[(activeIndex - 1 + NAV_ITEMS.length) % NAV_ITEMS.length].id);
+      selectTab(NAV_ITEMS[(activeIndex - 1 + NAV_ITEMS.length) % NAV_ITEMS.length].id, true);
     }
   }
 
@@ -547,14 +556,21 @@ export default function WorkspaceTabs({
 
   return (
     <main className="drive-app">
-      {/* Clean iOS Topbar — zero clutter */}
+      {/* Neutral Silver-Pearl Studio Ambient Orbs for True Optical Glassmorphism */}
+      <div className="ios-ambient-orbs" aria-hidden="true">
+        <span className="ios-orb orb-1" />
+        <span className="ios-orb orb-2" />
+        <span className="ios-orb orb-3" />
+      </div>
+
+      {/* Clean Apple Liquid Glass Topbar */}
       <header className="app-topbar">
         <button
           type="button"
           className="app-brand"
           aria-label="DRIVE home"
           onClick={() => {
-            selectTab("mcp");
+            selectTab("mcp", true);
             setMcpView("discover");
           }}
         >
@@ -572,7 +588,7 @@ export default function WorkspaceTabs({
               if (active === "mcp") {
                 setMcpView(mcpView === "discover" ? "my" : "discover");
               } else {
-                selectTab("mcp");
+                selectTab("mcp", true);
                 setMcpView("discover");
               }
             }}
@@ -595,10 +611,10 @@ export default function WorkspaceTabs({
             className="top-pill-btn is-accent"
             onClick={() => {
               if (active === "account") {
-                selectTab("mcp");
+                selectTab("mcp", true);
                 setMcpView("discover");
               } else {
-                selectTab("mcp");
+                selectTab("mcp", true);
                 setMcpView("custom");
               }
             }}
@@ -610,7 +626,7 @@ export default function WorkspaceTabs({
         </div>
       </header>
 
-      {/* Persistent mounted panels for 0ms instant switching */}
+      {/* Persistent SPA Panels (/mcp, /skills, /acc) */}
       <section className="app-content" aria-live="polite">
         <div className="app-panel" hidden={active !== "mcp"}>
           <div className="drive-mcp-workspace">
@@ -664,7 +680,7 @@ export default function WorkspaceTabs({
         </div>
       </section>
 
-      {/* Floating iOS 26 Liquid Glass 3-Tab Dock */}
+      {/* Floating Pure Liquid Glass 3-Tab Dock */}
       <div className="bottom-dock-stage">
         <nav
           ref={dockRef}
@@ -691,7 +707,7 @@ export default function WorkspaceTabs({
                 className={`dock-item ${isActive ? "active is-active" : ""}`}
                 aria-current={isActive ? "page" : undefined}
                 aria-label={label}
-                onClick={() => selectTab(id)}
+                onClick={() => selectTab(id, true)}
               >
                 <span className="dock-icon">
                   <Icon size={17} />

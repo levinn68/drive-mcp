@@ -181,6 +181,10 @@ const SKILLS_SH_TOPICS = [
   "firebase", "neon", "planetscale", "clickhouse", "snowflake", "dbt", "airflow", "kafka",
   "sentry", "datadog", "grafana", "prometheus", "opentelemetry", "accessibility", "i18n",
   "saas", "landing", "pricing", "onboarding", "growth", "product", "pitch", "startup",
+  "shadcn", "radix", "framer", "gsap", "canvas", "svg", "chart", "dashboard", "admin",
+  "webhook", "queue", "worker", "cron", "cache", "search", "vector", "embedding", "eval",
+  "voice", "tts", "whisper", "image", "vision", "ocr", "markdown", "latex", "notion",
+  "obsidian", "telegram", "whatsapp", "twilio", "resend", "posthog", "mixpanel", "hubspot",
 ];
 
 const AWESOME_README_URLS = [
@@ -239,15 +243,14 @@ function formatTitle(raw, fallback) {
   return base.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-// Non-GitHub source 1: skills.sh leaderboard & search API
 async function fetchSkillsShSearch(q) {
-  const headers = { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/2.8" };
+  const headers = { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/3.0" };
   const queries = q ? [q] : SKILLS_SH_TOPICS;
   const rows = [];
-  const deadline = Date.now() + 11500;
+  const deadline = Date.now() + 13500;
 
-  for (let start = 0; start < queries.length && Date.now() < deadline; start += 24) {
-    const batch = queries.slice(start, start + 24);
+  for (let start = 0; start < queries.length && Date.now() < deadline; start += 28) {
+    const batch = queries.slice(start, start + 28);
     const settled = await Promise.allSettled(
       batch.map(async (term) => {
         const url = new URL("https://skills.sh/api/search");
@@ -272,18 +275,17 @@ async function fetchSkillsShSearch(q) {
         rows.push(...r.value);
       }
     }
-    if (rows.length >= 18000) break;
+    if (rows.length >= 26000) break;
   }
   return rows;
 }
 
-// Non-GitHub source 2: skillsdirectory.com public registry
 async function fetchSkillsDirectory(q) {
-  const totalPages = q ? 12 : 55;
+  const totalPages = q ? 12 : 75;
   const allRows = [];
-  const deadline = Date.now() + 11000;
-  for (let start = 0; start < totalPages && Date.now() < deadline; start += 18) {
-    const batch = Array.from({ length: Math.min(18, totalPages - start) }, (_, i) => start + i);
+  const deadline = Date.now() + 13000;
+  for (let start = 0; start < totalPages && Date.now() < deadline; start += 20) {
+    const batch = Array.from({ length: Math.min(20, totalPages - start) }, (_, i) => start + i);
     const settled = await Promise.allSettled(
       batch.map(async (page) => {
         const url = new URL("https://www.skillsdirectory.com/api/registry");
@@ -292,7 +294,7 @@ async function fetchSkillsDirectory(q) {
         url.searchParams.set("sort", "stars");
         if (q) url.searchParams.set("q", q);
         const res = await fetch(url, {
-          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/2.8" },
+          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/3.0" },
           next: { revalidate: q ? 900 : 3600 },
           signal: AbortSignal.timeout(5500),
         });
@@ -308,15 +310,25 @@ async function fetchSkillsDirectory(q) {
   return allRows;
 }
 
-// Non-GitHub source 3: npm public registry for published agent skill & rule packs
 async function fetchNpmSkillPackages(q) {
   const queries = q
     ? [`${q} agent skill`]
-    : ["agent-skill", "claude-skill", "codex-skill", "cursor-rules", "ai-agent-skills", "skill-md"];
+    : [
+        "agent-skill",
+        "claude-skill",
+        "codex-skill",
+        "cursor-rules",
+        "ai-agent-skills",
+        "skill-md",
+        "copilot-instructions",
+        "windsurf-rules",
+        "cline-rules",
+        "mcp-skill",
+      ];
 
   const requests = [];
   for (const text of queries) {
-    const offsets = q ? [0] : [0, 250];
+    const offsets = q ? [0] : [0, 250, 500];
     for (const from of offsets) {
       requests.push({ text, from });
     }
@@ -329,9 +341,9 @@ async function fetchNpmSkillPackages(q) {
       url.searchParams.set("size", "250");
       url.searchParams.set("from", String(from));
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/2.8" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/3.0" },
         next: { revalidate: 3600 },
-        signal: AbortSignal.timeout(6000),
+        signal: AbortSignal.timeout(6500),
       });
       if (!res.ok) return [];
       const payload = await res.json();
@@ -370,7 +382,7 @@ async function fetchAwesomeReadmes(q) {
   const settled = await Promise.allSettled(
     AWESOME_README_URLS.map(async (readmeUrl) => {
       const res = await fetch(readmeUrl, {
-        headers: { "user-agent": "DRIVE-Skills-Catalog/2.8" },
+        headers: { "user-agent": "DRIVE-Skills-Catalog/3.0" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(6000),
       });
@@ -454,9 +466,8 @@ export async function GET(request) {
         return;
       }
 
-      // Cap per single repo to 15 so one monorepo doesn't flood the top screen
       const repoCount = perRepoCount.get(repoKey) || 0;
-      if (!bypassRepoCap && repoCount >= 15) return;
+      if (!bypassRepoCap && repoCount >= 18) return;
       perRepoCount.set(repoKey, repoCount + 1);
 
       const displayName = formatTitle(rawName, cleanRepo.split("/")[1]);
@@ -540,7 +551,7 @@ export async function GET(request) {
         const scoreB = b.installs * 2 + b.stars;
         return scoreB - scoreA;
       })
-      .slice(0, 10500);
+      .slice(0, 13500);
 
     const categoryCounts = {};
     for (const item of items) {
@@ -552,7 +563,7 @@ export async function GET(request) {
         items,
         count: items.length,
         totalRawSkills,
-        target: 10000,
+        target: 13000,
         categories: categoryCounts,
         source: "skills.sh + Skills Directory + npm + Curated Agent Skills",
         query: q || null,

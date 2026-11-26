@@ -11,7 +11,6 @@ const GLAMA_API = "https://glama.ai/api/mcp/v1/servers";
 const NPM_SEARCH_API = "https://registry.npmjs.org/-/v1/search";
 const PULSEMCP_API = "https://api.pulsemcp.com/v0beta/servers";
 
-// Curated, widely-used official Remote Streamable HTTP MCP servers with auth type & popularity stars
 const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
@@ -534,10 +533,10 @@ function inferAuthType(explicitAuthType, isRemote, text) {
   return "oauth";
 }
 
-async function fetchOfficialRegistry(apiSearch, maxPages = 50) {
+async function fetchOfficialRegistry(apiSearch, maxPages = 65) {
   const results = [];
   let cursor = "";
-  const deadline = Date.now() + 11500;
+  const deadline = Date.now() + 13500;
   for (let i = 0; i < maxPages && Date.now() < deadline; i += 1) {
     const params = new URLSearchParams({ limit: "100", version: "latest" });
     if (apiSearch.length >= 2) params.set("search", apiSearch);
@@ -545,7 +544,7 @@ async function fetchOfficialRegistry(apiSearch, maxPages = 50) {
 
     try {
       const response = await fetch(`${REGISTRY}/v0.1/servers?${params}`, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/2.8" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/3.0" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(4500),
       });
@@ -556,7 +555,7 @@ async function fetchOfficialRegistry(apiSearch, maxPages = 50) {
         results.push({ ...item, sourceLabel: "Official Registry" });
       }
       cursor = payload?.metadata?.nextCursor || "";
-      if (!cursor || results.length >= 5000) break;
+      if (!cursor || results.length >= 6500) break;
     } catch {
       break;
     }
@@ -564,10 +563,10 @@ async function fetchOfficialRegistry(apiSearch, maxPages = 50) {
   return results;
 }
 
-async function fetchGlamaDirectory(apiSearch, maxPages = 32) {
+async function fetchGlamaDirectory(apiSearch, maxPages = 45) {
   const results = [];
   let cursor = "";
-  const deadline = Date.now() + 11000;
+  const deadline = Date.now() + 13500;
   for (let i = 0; i < maxPages && Date.now() < deadline; i += 1) {
     const params = new URLSearchParams({ first: "100" });
     if (apiSearch.length >= 2) params.set("query", apiSearch);
@@ -575,7 +574,7 @@ async function fetchGlamaDirectory(apiSearch, maxPages = 32) {
 
     try {
       const response = await fetch(`${GLAMA_API}?${params}`, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/2.8" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/3.0" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(4500),
       });
@@ -605,7 +604,7 @@ async function fetchGlamaDirectory(apiSearch, maxPages = 32) {
         });
       }
       cursor = payload?.pageInfo?.hasNextPage ? payload?.pageInfo?.endCursor || "" : "";
-      if (!cursor || results.length >= 3200) break;
+      if (!cursor || results.length >= 4500) break;
     } catch {
       break;
     }
@@ -613,7 +612,6 @@ async function fetchGlamaDirectory(apiSearch, maxPages = 32) {
   return results;
 }
 
-// Non-GitHub source: npm public package registry for real published MCP servers
 async function fetchNpmMcpServers(apiSearch) {
   const queries = apiSearch
     ? [`${apiSearch} mcp`]
@@ -624,6 +622,10 @@ async function fetchNpmMcpServers(apiSearch) {
         "@modelcontextprotocol",
         "mcp-tool",
         "fastmcp",
+        "mcp-client",
+        "mcp-proxy",
+        "mcp-bridge",
+        "mcp-adapter",
       ];
 
   const requests = [];
@@ -641,9 +643,9 @@ async function fetchNpmMcpServers(apiSearch) {
       url.searchParams.set("size", "250");
       url.searchParams.set("from", String(from));
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/2.8" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/3.0" },
         next: { revalidate: 3600 },
-        signal: AbortSignal.timeout(6000),
+        signal: AbortSignal.timeout(6500),
       });
       if (!res.ok) return [];
       const payload = await res.json();
@@ -681,9 +683,8 @@ async function fetchNpmMcpServers(apiSearch) {
   return items;
 }
 
-// Non-GitHub source: PulseMCP public directory API (best-effort)
 async function fetchPulseMcpServers(apiSearch) {
-  const pages = apiSearch ? [0, 1] : [0, 1, 2, 3, 4, 5, 6, 7];
+  const pages = apiSearch ? [0, 1] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
   const settled = await Promise.allSettled(
     pages.map(async (page) => {
       const url = new URL(PULSEMCP_API);
@@ -691,9 +692,9 @@ async function fetchPulseMcpServers(apiSearch) {
       url.searchParams.set("offset", String(page * 100));
       if (apiSearch) url.searchParams.set("query", apiSearch);
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/2.8" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/3.0" },
         next: { revalidate: 3600 },
-        signal: AbortSignal.timeout(5000),
+        signal: AbortSignal.timeout(5500),
       });
       if (!res.ok) return [];
       const payload = await res.json();
@@ -726,11 +727,10 @@ async function fetchPulseMcpServers(apiSearch) {
   return items;
 }
 
-// Supplemental open-source MCP repositories
 async function fetchGithubPopularMcps(apiSearch) {
   const headers = {
     accept: "application/vnd.github+json",
-    "user-agent": "DRIVE-MCP/2.8",
+    "user-agent": "DRIVE-MCP/3.0",
   };
   if (process.env.GITHUB_TOKEN) {
     headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
@@ -740,7 +740,9 @@ async function fetchGithubPopularMcps(apiSearch) {
     : [
         "topic:mcp-server stars:>100",
         "topic:mcp-server stars:25..100",
+        "topic:mcp-server stars:8..24",
         "topic:model-context-protocol stars:>20",
+        "mcp-server in:name stars:>15",
       ];
 
   const requests = [];
@@ -762,7 +764,7 @@ async function fetchGithubPopularMcps(apiSearch) {
       const res = await fetch(url, {
         headers,
         next: { revalidate: 3600 },
-        signal: AbortSignal.timeout(6000),
+        signal: AbortSignal.timeout(6500),
       });
       if (!res.ok) return [];
       const payload = await res.json();
@@ -853,8 +855,8 @@ async function getServers(query) {
   }
 
   const [officialRes, glamaRes, npmRes, pulseRes, githubRes] = await Promise.allSettled([
-    fetchOfficialRegistry(apiSearch, apiSearch ? 8 : 50),
-    fetchGlamaDirectory(apiSearch, apiSearch ? 6 : 32),
+    fetchOfficialRegistry(apiSearch, apiSearch ? 8 : 65),
+    fetchGlamaDirectory(apiSearch, apiSearch ? 6 : 45),
     fetchNpmMcpServers(apiSearch),
     fetchPulseMcpServers(apiSearch),
     fetchGithubPopularMcps(apiSearch),
@@ -873,7 +875,7 @@ async function getServers(query) {
     if (!key || seen.has(key)) continue;
     seen.add(key);
     all.push(entry);
-    if (all.length >= 10500) break;
+    if (all.length >= 13500) break;
   }
 
   const serialized = all.map(serializeServer);
@@ -890,7 +892,7 @@ async function getServers(query) {
   };
 }
 
-export default async function Home({ searchParams }) {
+export async function renderWorkspaceHome(searchParams, forcedTab = "mcp") {
   const params = await searchParams;
   const query = typeof params?.q === "string" ? params.q : "";
 
@@ -929,8 +931,13 @@ export default async function Home({ searchParams }) {
       discover={discover}
       add={add}
       skills={skills}
+      initialTab={forcedTab}
       serverCount={servers.length}
       query={query}
     />
   );
+}
+
+export default async function Home({ searchParams }) {
+  return renderWorkspaceHome(searchParams, "mcp");
 }

@@ -1,29 +1,27 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import {
-  ArrowUpRight,
   Cable,
   Check,
-  CircleAlert,
-  Command,
-  Compass,
+  Copy,
+  LoaderCircle,
   Plus,
   RefreshCw,
   Search,
   ShieldCheck,
-  Sparkles,
+  Trash2,
 } from "lucide-react";
-import CopyButton from "./copy-button";
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  return url && key ? createBrowserClient(url, key) : null;
+  if (!url || !key) return null;
+  return createBrowserClient(url, key);
 }
 
-async function accessToken() {
+async function getAccessToken() {
   const supabase = getSupabase();
   if (!supabase) return null;
   const {
@@ -32,23 +30,29 @@ async function accessToken() {
   return session?.access_token || null;
 }
 
-function navigateToTab(tabId) {
-  if (typeof window === "undefined") return;
-  window.dispatchEvent(new CustomEvent("drive:navigate", { detail: { tab: tabId } }));
-}
-
 export function AddMcpButton({ serverName, version, registryEntry, remoteAvailable }) {
   const [state, setState] = useState("idle");
 
   async function add() {
-    const token = await accessToken();
-    if (!token) {
-      setState("Sign in first");
-      window.setTimeout(() => navigateToTab("add"), 600);
-      return;
-    }
-    setState("busy");
+    if (state === "adding") return;
+    setState("adding");
     try {
+      const token = await getAccessToken();
+      if (!token) {
+        const supabase = getSupabase();
+        if (supabase) {
+          await supabase.auth.signInWithOAuth({
+            provider: "google",
+            options: {
+              redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/")}`,
+            },
+          });
+          return;
+        }
+        setState("Sign in required");
+        return;
+      }
+
       const response = await fetch("/api/connections", {
         method: "POST",
         headers: {
@@ -58,31 +62,45 @@ export function AddMcpButton({ serverName, version, registryEntry, remoteAvailab
         body: JSON.stringify({ serverName, version, registryEntry }),
       });
       const result = await response.json();
-      setState(response.ok ? "Added to My MCPs" : [result.error, result.detail].filter(Boolean).join(": ") || "Could not add");
       if (response.ok) {
+        setState("added");
         window.dispatchEvent(new Event("drive:connections-changed"));
+      } else {
+        setState([result.error, result.detail].filter(Boolean).join(": ") || "Could not add");
       }
     } catch {
       setState("Network error");
     }
   }
 
-  if (!remoteAvailable) {
-    return <span className="availability-note">STDIO package · Local runtime only</span>;
-  }
-
-  const isAdded = state === "Added to My MCPs";
-  const isBusy = state === "busy";
+  const isAdded = state === "added";
+  const isBusy = state === "adding";
+  const isError = !isAdded && !isBusy && state !== "idle";
 
   return (
     <button
-      className={`glass-add-button ${isAdded ? "is-added" : ""}`}
       type="button"
+      className={`add-mcp-btn ${isAdded ? "is-installed" : ""}`}
+      disabled={isBusy}
       onClick={add}
-      disabled={isBusy || isAdded}
+      title={
+        isError
+          ? state
+          : remoteAvailable
+          ? "Connect this remote MCP to your DRIVE workspace"
+          : "Save this MCP entry to your workspace"
+      }
     >
-      {isAdded ? <Check size={13} /> : <Plus size={13} />}
-      <span>{isBusy ? "Adding…" : state === "idle" ? "Connect" : state}</span>
+      {isBusy ? (
+        <LoaderCircle size={12} className="spin" />
+      ) : isAdded ? (
+        <Check size={12} />
+      ) : (
+        <Plus size={12} />
+      )}
+      <span>
+        {isBusy ? "Adding..." : isAdded ? "Connected" : isError ? "Retry" : "Connect"}
+      </span>
     </button>
   );
 }
@@ -90,38 +108,41 @@ export function AddMcpButton({ serverName, version, registryEntry, remoteAvailab
 export default function MyMcpPanel() {
   const [connections, setConnections] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState("");
-  const [signedIn, setSignedIn] = useState(false);
-  const [busyId, setBusyId] = useState("");
-  const [filterText, setFilterText] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [signedIn, setSignedIn] = useState(true);
+  const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
+  const [copiedId, setCopiedId] = useState("");
+  const [error, setError] = useState("");
+
+  // Cache token in memory so ON/OFF toggles execute with 0ms UI delay and no extra getSession roundtrip
+  const tokenRef = useRef("");
 
   const load = useCallback(async () => {
     setLoading(true);
-    setMessage("");
-    const token = await accessToken();
-    if (!token) {
-      setSignedIn(false);
-      setConnections([]);
-      setLoading(false);
-      return;
-    }
-    setSignedIn(true);
+    setError("");
     try {
+      const token = await getAccessToken();
+      tokenRef.current = token || "";
+      if (!token) {
+        setSignedIn(false);
+        setConnections([]);
+        return;
+      }
+      setSignedIn(true);
       const response = await fetch("/api/connections", {
         headers: { Authorization: `Bearer ${token}` },
         cache: "no-store",
       });
-      const result = await response.json();
+      const data = await response.json();
       if (!response.ok) {
-        setMessage(result.error || "Could not load your MCPs.");
-      } else {
-        setConnections(result.connections || []);
+        throw new Error(data.error || "Could not load saved connections.");
       }
-    } catch {
-      setMessage("Could not reach connection service.");
+      setConnections(Array.isArray(data.connections) ? data.connections : []);
+    } catch (err) {
+      setError(err?.message || "Could not load saved connections.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   useEffect(() => {
@@ -136,245 +157,229 @@ export default function MyMcpPanel() {
     };
   }, [load]);
 
-  async function toggle(connection) {
-    const token = await accessToken();
-    if (!token) {
-      setSignedIn(false);
-      return;
-    }
-    setBusyId(connection.id);
-    setMessage("");
+  async function toggleConnection(item) {
+    const prevEnabled = Boolean(item.enabled);
+    const nextEnabled = !prevEnabled;
+    setError("");
+
+    // Instant 0ms optimistic UI toggle
+    setConnections((prev) =>
+      prev.map((row) => (row.id === item.id ? { ...row, enabled: nextEnabled } : row))
+    );
+
     try {
+      const token = tokenRef.current || (await getAccessToken());
+      if (!token) throw new Error("Session expired. Sign in again.");
+      tokenRef.current = token;
+
       const response = await fetch("/api/connections", {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ id: connection.id, enabled: !connection.enabled }),
+        body: JSON.stringify({ id: item.id, enabled: nextEnabled }),
       });
       const result = await response.json();
-      if (response.ok) {
-        setConnections((items) =>
-          items.map((item) =>
-            item.id === connection.id
-              ? {
-                  ...item,
-                  enabled: result.connection.enabled,
-                  updated_at: result.connection.updated_at,
-                }
-              : item
-          )
-        );
-      } else {
-        setMessage(result.error || "Could not update this connection.");
+      if (!response.ok) {
+        throw new Error(result.error || "Could not update toggle state.");
       }
-    } catch {
-      setMessage("Network error while updating switch.");
+    } catch (err) {
+      // Revert cleanly if server rejected the toggle
+      setConnections((prev) =>
+        prev.map((row) => (row.id === item.id ? { ...row, enabled: prevEnabled } : row))
+      );
+      setError(err?.message || "Could not update MCP state.");
     }
-    setBusyId("");
   }
 
-  const enabledCount = connections.filter((item) => item.enabled).length;
-  const filteredConnections = connections.filter((connection) => {
-    const server = connection.server || {};
-    const title = (server.title || server.display_name || server.server_name || "").toLowerCase();
-    const detail = (server.description || server.endpoint_url || "").toLowerCase();
-    const matchesQuery =
-      !filterText.trim() ||
-      title.includes(filterText.trim().toLowerCase()) ||
-      detail.includes(filterText.trim().toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" ||
-      (statusFilter === "enabled" && connection.enabled) ||
-      (statusFilter === "disabled" && !connection.enabled);
-    return matchesQuery && matchesStatus;
-  });
+  async function removeConnection(item) {
+    const snapshot = connections;
+    setError("");
+    setConnections((prev) => prev.filter((row) => row.id !== item.id));
+    try {
+      const token = tokenRef.current || (await getAccessToken());
+      if (!token) throw new Error("Session expired.");
+      const response = await fetch(`/api/connections?id=${encodeURIComponent(item.id)}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) {
+        const result = await response.json();
+        throw new Error(result.error || "Could not remove connection.");
+      }
+    } catch (err) {
+      setConnections(snapshot);
+      setError(err?.message || "Could not remove connection.");
+    }
+  }
+
+  async function copyUrl(id, url) {
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopiedId(id);
+      window.setTimeout(() => setCopiedId(""), 1400);
+    } catch {}
+  }
+
+  const activeCount = useMemo(
+    () => connections.filter((item) => item.enabled).length,
+    [connections]
+  );
+
+  const visible = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return connections.filter((item) => {
+      if (filter === "active" && !item.enabled) return false;
+      if (filter === "off" && item.enabled) return false;
+      if (!q) return true;
+      const hay = [
+        item.server?.title,
+        item.server?.display_name,
+        item.server?.server_name,
+        item.server?.endpoint_url,
+        item.server?.description,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    });
+  }, [connections, filter, search]);
 
   return (
-    <section className="my-mcps glass-surface" id="my-mcps">
-      <div className="my-mcps-heading">
+    <section className="my-mcps-section" id="my-mcps">
+      <div className="section-head">
         <div>
           <div className="eyebrow">
-            <span className="pulse" /> PERSONAL WORKSPACE
+            <span className="pulse" /> MY WORKSPACE
           </div>
-          <h2>
-            My MCPs<span className="heading-period">.</span>
-          </h2>
-          <p>Manage your saved remote MCP servers and control active runtime switches.</p>
+          <h1>My MCPs</h1>
         </div>
-        <button
-          type="button"
-          className="glass-icon-button"
-          onClick={load}
-          aria-label="Refresh MCP connections"
-          disabled={loading}
-        >
-          <RefreshCw className={loading ? "spin" : ""} size={16} />
+        <button type="button" className="glass-chip-btn" onClick={load} disabled={loading}>
+          <RefreshCw size={13} className={loading ? "spin" : ""} /> Refresh
         </button>
       </div>
 
-      <div className="connection-summary">
-        <div className="summary-metric">
-          <span className="summary-value">{connections.length}</span>
-          <span className="summary-label">SAVED SERVERS</span>
+      <div className="my-mcp-summary-strip">
+        <div className="my-mcp-stat">
+          <strong>{connections.length}</strong>
+          <span>SAVED</span>
         </div>
-        <div className="summary-metric">
-          <span className="summary-value is-accent">{enabledCount}</span>
-          <span className="summary-label">ACTIVE NOW</span>
+        <div className="my-mcp-stat">
+          <strong style={{ color: "#7cd4ff" }}>{activeCount}</strong>
+          <span>ACTIVE</span>
         </div>
-        <div className="summary-status">
-          <span className={enabledCount ? "live-dot" : "idle-dot"} />
-          <span>{enabledCount ? `${enabledCount} active in workspace` : "All connections standby"}</span>
+        <div className="my-mcp-filter-pills">
+          {[
+            { id: "all", label: "All" },
+            { id: "active", label: "Active" },
+            { id: "off", label: "Off" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              className={`category-chip ${filter === tab.id ? "is-active" : ""}`}
+              onClick={() => setFilter(tab.id)}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {signedIn && connections.length > 0 && (
-        <div className="connection-filter-bar">
-          <div className="connection-search-input">
-            <Search size={14} />
-            <input
-              type="search"
-              value={filterText}
-              onChange={(e) => setFilterText(e.target.value)}
-              placeholder="Filter saved connections…"
-              aria-label="Filter saved connections"
-            />
-          </div>
-          <div className="segmented-pills" role="tablist" aria-label="Filter connections by state">
-            {["all", "enabled", "disabled"].map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                role="tab"
-                aria-selected={statusFilter === mode}
-                className={`segmented-pill ${statusFilter === mode ? "is-active" : ""}`}
-                onClick={() => setStatusFilter(mode)}
-              >
-                {mode === "all" ? "All" : mode === "enabled" ? "Active" : "Off"}
-              </button>
-            ))}
-          </div>
+      <div className="catalog-search" style={{ marginBottom: 12 }}>
+        <Search size={14} />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Filter saved connections..."
+          aria-label="Filter saved connections"
+        />
+      </div>
+
+      {error && (
+        <div className="custom-form-alert is-error" role="alert" style={{ marginBottom: 12 }}>
+          <span>{error}</span>
         </div>
       )}
 
       {loading ? (
-        <div className="connection-empty">
-          <div className="empty-orb">
-            <RefreshCw className="spin" size={22} />
-          </div>
-          <h3>Syncing your workspace</h3>
-          <p>Fetching your personal MCP connections and switch states…</p>
+        <div className="empty-state">
+          <LoaderCircle size={22} className="spin" />
+          <h3>Loading My MCPs...</h3>
         </div>
       ) : !signedIn ? (
-        <div className="connection-empty">
-          <div className="empty-orb">
-            <Command size={24} />
-          </div>
-          <h3>Your personal MCP dock is ready</h3>
-          <p>
-            Sign in with Google from the Add MCP tab to save remote servers, register custom endpoints, and toggle connections across devices.
-          </p>
-          <div className="empty-actions">
-            <button type="button" className="glass-link is-primary" onClick={() => navigateToTab("add")}>
-              <Sparkles size={14} />
-              <span>Sign in & Add Server</span>
-              <ArrowUpRight size={14} />
-            </button>
-            <button type="button" className="glass-link" onClick={() => navigateToTab("discover")}>
-              <Compass size={14} />
-              <span>Browse Directory</span>
-            </button>
-          </div>
+        <div className="empty-state">
+          <ShieldCheck size={22} />
+          <h3>Sign in required</h3>
+          <p>Buka tab Account untuk sign in dan kelola MCP kamu.</p>
         </div>
-      ) : connections.length === 0 ? (
-        <div className="connection-empty">
-          <div className="empty-orb">
-            <Cable size={24} />
-          </div>
-          <h3>No MCPs connected yet</h3>
-          <p>
-            Explore the public directory to connect remote-ready servers, or register your own custom Streamable HTTP endpoint.
-          </p>
-          <div className="empty-actions">
-            <button type="button" className="glass-link is-primary" onClick={() => navigateToTab("discover")}>
-              <Compass size={14} />
-              <span>Explore Directory</span>
-              <ArrowUpRight size={14} />
-            </button>
-            <button type="button" className="glass-link" onClick={() => navigateToTab("add")}>
-              <Plus size={14} />
-              <span>Add Custom Endpoint</span>
-            </button>
-          </div>
-        </div>
-      ) : filteredConnections.length === 0 ? (
-        <div className="connection-empty">
-          <div className="empty-orb">
-            <Search size={22} />
-          </div>
-          <h3>No matching connections</h3>
-          <p>No saved servers match your current filter criteria.</p>
-          <button
-            type="button"
-            className="glass-link"
-            onClick={() => {
-              setFilterText("");
-              setStatusFilter("all");
-            }}
-          >
-            Reset filter
-          </button>
+      ) : visible.length === 0 ? (
+        <div className="empty-state">
+          <Cable size={22} />
+          <h3>Belum ada MCP tersimpan</h3>
+          <p>Buka tab Directory lalu klik Connect di MCP yang kamu butuhkan.</p>
         </div>
       ) : (
-        <div className="connection-list">
-          {filteredConnections.map((connection) => {
-            const server = connection.server || {};
-            const title = server.title || server.display_name || server.server_name || "MCP server";
-            const detail =
-              server.description || server.endpoint_url || server.server_name || "Personal MCP connection";
-            const ready =
-              connection.kind === "registry"
-                ? Array.isArray(server.remotes) && server.remotes.length > 0
-                : server.status === "verified";
+        <div className="my-mcp-list">
+          {visible.map((item) => {
+            const title =
+              item.server?.title ||
+              item.server?.display_name ||
+              item.server?.server_name ||
+              "MCP Server";
+            const endpoint =
+              item.server?.endpoint_url ||
+              item.server?.remote_url ||
+              item.server?.remotes?.[0]?.url ||
+              "";
+            const isCustom = item.source === "custom" || Boolean(item.custom_server_id);
+            const enabled = Boolean(item.enabled);
             return (
-              <article className="connection-row" key={connection.id}>
-                <div className="connection-symbol">
-                  <Cable size={19} />
-                </div>
-                <div className="connection-info">
-                  <div className="connection-title">
-                    <span>{title}</span>
-                    <span className={`connection-kind is-${connection.kind}`}>
-                      {connection.kind === "custom" ? "CUSTOM" : "REGISTRY"}
-                    </span>
+              <article key={item.id} className="my-mcp-row-card">
+                <div className="my-mcp-row-main">
+                  <div className="integration-icon">
+                    <Cable size={16} />
                   </div>
-                  <p>{detail}</p>
-                  <div className="connection-meta-row">
-                    <span className="connection-meta">
-                      {ready ? "Remote endpoint verified" : "Verification pending"} · Added{" "}
-                      {new Date(connection.created_at).toLocaleDateString()}
-                    </span>
-                    <CopyButton
-                      value={server.endpoint_url || server.repository_url || server.server_name || title}
-                      label="Copy URI"
-                    />
+                  <div className="my-mcp-row-copy">
+                    <div className="my-mcp-row-title">
+                      <strong>{title}</strong>
+                      <span className="status">{isCustom ? "CUSTOM" : "REMOTE"}</span>
+                    </div>
+                    <p>{endpoint || item.server?.description || "Connected via DRIVE MCP"}</p>
+                    <div className="my-mcp-row-actions">
+                      {endpoint && (
+                        <button
+                          type="button"
+                          className="glass-chip-btn"
+                          onClick={() => copyUrl(item.id, endpoint)}
+                        >
+                          {copiedId === item.id ? <Check size={11} /> : <Copy size={11} />}
+                          {copiedId === item.id ? "Copied" : "Copy URL"}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        className="glass-chip-btn"
+                        onClick={() => removeConnection(item)}
+                        aria-label={`Remove ${title}`}
+                      >
+                        <Trash2 size={11} /> Remove
+                      </button>
+                    </div>
                   </div>
-                </div>
-                <div className="connection-control">
-                  <span className={connection.enabled ? "switch-label is-on" : "switch-label"}>
-                    {connection.enabled ? "ON" : "OFF"}
-                  </span>
+
                   <button
                     type="button"
                     role="switch"
-                    aria-checked={connection.enabled}
-                    aria-label={`${connection.enabled ? "Disable" : "Enable"} ${title}`}
-                    className={`ios-switch ${connection.enabled ? "checked" : ""}`}
-                    onClick={() => toggle(connection)}
-                    disabled={busyId === connection.id || !ready}
+                    aria-checked={enabled}
+                    aria-label={`Toggle ${title}`}
+                    className={`ios-toggle ${enabled ? "is-on" : ""}`}
+                    onClick={() => toggleConnection(item)}
                   >
-                    <span />
+                    <span className="ios-toggle-thumb" />
                   </button>
                 </div>
               </article>
@@ -382,18 +387,6 @@ export default function MyMcpPanel() {
           })}
         </div>
       )}
-
-      {message && (
-        <p className="connection-message" role="status">
-          <CircleAlert size={15} />
-          <span>{message}</span>
-        </p>
-      )}
-
-      <div className="workspace-foot">
-        <ShieldCheck size={15} />
-        <span>Row-level security isolates your saved MCP list and toggle states to your authenticated identity.</span>
-      </div>
     </section>
   );
 }

@@ -6,6 +6,8 @@ import {
   ArrowUpRight,
   Cable,
   Check,
+  ChevronDown,
+  ChevronUp,
   Copy,
   ExternalLink,
   KeyRound,
@@ -15,6 +17,7 @@ import {
   Search,
   ShieldCheck,
   Trash2,
+  Wrench,
 } from "lucide-react";
 
 function getSupabase() {
@@ -79,7 +82,6 @@ export function AddMcpButton({
       if (typeof onConnected === "function") onConnected(result);
       window.dispatchEvent(new Event("drive:connections-changed"));
 
-      // Immediately initiate upstream MCP OAuth 2.1 handshake (CIMD / DCR) & redirect to original MCP
       const endpointUrl =
         registryEntry?.server?.remotes?.[0]?.url ||
         result?.connection?.server?.endpoint_url ||
@@ -183,6 +185,11 @@ export default function MyMcpPanel() {
   const [oauthClientSecret, setOauthClientSecret] = useState("");
   const [banner, setBanner] = useState({ type: "", text: "" });
 
+  // Tools discovery state per connectionId
+  const [openToolsId, setOpenToolsId] = useState("");
+  const [toolsById, setToolsById] = useState({});
+  const [toolSearchById, setToolSearchById] = useState({});
+
   const tokenRef = useRef("");
 
   const load = useCallback(async () => {
@@ -258,6 +265,71 @@ export default function MyMcpPanel() {
     };
   }, [load]);
 
+  async function loadToolsForConnection(item, forceRefresh = false) {
+    const endpointUrl =
+      item.server?.endpoint_url ||
+      item.server?.remote_url ||
+      item.server?.remotes?.[0]?.url ||
+      "";
+    if (!endpointUrl) return;
+
+    if (!forceRefresh && openToolsId === item.id) {
+      setOpenToolsId("");
+      return;
+    }
+
+    setOpenToolsId(item.id);
+    if (!forceRefresh && toolsById[item.id]?.loaded && !toolsById[item.id]?.requiresAuth) {
+      return;
+    }
+
+    setToolsById((prev) => ({
+      ...prev,
+      [item.id]: { ...(prev[item.id] || {}), loading: true, error: "" },
+    }));
+
+    try {
+      const token = tokenRef.current || (await getAccessToken());
+      if (!token) throw new Error("Sign in terlebih dahulu.");
+      const res = await fetch("/api/mcp-auth/tools", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          connectionId: item.id,
+          endpointUrl,
+        }),
+      });
+      const data = await res.json();
+      setToolsById((prev) => ({
+        ...prev,
+        [item.id]: {
+          loading: false,
+          loaded: true,
+          tools: Array.isArray(data.tools) ? data.tools : [],
+          total: Number(data.total || 0),
+          requiresAuth: Boolean(data.requiresAuth),
+          message: data.message || "",
+          error: data.error || "",
+        },
+      }));
+    } catch (err) {
+      setToolsById((prev) => ({
+        ...prev,
+        [item.id]: {
+          loading: false,
+          loaded: true,
+          tools: [],
+          total: 0,
+          requiresAuth: false,
+          error: err?.message || "Gagal memuat daftar tools.",
+        },
+      }));
+    }
+  }
+
   async function authorizeUpstream(item) {
     const endpointUrl =
       item.server?.endpoint_url ||
@@ -301,6 +373,7 @@ export default function MyMcpPanel() {
       if (data.mode === "none") {
         setBanner({ type: "success", text: data.message || `${title} aktif tanpa login.` });
         await load();
+        loadToolsForConnection(item, true);
         return;
       }
       if (data.mode === "bearer") {
@@ -369,9 +442,14 @@ export default function MyMcpPanel() {
         type: "success",
         text: `Token untuk ${bearerTarget.title} berhasil disimpan & aktif.`,
       });
+      const savedTarget = bearerTarget;
       setBearerTarget(null);
       setBearerValue("");
       await load();
+      loadToolsForConnection(
+        { id: savedTarget.id, server: { endpoint_url: savedTarget.endpointUrl } },
+        true
+      );
     } catch (err) {
       setBanner({ type: "error", text: err?.message || "Gagal menyimpan kredensial." });
     } finally {
@@ -676,6 +754,14 @@ export default function MyMcpPanel() {
             const isCustom = item.source === "custom" || Boolean(item.custom_server_id);
             const enabled = Boolean(item.enabled);
             const isAuthorizing = authBusyId === item.id;
+            const isToolsOpen = openToolsId === item.id;
+            const toolState = toolsById[item.id];
+            const toolFilter = (toolSearchById[item.id] || "").trim().toLowerCase();
+            const filteredTools = (toolState?.tools || []).filter((t) => {
+              if (!toolFilter) return true;
+              return `${t.name} ${t.description}`.toLowerCase().includes(toolFilter);
+            });
+
             return (
               <article key={item.id} className="my-mcp-row-card">
                 <div className="my-mcp-row-main">
@@ -689,6 +775,19 @@ export default function MyMcpPanel() {
                     </div>
                     <p>{endpoint || item.server?.description || "Connected via DRIVE MCP"}</p>
                     <div className="my-mcp-row-actions">
+                      {endpoint && (
+                        <button
+                          type="button"
+                          className="glass-chip-btn"
+                          onClick={() => loadToolsForConnection(item)}
+                        >
+                          <Wrench size={11} />
+                          {toolState?.loaded && toolState.total > 0
+                            ? `Tools (${toolState.total})`
+                            : "Tools"}
+                          {isToolsOpen ? <ChevronUp size={11} /> : <ChevronDown size={11} />}
+                        </button>
+                      )}
                       {endpoint && (
                         <button
                           type="button"
@@ -736,6 +835,75 @@ export default function MyMcpPanel() {
                     <span className="ios-toggle-thumb" />
                   </button>
                 </div>
+
+                {isToolsOpen && (
+                  <div className="mcp-tools-drawer">
+                    {toolState?.loading ? (
+                      <div className="mcp-tools-status">
+                        <LoaderCircle size={14} className="spin" />
+                        <span>Mengambil daftar tools dari {title}...</span>
+                      </div>
+                    ) : toolState?.requiresAuth ? (
+                      <div className="mcp-tools-status">
+                        <span>{toolState.message || "Perlu otorisasi untuk membaca daftar tools."}</span>
+                        <button
+                          type="button"
+                          className="glass-chip-btn"
+                          onClick={() => authorizeUpstream(item)}
+                        >
+                          <ArrowUpRight size={11} /> Authorize sekarang
+                        </button>
+                      </div>
+                    ) : toolState?.error ? (
+                      <div className="mcp-tools-status">
+                        <span>{toolState.error}</span>
+                        <button
+                          type="button"
+                          className="glass-chip-btn"
+                          onClick={() => loadToolsForConnection(item, true)}
+                        >
+                          <RefreshCw size={11} /> Retry
+                        </button>
+                      </div>
+                    ) : (toolState?.tools || []).length === 0 ? (
+                      <div className="mcp-tools-status">
+                        <span>Server tidak melaporkan tools publik saat ini.</span>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="mcp-tools-head">
+                          <strong>{toolState.total} tools siap digunakan</strong>
+                          <button
+                            type="button"
+                            className="glass-chip-btn"
+                            onClick={() => loadToolsForConnection(item, true)}
+                          >
+                            <RefreshCw size={11} /> Refresh
+                          </button>
+                        </div>
+                        {toolState.total > 6 && (
+                          <input
+                            className="mcp-tools-search"
+                            value={toolSearchById[item.id] || ""}
+                            onChange={(e) =>
+                              setToolSearchById((prev) => ({ ...prev, [item.id]: e.target.value }))
+                            }
+                            placeholder={`Filter ${toolState.total} tools...`}
+                            aria-label={`Filter tools for ${title}`}
+                          />
+                        )}
+                        <div className="mcp-tools-list">
+                          {filteredTools.map((tool) => (
+                            <div key={tool.name} className="mcp-tool-item">
+                              <code>{tool.name}</code>
+                              {tool.description && <p>{tool.description}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
               </article>
             );
           })}

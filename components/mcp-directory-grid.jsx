@@ -68,7 +68,6 @@ export default function McpDirectoryGrid({
   const [category, setCategory] = useState("");
   const [visibleLimit, setVisibleLimit] = useState(36);
   const [connectedKeys, setConnectedKeys] = useState(() => new Set());
-  const [connectedCount, setConnectedCount] = useState(0);
 
   const loadConnected = useCallback(async () => {
     try {
@@ -79,7 +78,6 @@ export default function McpDirectoryGrid({
       } = await supabase.auth.getSession();
       if (!session?.access_token) {
         setConnectedKeys(new Set());
-        setConnectedCount(0);
         return;
       }
       const res = await fetch("/api/connections", {
@@ -108,10 +106,7 @@ export default function McpDirectoryGrid({
         }
       }
       setConnectedKeys(nextSet);
-      setConnectedCount(rows.length);
-    } catch {
-      // Ignore silent background sync errors
-    }
+    } catch {}
   }, []);
 
   useEffect(() => {
@@ -134,20 +129,17 @@ export default function McpDirectoryGrid({
       for (const k of keys) next.add(k);
       return next;
     });
-    setConnectedCount((c) => c + 1);
   }, []);
 
-  const { filteredServers, hiddenCount } = useMemo(() => {
+  const filteredServers = useMemo(() => {
     const q = query.trim().toLowerCase();
     const cat = category.trim().toLowerCase();
-    let hidden = 0;
 
-    const list = initialServers.filter((entry) => {
-      // 1. Hide MCPs that are already connected in My MCPs
+    return initialServers.filter((entry) => {
+      // 1. Hide MCPs already connected in My MCPs
       if (connectedKeys.size > 0) {
         const entryKeys = getEntryKeys(entry);
         if (entryKeys.some((k) => connectedKeys.has(k))) {
-          hidden += 1;
           return false;
         }
       }
@@ -174,8 +166,6 @@ export default function McpDirectoryGrid({
         .toLowerCase();
       return hay.includes(q);
     });
-
-    return { filteredServers: list, hiddenCount: hidden };
   }, [initialServers, connectedKeys, category, query]);
 
   const visibleServers = useMemo(
@@ -243,11 +233,6 @@ export default function McpDirectoryGrid({
           <span className="registry-live">
             <i /> Verified Remote First
           </span>
-          {hiddenCount > 0 && (
-            <span className="hidden-connected-pill">
-              {hiddenCount} terhubung disembunyikan
-            </span>
-          )}
         </div>
       </div>
 
@@ -329,16 +314,8 @@ export default function McpDirectoryGrid({
       ) : (
         <div className="empty-state">
           <Search size={22} />
-          <h3>
-            {connectedCount > 0 && !query && !category
-              ? "Semua MCP yang cocok sudah terhubung"
-              : "No matching MCPs"}
-          </h3>
-          <p>
-            {connectedCount > 0 && hiddenCount > 0
-              ? "MCP yang sudah terhubung otomatis dipindah ke tab My MCPs."
-              : "Try a broader keyword or select another category."}
-          </p>
+          <h3>No matching MCPs</h3>
+          <p>Try a broader keyword or select another category.</p>
         </div>
       )}
     </section>

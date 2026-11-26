@@ -8,10 +8,11 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const SERVER_INFO = { name: "DRIVE MCP", version: "1.1.0" };
+const SERVER_INFO = { name: "DRIVE MCP", version: "1.2.0" };
 const PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26"];
 const MCP_REGISTRY = "https://registry.modelcontextprotocol.io/v0.1/servers";
 const SKILLS_REGISTRY = "https://www.skillsdirectory.com/api/registry";
+const DEFAULT_APP_URL = "https://drive-mcp-five.vercel.app";
 const MAX_CONNECTIONS = 20;
 const MAX_TOOLS_PER_CONNECTION = 100;
 
@@ -28,12 +29,46 @@ function clampLimit(value) {
   const parsed = Number(value ?? 10);
   return Number.isInteger(parsed) ? Math.min(30, Math.max(1, parsed)) : 10;
 }
+function getAppOrigin(request) {
+  const configured = process.env.NEXT_PUBLIC_APP_URL;
+  if (configured) {
+    try { return new URL(configured).origin; } catch {}
+  }
+  try {
+    const reqOrigin = new URL(request.url).origin;
+    if (reqOrigin && reqOrigin !== "null") return reqOrigin;
+  } catch {}
+  return DEFAULT_APP_URL;
+}
+function buildConnectUrl(appOrigin, { serverName, query, endpointUrl } = {}) {
+  const url = new URL("/connect", appOrigin);
+  if (serverName) url.searchParams.set("server", serverName);
+  else if (query) url.searchParams.set("query", query);
+  if (endpointUrl) url.searchParams.set("endpoint", endpointUrl);
+  return url.toString();
+}
+function buildSkillUrl(appOrigin, query) {
+  const url = new URL("/", appOrigin);
+  url.searchParams.set("tab", "skills");
+  if (query) url.searchParams.set("q", query);
+  url.hash = "skills";
+  return url.toString();
+}
+function pickHttpRemote(remotes) {
+  if (!Array.isArray(remotes)) return null;
+  const preferred = remotes.find((item) => {
+    if (typeof item?.url !== "string" || !item.url.startsWith("https://")) return false;
+    const kind = String(item?.type || item?.transport || "streamable_http").trim();
+    return /^(streamable.?http|http)$/i.test(kind);
+  });
+  return preferred || remotes.find((item) => typeof item?.url === "string" && item.url.startsWith("https://")) || null;
+}
 function privateV4(value) {
   const p = value.split(".").map(Number);
   if (p.length !== 4 || p.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return true;
-  const [a,b] = p;
+  const [a, b] = p;
   return a === 0 || a === 10 || a === 127 || a >= 224 ||
-    (a === 100 && b >= 64 && b <= 127) || (a === 169 && b === 254) ||
+    (a === 100 && b >= 64 && b < 127) || (a === 169 && b === 254) ||
     (a === 172 && b >= 16 && b <= 31) || (a === 192 && (b === 0 || b === 168)) ||
     (a === 198 && (b === 18 || b === 19)) || (a === 203 && b === 0);
 }
@@ -53,18 +88,21 @@ async function publicHttps(value) {
     if (version === 4) return !privateV4(host);
     if (version === 6) return !privateV6(host);
     const addresses = await lookup(host, { all: true, verbatim: true });
-    return addresses.length > 0 && addresses.every(({address,family}) => family === 4 ? !privateV4(address) : !privateV6(address));
+    return addresses.length > 0 && addresses.every(({ address, family }) => family === 4 ? !privateV4(address) : !privateV6(address));
   } catch { return false; }
 }
 async function authenticate(request) {
+  const appOrigin = getAppOrigin(request);
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   if (!token) {
-    const resourceMetadata = new URL("/.well-known/oauth-protected-resource/api/mcp", process.env.NEXT_PUBLIC_APP_URL || "https://drive-mcp-five.vercel.app").toString();
-    return { error: response({ error: "Authentication required", message: "Authenticate with OAuth 2.1 to access DRIVE MCP." }, 401, {
-      "WWW-Authenticate": `Bearer resource_metadata="${resourceMetadata}"`
-    }) };
+    const resourceMetadata = new URL("/.well-known/oauth-protected-resource/api/mcp", appOrigin).toString();
+    return {
+      error: response({ error: "Authentication required", message: "Authenticate with OAuth 2.1 to access DRIVE MCP." }, 401, {
+        "WWW-Authenticate": `Bearer resource_metadata="${resourceMetadata}"`
+      })
+    };
   }
   if (!url || !key) return { error: response({ error: "Authentication is not configured" }, 503) };
   const supabase = createClient(url, key, {
@@ -72,49 +110,105 @@ async function authenticate(request) {
     global: { headers: { Authorization: `Bearer ${token}` } }
   });
   const { data: { user }, error } = await supabase.auth.getUser(token);
-  return error || !user ? { error: response({ error: "Invalid or expired access token" }, 401, { "WWW-Authenticate": 'Bearer error="invalid_token"' }) } : { supabase, user };
+  return error || !user
+    ? { error: response({ error: "Invalid or expired access token" }, 401, { "WWW-Authenticate": 'Bearer error="invalid_token"' }) }
+    : { supabase, user, appOrigin };
 }
 async function fetchJson(url, label) {
   const upstream = await fetch(url, {
-    headers: { accept: "application/json", "user-agent": "DRIVE-MCP/1.1" },
+    headers: { accept: "application/json", "user-agent": "DRIVE-MCP/1.2" },
     cache: "no-store", redirect: "error", signal: AbortSignal.timeout(12000)
   });
   if (!upstream.ok) throw new Error(`${label} returned HTTP ${upstream.status}`);
   return upstream.json();
 }
-async function searchMcpServers(query, limit) {
-  const url = new URL(MCP_REGISTRY);
-  url.searchParams.set("search", query); url.searchParams.set("limit", String(limit)); url.searchParams.set("version", "latest");
-  const payload = await fetchJson(url, "Official MCP Registry");
-  const servers = (payload.servers || []).slice(0, limit).map((entry) => {
-    const server = entry.server || entry;
-    return { name: server.name || null, title: server.title || null, description: server.description || "", version: server.version || null, repository: server.repository || null, remotes: Array.isArray(server.remotes) ? server.remotes : [], packages: Array.isArray(server.packages) ? server.packages : [] };
-  });
-  return { source: "Official MCP Registry", query, count: servers.length, servers };
+function normalizeRegistryServer(entry, appOrigin) {
+  const server = entry?.server || entry || {};
+  const remotes = Array.isArray(server.remotes) ? server.remotes : [];
+  const packages = Array.isArray(server.packages) ? server.packages : [];
+  const remote = pickHttpRemote(remotes);
+  return {
+    name: server.name || null,
+    title: server.title || server.name || null,
+    description: server.description || "",
+    version: server.version || null,
+    repository: server.repository || null,
+    remotes,
+    packages,
+    remote_available: Boolean(remote?.url),
+    connect_url: server.name ? buildConnectUrl(appOrigin, { serverName: server.name }) : buildConnectUrl(appOrigin, { query: server.title || "" })
+  };
 }
-async function getMcpServer(serverName) {
+async function searchMcpServers(query, limit, appOrigin) {
   const url = new URL(MCP_REGISTRY);
-  url.searchParams.set("search", serverName); url.searchParams.set("limit", "100"); url.searchParams.set("version", "latest");
+  url.searchParams.set("search", query);
+  url.searchParams.set("limit", String(limit));
+  url.searchParams.set("version", "latest");
+  const payload = await fetchJson(url, "Official MCP Registry");
+  const servers = (payload.servers || []).slice(0, limit).map((entry) => normalizeRegistryServer(entry, appOrigin));
+  return {
+    source: "Official MCP Registry",
+    query,
+    count: servers.length,
+    servers,
+    connect_fallback_url: buildConnectUrl(appOrigin, { query })
+  };
+}
+async function getMcpServer(serverName, appOrigin) {
+  const url = new URL(MCP_REGISTRY);
+  url.searchParams.set("search", serverName);
+  url.searchParams.set("limit", "100");
+  url.searchParams.set("version", "latest");
   const payload = await fetchJson(url, "Official MCP Registry");
   const match = (payload.servers || []).find((entry) => (entry.server || entry).name === serverName);
-  if (!match) return { found: false, server_name: serverName, message: "No exact server name match was found in the official registry." };
-  const server = match.server || match;
-  return { found: true, server: { name: server.name || null, title: server.title || null, description: server.description || "", version: server.version || null, repository: server.repository || null, remotes: Array.isArray(server.remotes) ? server.remotes : [], packages: Array.isArray(server.packages) ? server.packages : [] } };
+  if (!match) {
+    return {
+      found: false,
+      server_name: serverName,
+      connect_url: buildConnectUrl(appOrigin, { query: serverName }),
+      message: "No exact server name match was found in the official registry. Open connect_url in DRIVE to search or add a custom remote MCP endpoint."
+    };
+  }
+  return { found: true, server: normalizeRegistryServer(match, appOrigin) };
 }
-async function searchSkills(query, limit) {
+async function searchSkills(query, limit, appOrigin) {
   const url = new URL(SKILLS_REGISTRY);
-  url.searchParams.set("limit", String(Math.min(100, limit * 3))); url.searchParams.set("offset", "0"); url.searchParams.set("sort", "stars"); url.searchParams.set("q", query);
+  url.searchParams.set("limit", String(Math.min(100, limit * 3)));
+  url.searchParams.set("offset", "0");
+  url.searchParams.set("sort", "stars");
+  url.searchParams.set("q", query);
   const payload = await fetchJson(url, "Skills Directory");
   const source = payload.skills || payload.data || [];
-  const seen = new Set(); const skills = [];
+  const seen = new Set();
+  const skills = [];
   for (const item of source) {
-    const repository = item.repository || ""; const slug = item.slug || ""; const id = `${repository}/${slug}`;
+    const repository = item.repository || "";
+    const slug = item.slug || "";
+    const id = `${repository}/${slug}`;
     if (!repository || !slug || !item.name || seen.has(id)) continue;
     seen.add(id);
-    skills.push({ name: item.name, slug, category: item.category || "other", description: item.description || "", author: item.author || null, stars: Number(item.stars || 0), verified: Boolean(item.verified), tags: Array.isArray(item.tags) ? item.tags.slice(0, 12) : [], source: `https://github.com/${repository}` });
+    skills.push({
+      name: item.name,
+      slug,
+      category: item.category || "other",
+      description: item.description || "",
+      author: item.author || null,
+      stars: Number(item.stars || 0),
+      verified: Boolean(item.verified),
+      tags: Array.isArray(item.tags) ? item.tags.slice(0, 12) : [],
+      source: `https://github.com/${repository}`,
+      install_url: buildSkillUrl(appOrigin, slug || item.name)
+    });
     if (skills.length >= limit) break;
   }
-  return { source: "Skills Directory public registry", query, count: skills.length, skills, note: "Catalog discovery only. Skills are not installed, security-approved or executed by this tool." };
+  return {
+    source: "Skills Directory public registry",
+    query,
+    count: skills.length,
+    skills,
+    marketplace_url: buildSkillUrl(appOrigin, query),
+    note: "Send install_url to the user so they can review, scan, and enable the Skill in their DRIVE workspace."
+  };
 }
 function safeToolName(value) {
   return String(value || "tool").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 80);
@@ -122,16 +216,20 @@ function safeToolName(value) {
 function connectionToolName(connectionId, toolName) {
   return `mcp_${connectionId.replace(/-/g, "").slice(0, 12)}__${safeToolName(toolName)}`;
 }
-async function getActiveConnections(supabase, userId) {
-  const { data, error } = await supabase.from("user_mcp_connections")
-    .select("id,registry_server_id,custom_server_id,enabled")
-    .eq("user_id", userId).eq("enabled", true).limit(MAX_CONNECTIONS);
-  if (error) throw new Error("Could not load active MCP connections.");
+async function getUserConnections(supabase, userId, { enabledOnly = false, appOrigin = DEFAULT_APP_URL } = {}) {
+  let query = supabase.from("user_mcp_connections")
+    .select("id,registry_server_id,custom_server_id,enabled,updated_at")
+    .eq("user_id", userId)
+    .order("updated_at", { ascending: false })
+    .limit(MAX_CONNECTIONS);
+  if (enabledOnly) query = query.eq("enabled", true);
+  const { data, error } = await query;
+  if (error) throw new Error("Could not load MCP connections.");
   const connections = data || [];
   const registryIds = connections.map((row) => row.registry_server_id).filter(Boolean);
   const customIds = connections.map((row) => row.custom_server_id).filter(Boolean);
   const [registry, custom] = await Promise.all([
-    registryIds.length ? supabase.from("mcp_servers").select("id,server_name,title,description,remotes").in("id", registryIds) : Promise.resolve({ data: [] }),
+    registryIds.length ? supabase.from("mcp_servers").select("id,server_name,title,description,version,remotes").in("id", registryIds) : Promise.resolve({ data: [] }),
     customIds.length ? supabase.from("user_custom_mcp_servers").select("id,display_name,endpoint_url,status,auth_type").in("id", customIds).eq("user_id", userId) : Promise.resolve({ data: [] })
   ]);
   const rmap = new Map((registry.data || []).map((x) => [x.id, x]));
@@ -141,21 +239,85 @@ async function getActiveConnections(supabase, userId) {
     if (!server) return null;
     let endpoint = "";
     let authType = "none";
+    let status = "active";
     if (row.registry_server_id) {
-      const remote = (server.remotes || []).find((item) => typeof item?.url === "string" && /streamable.?http/i.test(String(item?.type || item?.transport || "streamable_http")));
+      const remote = pickHttpRemote(server.remotes || []);
       endpoint = remote?.url || "";
       authType = remote?.authentication?.required ? "oauth2" : "none";
+      status = endpoint ? "ready" : "no_remote_endpoint";
     } else {
       endpoint = server.endpoint_url || "";
       authType = server.auth_type || "none";
+      status = server.status || "pending";
       if (server.status !== "verified") endpoint = "";
     }
-    return { id: row.id, name: server.server_name || server.display_name || "MCP server", endpoint, authType };
+    const name = server.server_name || server.display_name || "MCP server";
+    return {
+      id: row.id,
+      kind: row.registry_server_id ? "registry" : "custom",
+      name,
+      title: server.title || server.display_name || name,
+      version: server.version || null,
+      enabled: Boolean(row.enabled),
+      endpoint,
+      authType,
+      status,
+      active_in_gateway: Boolean(row.enabled && endpoint && authType === "none"),
+      manage_url: row.registry_server_id
+        ? buildConnectUrl(appOrigin, { serverName: server.server_name })
+        : `${appOrigin}/#mcp`
+    };
   }).filter(Boolean);
+}
+async function getConnectUrl(supabase, userId, args, appOrigin) {
+  const serverName = typeof args.server_name === "string" ? args.server_name.trim().slice(0, 200) : "";
+  const query = typeof args.query === "string" ? args.query.trim().slice(0, 120) : "";
+  const endpointUrl = typeof args.endpoint_url === "string" ? args.endpoint_url.trim().slice(0, 500) : "";
+  const lookupTerm = serverName || query;
+  if (!lookupTerm && !endpointUrl) throw new Error("Provide server_name, query, or endpoint_url.");
+
+  const connections = await getUserConnections(supabase, userId, { enabledOnly: false, appOrigin });
+  const needle = lookupTerm.toLowerCase();
+  const existing = connections.find((c) =>
+    c.name.toLowerCase() === needle ||
+    c.title.toLowerCase() === needle ||
+    (needle.length >= 3 && (c.name.toLowerCase().includes(needle) || c.title.toLowerCase().includes(needle)))
+  ) || null;
+
+  let matchedServer = null;
+  let candidates = [];
+  if (lookupTerm) {
+    try {
+      const search = await searchMcpServers(lookupTerm, 5, appOrigin);
+      candidates = search.servers;
+      matchedServer = candidates.find((s) => s.name?.toLowerCase() === needle) || candidates[0] || null;
+    } catch {
+      candidates = [];
+    }
+  }
+
+  const connectUrl = matchedServer?.name
+    ? buildConnectUrl(appOrigin, { serverName: matchedServer.name, endpointUrl })
+    : buildConnectUrl(appOrigin, { query: lookupTerm, endpointUrl });
+
+  return {
+    query: lookupTerm || null,
+    connect_url: connectUrl,
+    already_connected: Boolean(existing),
+    connection_enabled: Boolean(existing?.enabled),
+    existing_connection: existing,
+    matched_server: matchedServer,
+    candidates: candidates.slice(0, 5).map(({ name, title, description, version, remote_available, connect_url }) => ({
+      name, title, description, version, remote_available, connect_url
+    })),
+    user_action: existing?.enabled
+      ? `This MCP (${existing.title}) is already connected and enabled in DRIVE. Share ${connectUrl} if the user wants to manage or reconfigure it.`
+      : `Send this clickable DRIVE MCP Gateway link directly to the user so they can connect and enable it in one click: ${connectUrl}`
+  };
 }
 async function discoverConnectionTools(connection) {
   if (!connection.endpoint || connection.authType !== "none" || !await publicHttps(connection.endpoint)) return [];
-  const client = new Client({ name: "drive-mcp-gateway", version: "1.1.0" });
+  const client = new Client({ name: "drive-mcp-gateway", version: "1.2.0" });
   let transport;
   try {
     transport = new StreamableHTTPClientTransport(new URL(connection.endpoint), { requestInit: { signal: AbortSignal.timeout(10000) } });
@@ -177,29 +339,65 @@ async function getActiveSkills(supabase, userId) {
   if (error) throw new Error("Could not load active Skills.");
   return data || [];
 }
-async function buildTools(supabase, userId) {
-  const connections = await getActiveConnections(supabase, userId);
+async function buildTools(supabase, userId, appOrigin) {
+  const connections = await getUserConnections(supabase, userId, { enabledOnly: true, appOrigin });
   const discovered = await Promise.all(connections.map(discoverConnectionTools));
-  const skills = await getActiveSkills(supabase, userId);
-  const skillTools = [
-    { name: "drive_list_active_skills", description: "List the Agent Skills enabled in this DRIVE account. Call this to discover the user's active Skills.", inputSchema: { type: "object", properties: {}, additionalProperties: false } },
-    { name: "drive_get_active_skill", description: "Read the complete instructions of one enabled and security-scanned Agent Skill. Use this when a Skill is relevant to the user's task.", inputSchema: { type: "object", properties: { skill_id: { type: "string", description: "Skill ID returned by drive_list_active_skills." } }, required: ["skill_id"], additionalProperties: false } }
+  const gatewayTools = [
+    {
+      name: "drive_list_connected_mcps",
+      description: "List all MCP servers connected in this user's DRIVE workspace (enabled and disabled), including their gateway status, auth requirements, and direct management URLs.",
+      inputSchema: { type: "object", properties: {}, additionalProperties: false }
+    },
+    {
+      name: "drive_get_connect_url",
+      description: "Generate a direct clickable DRIVE MCP Gateway URL to connect a requested MCP server (for example 'figcraft', 'github', 'supabase') or custom remote MCP endpoint. Always call this when the user asks to connect or add an MCP, then send the returned connect_url to the user.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "MCP name or search keyword requested by the user, e.g. figcraft." },
+          server_name: { type: "string", description: "Exact official registry server name if already known." },
+          endpoint_url: { type: "string", description: "Optional HTTPS remote MCP endpoint URL for custom servers." }
+        },
+        additionalProperties: false
+      }
+    },
+    {
+      name: "drive_list_active_skills",
+      description: "List the Agent Skills enabled in this DRIVE account. Call this to see all active Skills installed by the user.",
+      inputSchema: { type: "object", properties: {}, additionalProperties: false }
+    },
+    {
+      name: "drive_get_active_skill",
+      description: "Read the complete instructions of one enabled and security-scanned Agent Skill. Use this when a Skill is relevant to the user's task.",
+      inputSchema: { type: "object", properties: { skill_id: { type: "string", description: "Skill ID returned by drive_list_active_skills." } }, required: ["skill_id"], additionalProperties: false }
+    },
+    {
+      name: "drive_search_mcp_servers",
+      description: "Search the public DRIVE MCP marketplace backed by the Official MCP Registry. Each result includes a direct connect_url to connect it in DRIVE.",
+      inputSchema: { type: "object", properties: { query: { type: "string" }, limit: { type: "integer", minimum: 1, maximum: 30 } }, required: ["query"], additionalProperties: false }
+    },
+    {
+      name: "drive_get_mcp_server",
+      description: "Look up a public MCP server by exact registry name and get its direct DRIVE connect_url.",
+      inputSchema: { type: "object", properties: { server_name: { type: "string" } }, required: ["server_name"], additionalProperties: false }
+    },
+    {
+      name: "drive_search_skills",
+      description: "Search the public DRIVE Skills marketplace. Returns matching Skills with direct install_url links to open in DRIVE.",
+      inputSchema: { type: "object", properties: { query: { type: "string" }, limit: { type: "integer", minimum: 1, maximum: 30 } }, required: ["query"], additionalProperties: false }
+    }
   ];
-  const publicTools = [
-    { name: "drive_search_mcp_servers", description: "Search the public DRIVE MCP directory.", inputSchema: { type: "object", properties: { query: { type: "string" }, limit: { type: "integer", minimum: 1, maximum: 30 } }, required: ["query"], additionalProperties: false } },
-    { name: "drive_get_mcp_server", description: "Look up a public MCP server by exact registry name.", inputSchema: { type: "object", properties: { server_name: { type: "string" } }, required: ["server_name"], additionalProperties: false } },
-    { name: "drive_search_skills", description: "Search the public DRIVE Skills catalog. Does not install or execute Skills.", inputSchema: { type: "object", properties: { query: { type: "string" }, limit: { type: "integer", minimum: 1, maximum: 30 } }, required: ["query"], additionalProperties: false } }
-  ];
-  return { tools: [...publicTools, ...skillTools, ...discovered.flat()], connections, skills };
+  return { tools: [...gatewayTools, ...discovered.flat()], connections };
 }
-async function callUpstreamTool(supabase, userId, encodedName, args) {
-  const connections = await getActiveConnections(supabase, userId);
-  const skills = await getActiveSkills(supabase, userId);
+async function callUpstreamTool(supabase, userId, encodedName, args, appOrigin) {
+  const connections = await getUserConnections(supabase, userId, { enabledOnly: true, appOrigin });
   const match = encodedName.match(/^mcp_([a-f0-9]{12})__(.+)$/);
   if (!match) throw new Error("Unknown tool.");
   const connection = connections.find((item) => item.id.replace(/-/g, "").slice(0, 12) === match[1]);
-  if (!connection || !connection.endpoint || connection.authType !== "none" || !await publicHttps(connection.endpoint)) throw new Error("MCP connection is inactive or requires authentication that has not been configured.");
-  const client = new Client({ name: "drive-mcp-gateway", version: "1.1.0" });
+  if (!connection || !connection.endpoint || connection.authType !== "none" || !await publicHttps(connection.endpoint)) {
+    throw new Error("MCP connection is inactive or requires authentication that has not been configured.");
+  }
+  const client = new Client({ name: "drive-mcp-gateway", version: "1.2.0" });
   let transport;
   try {
     transport = new StreamableHTTPClientTransport(new URL(connection.endpoint), { requestInit: { signal: AbortSignal.timeout(20000) } });
@@ -207,16 +405,31 @@ async function callUpstreamTool(supabase, userId, encodedName, args) {
     const listed = await client.listTools();
     const original = listed.tools?.find((tool) => safeToolName(tool.name) === match[2]);
     if (!original) throw new Error("The original MCP tool is no longer available.");
-    const result = await client.callTool({ name: original.name, arguments: args || {} });
-    return result;
+    return await client.callTool({ name: original.name, arguments: args || {} });
   } finally { try { await client.close(); } catch {} try { await transport?.close(); } catch {} }
 }
 async function callTool(name, args, context) {
   if (!args || typeof args !== "object" || Array.isArray(args)) throw new Error("Tool arguments must be an object.");
-  if (name.startsWith("mcp_")) return callUpstreamTool(context.supabase, context.user.id, name, args);
+  if (name.startsWith("mcp_")) return callUpstreamTool(context.supabase, context.user.id, name, args, context.appOrigin);
+  if (name === "drive_list_connected_mcps") {
+    const connections = await getUserConnections(context.supabase, context.user.id, { enabledOnly: false, appOrigin: context.appOrigin });
+    return {
+      count: connections.length,
+      enabled_count: connections.filter((c) => c.enabled).length,
+      workspace_url: `${context.appOrigin}/#mcp`,
+      connections
+    };
+  }
+  if (name === "drive_get_connect_url") {
+    return getConnectUrl(context.supabase, context.user.id, args, context.appOrigin);
+  }
   if (name === "drive_list_active_skills") {
     const skills = await getActiveSkills(context.supabase, context.user.id);
-    return { count: skills.length, skills: skills.map(({id,name,description,version}) => ({id,name,description,version})) };
+    return {
+      count: skills.length,
+      marketplace_url: `${context.appOrigin}/?tab=skills#skills`,
+      skills: skills.map(({ id, name: skillName, description, version }) => ({ id, name: skillName, description, version }))
+    };
   }
   if (name === "drive_get_active_skill") {
     const id = typeof args.skill_id === "string" ? args.skill_id : "";
@@ -228,17 +441,17 @@ async function callTool(name, args, context) {
   if (name === "drive_search_mcp_servers") {
     const query = typeof args.query === "string" ? args.query.trim().slice(0, 100) : "";
     if (!query) throw new Error("query is required.");
-    return searchMcpServers(query, clampLimit(args.limit));
+    return searchMcpServers(query, clampLimit(args.limit), context.appOrigin);
   }
   if (name === "drive_get_mcp_server") {
     const serverName = typeof args.server_name === "string" ? args.server_name.trim().slice(0, 200) : "";
     if (!serverName) throw new Error("server_name is required.");
-    return getMcpServer(serverName);
+    return getMcpServer(serverName, context.appOrigin);
   }
   if (name === "drive_search_skills") {
     const query = typeof args.query === "string" ? args.query.trim().slice(0, 100) : "";
     if (!query) throw new Error("query is required.");
-    return searchSkills(query, clampLimit(args.limit));
+    return searchSkills(query, clampLimit(args.limit), context.appOrigin);
   }
   throw new Error(`Unknown tool: ${name}`);
 }
@@ -252,15 +465,29 @@ async function handleMessage(message, context) {
     if (!hasId) return { response: jsonRpcError(null, -32600, "initialize must be a request with an id.") };
     const requested = message.params?.protocolVersion;
     const protocolVersion = PROTOCOL_VERSIONS.includes(requested) ? requested : "2025-03-26";
-    return { response: jsonRpc(id, { protocolVersion, capabilities: { tools: { listChanged: true } }, serverInfo: SERVER_INFO, instructions: "DRIVE exposes the active MCP connections and enabled, security-approved Agent Skills belonging to the authenticated DRIVE user. Call drive_list_active_skills and drive_get_active_skill to load relevant Skill instructions. MCP tools are proxied to their original servers without rewriting their schemas or permission model. Servers requiring upstream credentials are not exposed until the user configures their credentials in DRIVE." }) };
+    return {
+      response: jsonRpc(id, {
+        protocolVersion,
+        capabilities: { tools: { listChanged: true } },
+        serverInfo: SERVER_INFO,
+        instructions: [
+          "DRIVE MCP is this user's personal MCP Gateway, MCP Marketplace, and Skills Hub.",
+          "1. Always check drive_list_connected_mcps and drive_list_active_skills to inspect the user's installed MCPs and enabled Skills.",
+          "2. When a Skill matches the user's request, call drive_get_active_skill to load its full instructions.",
+          "3. When the user needs a new MCP or asks to connect one (for example: 'hubungkan mcp dengan figcraft'), call drive_get_connect_url (or drive_search_mcp_servers) and ALWAYS send the returned clickable DRIVE connect_url directly to the user so clicking it opens the DRIVE gateway to connect that MCP.",
+          "4. When the user wants a new Skill, call drive_search_skills and share the returned install_url.",
+          "5. Active remote MCP tools are exposed directly with the mcp_<id>__<tool> prefix."
+        ].join(" ")
+      })
+    };
   }
-  if (["notifications/initialized","notifications/cancelled","notifications/progress"].includes(message.method)) return { notification: true };
+  if (["notifications/initialized", "notifications/cancelled", "notifications/progress"].includes(message.method)) return { notification: true };
   if (!hasId) return { notification: true };
   if (message.method === "ping") return { response: jsonRpc(id, {}) };
   if (message.method === "tools/list") {
     try {
-      const catalog = await buildTools(context.supabase, context.user.id);
-      const tools = catalog.tools.map(({_drive,...tool}) => tool);
+      const catalog = await buildTools(context.supabase, context.user.id, context.appOrigin);
+      const tools = catalog.tools.map(({ _drive, ...tool }) => tool);
       return { response: jsonRpc(id, { tools }) };
     } catch (error) { return { response: jsonRpcError(id, -32603, error.message || "Could not build user tool catalog.") }; }
   }
@@ -279,8 +506,12 @@ export async function POST(request) {
   const auth = await authenticate(request);
   if (auth.error) return auth.error;
   const accept = request.headers.get("accept") || "";
-  if (!accept.includes("application/json") && !accept.includes("text/event-stream")) return response(jsonRpcError(null, -32600, "Accept must include application/json or text/event-stream."), 406);
-  if (!(request.headers.get("content-type") || "").toLowerCase().includes("application/json")) return response(jsonRpcError(null, -32700, "Content-Type must be application/json."), 415);
+  if (!accept.includes("application/json") && !accept.includes("text/event-stream")) {
+    return response(jsonRpcError(null, -32600, "Accept must include application/json or text/event-stream."), 406);
+  }
+  if (!(request.headers.get("content-type") || "").toLowerCase().includes("application/json")) {
+    return response(jsonRpcError(null, -32700, "Content-Type must be application/json."), 415);
+  }
   let raw;
   try {
     const body = await request.text();

@@ -8,15 +8,18 @@ import {
   Command,
   Compass,
   LockKeyhole,
+  LogIn,
+  LogOut,
   Plus,
   RefreshCw,
   Sparkles,
+  User,
 } from "lucide-react";
 
 const NAV_ITEMS = [
-  { id: "mcp", label: "MCP Hub", short: "MCP", hash: "#mcp", icon: Cable },
-  { id: "skills", label: "Skills Library", short: "Skills", hash: "#skills", icon: BookOpen },
-  { id: "account", label: "Account Status", short: "Account", hash: "#account", icon: LockKeyhole },
+  { id: "mcp", label: "MCP Hub", short: "MCP", icon: Cable },
+  { id: "skills", label: "Skills Library", short: "Skills", icon: BookOpen },
+  { id: "account", label: "Account Status", short: "Account", icon: LockKeyhole },
 ];
 
 const MCP_SUBTABS = [
@@ -41,31 +44,39 @@ const HASH_TO_TAB = {
   "#settings": "account",
 };
 
+function getSupabaseClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
+  return createBrowserClient(url, key);
+}
+
 function AccountStatusPanel() {
+  const [session, setSession] = useState(null);
   const [mcp, setMcp] = useState([]);
   const [skills, setSkills] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [authBusy, setAuthBusy] = useState(false);
   const [error, setError] = useState("");
 
   const refresh = useCallback(async () => {
     setLoading(true);
     setError("");
     try {
-      const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      if (!url || !key) throw new Error("Account status is not configured.");
-      const supabase = createBrowserClient(url, key);
+      const supabase = getSupabaseClient();
+      if (!supabase) throw new Error("Account status is not configured.");
       const {
-        data: { session },
+        data: { session: currentSession },
       } = await supabase.auth.getSession();
-      if (!session) {
+      setSession(currentSession || null);
+      if (!currentSession) {
         setMcp([]);
         setSkills([]);
         return;
       }
       const [connectionResponse, skillResponse] = await Promise.all([
         fetch("/api/connections", {
-          headers: { Authorization: `Bearer ${session.access_token}` },
+          headers: { Authorization: `Bearer ${currentSession.access_token}` },
           cache: "no-store",
         }),
         supabase
@@ -95,31 +106,108 @@ function AccountStatusPanel() {
     return () => window.clearTimeout(timer);
   }, [refresh]);
 
+  async function handleSignIn() {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+    setAuthBusy(true);
+    try {
+      await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/")}`,
+        },
+      });
+    } catch (e) {
+      setError(e?.message || "Failed to start Google sign-in.");
+      setAuthBusy(false);
+    }
+  }
+
+  async function handleSignOut() {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+    setAuthBusy(true);
+    try {
+      await supabase.auth.signOut();
+      setSession(null);
+      setMcp([]);
+      setSkills([]);
+    } catch (e) {
+      setError(e?.message || "Failed to sign out.");
+    } finally {
+      setAuthBusy(false);
+    }
+  }
+
   return (
     <section className="account-status-page" id="account">
       <div className="section-head">
         <div>
           <div className="eyebrow">
-            <span className="pulse" /> ACCOUNT OVERVIEW
+            <span className="pulse" /> ACCOUNT
           </div>
-          <h1>Workspace status.</h1>
-          <p>Ringkasan MCP dan Skills yang sedang aktif di akun ini.</p>
+          <h1>Account &amp; Status</h1>
         </div>
         <button type="button" className="glass-chip-btn" onClick={refresh} disabled={loading}>
-          <RefreshCw size={14} className={loading ? "spin" : ""} /> Refresh
+          <RefreshCw size={13} className={loading ? "spin" : ""} /> Refresh
         </button>
       </div>
+
+      <article className="account-profile-card">
+        <div className="account-profile-left">
+          <span className="account-profile-avatar">
+            <User size={18} />
+          </span>
+          <div className="account-profile-meta">
+            {session?.user ? (
+              <>
+                <div className="account-profile-email-row">
+                  <strong>{session.user.email}</strong>
+                  <span className="account-sync-pill">Synced</span>
+                </div>
+                <small>Signed in to DRIVE · MCPs &amp; Skills synced to your account</small>
+              </>
+            ) : (
+              <>
+                <strong>Not signed in</strong>
+                <small>Sign in to sync MCP connections &amp; installed Skills</small>
+              </>
+            )}
+          </div>
+        </div>
+        {session?.user ? (
+          <button
+            type="button"
+            className="account-auth-btn"
+            onClick={handleSignOut}
+            disabled={authBusy}
+          >
+            <LogOut size={13} /> {authBusy ? "Signing out..." : "Sign out"}
+          </button>
+        ) : (
+          <button
+            type="button"
+            className="account-auth-btn is-primary"
+            onClick={handleSignIn}
+            disabled={authBusy}
+          >
+            <LogIn size={13} /> {authBusy ? "Redirecting..." : "Sign in with Google"}
+          </button>
+        )}
+      </article>
+
       {error && <p className="skill-inline-error">{error}</p>}
+
       <div className="account-active-grid">
         <article className="account-active-card">
           <span className="account-active-icon">
-            <Cable size={20} />
+            <Cable size={18} />
           </span>
           <small>ACTIVE MCPs</small>
           <strong>{loading ? "—" : mcp.length}</strong>
           <span>{mcp.length === 1 ? "server enabled" : "servers enabled"}</span>
           <div className="account-active-list">
-            {mcp.slice(0, 5).map((item) => (
+            {mcp.slice(0, 4).map((item) => (
               <div key={item.id}>
                 <i />
                 {item.server?.title ||
@@ -128,32 +216,30 @@ function AccountStatusPanel() {
                   "MCP connection"}
               </div>
             ))}
-            {!loading && !mcp.length && <p>No active MCP connections yet.</p>}
-            {mcp.length > 5 && <p>+{mcp.length - 5} more active</p>}
+            {!loading && !mcp.length && <p>No active MCPs yet.</p>}
+            {mcp.length > 4 && <p>+{mcp.length - 4} more active</p>}
           </div>
         </article>
+
         <article className="account-active-card">
           <span className="account-active-icon">
-            <BookOpen size={20} />
+            <BookOpen size={18} />
           </span>
           <small>ACTIVE SKILLS</small>
           <strong>{loading ? "—" : skills.length}</strong>
           <span>{skills.length === 1 ? "skill enabled" : "skills enabled"}</span>
           <div className="account-active-list">
-            {skills.slice(0, 5).map((item) => (
+            {skills.slice(0, 4).map((item) => (
               <div key={item.id}>
                 <i />
                 {item.name}
               </div>
             ))}
             {!loading && !skills.length && <p>No active Skills yet.</p>}
-            {skills.length > 5 && <p>+{skills.length - 5} more active</p>}
+            {skills.length > 4 && <p>+{skills.length - 4} more active</p>}
           </div>
         </article>
       </div>
-      <p className="account-status-footnote">
-        Status diambil langsung dari koneksi dan Skill yang aktif. Item yang belum diaktifkan tidak dihitung.
-      </p>
     </section>
   );
 }
@@ -193,7 +279,7 @@ export default function WorkspaceTabs({
     MCP_SUBTABS.findIndex((item) => item.id === mcpView)
   );
 
-  const selectTab = useCallback((nextTab, updateHash = true) => {
+  const selectTab = useCallback((nextTab) => {
     setActive((prev) => {
       if (prev !== nextTab) {
         setIsAnimatingLens(true);
@@ -202,16 +288,10 @@ export default function WorkspaceTabs({
       }
       return nextTab;
     });
-    if (updateHash && typeof window !== "undefined") {
-      const target = NAV_ITEMS.find((item) => item.id === nextTab);
-      if (target) {
-        window.history.replaceState(null, "", target.hash);
-      }
-    }
   }, []);
 
   useEffect(() => {
-    const syncFromHash = () => {
+    const timer = window.setTimeout(() => {
       const hash = window.location.hash.toLowerCase();
       if (!hash) return;
       const mapped = HASH_TO_TAB[hash];
@@ -219,12 +299,12 @@ export default function WorkspaceTabs({
       if (hash === "#my-mcps" || hash === "#connections") setMcpView("my");
       else if (hash === "#custom" || hash === "#add") setMcpView("custom");
       else if (hash === "#directory" || hash === "#discover") setMcpView("discover");
-    };
-    const timer = window.setTimeout(syncFromHash, 0);
-    window.addEventListener("hashchange", syncFromHash);
+      // Keep the browser address bar clean without #mcp / #skills / #account
+      const cleanUrl = `${window.location.pathname}${window.location.search}`;
+      window.history.replaceState(null, "", cleanUrl);
+    }, 0);
     return () => {
       window.clearTimeout(timer);
-      window.removeEventListener("hashchange", syncFromHash);
       if (glideTimerRef.current) window.clearTimeout(glideTimerRef.current);
     };
   }, []);
@@ -258,16 +338,16 @@ export default function WorkspaceTabs({
     setIsDragging(false);
     setDragIndex(null);
     const target = NAV_ITEMS[Math.min(NAV_ITEMS.length - 1, Math.max(0, finalIdx))];
-    if (target) selectTab(target.id, true);
+    if (target) selectTab(target.id);
   }
 
   function handleKeyDown(event) {
     if (event.key === "ArrowRight") {
       event.preventDefault();
-      selectTab(NAV_ITEMS[(activeIndex + 1) % NAV_ITEMS.length].id, true);
+      selectTab(NAV_ITEMS[(activeIndex + 1) % NAV_ITEMS.length].id);
     } else if (event.key === "ArrowLeft") {
       event.preventDefault();
-      selectTab(NAV_ITEMS[(activeIndex - 1 + NAV_ITEMS.length) % NAV_ITEMS.length].id, true);
+      selectTab(NAV_ITEMS[(activeIndex - 1 + NAV_ITEMS.length) % NAV_ITEMS.length].id);
     }
   }
 
@@ -321,7 +401,7 @@ export default function WorkspaceTabs({
           className="app-brand"
           aria-label="DRIVE home"
           onClick={() => {
-            selectTab("mcp", true);
+            selectTab("mcp");
             setMcpView("discover");
           }}
         >
@@ -339,7 +419,7 @@ export default function WorkspaceTabs({
               if (active === "mcp") {
                 setMcpView(mcpView === "discover" ? "my" : "discover");
               } else {
-                selectTab("mcp", true);
+                selectTab("mcp");
                 setMcpView("discover");
               }
             }}
@@ -352,7 +432,7 @@ export default function WorkspaceTabs({
                   ? `${serverCount} MCPs`
                   : "Directory"
                 : active === "skills"
-                ? "Skills"
+                ? "MCPs"
                 : "Directory"}
             </span>
           </button>
@@ -361,29 +441,18 @@ export default function WorkspaceTabs({
             type="button"
             className="top-pill-btn is-accent"
             onClick={() => {
-              if (active === "skills") {
-                document
-                  .getElementById("my-skills")
-                  ?.scrollIntoView({ behavior: "smooth", block: "start" });
-              } else if (active === "account") {
-                selectTab("mcp", true);
+              if (active === "account") {
+                selectTab("mcp");
                 setMcpView("discover");
               } else {
+                selectTab("mcp");
                 setMcpView("custom");
               }
             }}
-            title={
-              active === "skills"
-                ? "Jump to My Skills"
-                : active === "account"
-                ? "Open MCP Directory"
-                : "Add Custom MCP"
-            }
+            title="Add Custom MCP"
           >
-            {active === "mcp" ? <Plus size={13} /> : <Sparkles size={12} />}
-            <span>
-              {active === "skills" ? "My Skills" : active === "account" ? "MCPs" : "Connect"}
-            </span>
+            {active === "account" ? <Sparkles size={12} /> : <Plus size={13} />}
+            <span>{active === "account" ? "MCPs" : "Connect"}</span>
           </button>
         </div>
       </header>
@@ -420,7 +489,7 @@ export default function WorkspaceTabs({
                 className={`dock-item ${isActive ? "active is-active" : ""}`}
                 aria-current={isActive ? "page" : undefined}
                 aria-label={label}
-                onClick={() => selectTab(id, true)}
+                onClick={() => selectTab(id)}
               >
                 <span className="dock-icon">
                   <Icon size={17} />

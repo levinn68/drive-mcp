@@ -20,7 +20,6 @@ import {
   Trash2,
   Wrench,
 } from "lucide-react";
-import { useDriveLang } from "./lang-context";
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -38,7 +37,7 @@ async function getAccessToken() {
   return session?.access_token || null;
 }
 
-function getAuthMethodLabel(endpointUrl, lang) {
+function getAuthMethodLabel(endpointUrl) {
   const lower = String(endpointUrl || "").toLowerCase();
   if (!lower) return { label: "STDIO", cls: "", isNoAuth: false };
   if (
@@ -47,11 +46,7 @@ function getAuthMethodLabel(endpointUrl, lang) {
     lower.includes("developers.openai.com") ||
     lower.includes("docs.mcp.cloudflare.com")
   ) {
-    return {
-      label: lang === "en" ? "No Auth" : "Tanpa Auth",
-      cls: "is-auth-none",
-      isNoAuth: true,
-    };
+    return { label: "No Auth", cls: "is-auth-none", isNoAuth: true };
   }
   if (
     lower.includes("githubcopilot.com") ||
@@ -65,11 +60,7 @@ function getAuthMethodLabel(endpointUrl, lang) {
     return { label: "PAT / Token", cls: "is-auth-pat", isNoAuth: false };
   }
   if (lower.includes("figma.com")) {
-    return {
-      label: lang === "en" ? "OAuth Catalog" : "OAuth Katalog",
-      cls: "is-auth-pat",
-      isNoAuth: false,
-    };
+    return { label: "OAuth Catalog", cls: "is-auth-pat", isNoAuth: false };
   }
   return { label: "OAuth 2.1", cls: "is-auth-oauth", isNoAuth: false };
 }
@@ -81,7 +72,6 @@ export function AddMcpButton({
   remoteAvailable,
   onConnected,
 }) {
-  const { t } = useDriveLang();
   const [state, setState] = useState("idle");
 
   async function add() {
@@ -115,7 +105,7 @@ export function AddMcpButton({
       });
       const result = await response.json();
       if (!response.ok) {
-        setState(result.error || t("Gagal menyambungkan", "Could not connect"));
+        setState(result.error || "Could not connect");
         return;
       }
 
@@ -157,11 +147,9 @@ export function AddMcpButton({
                 endpointUrl,
                 note: authData.message || "",
                 tokenPortalUrl: authData.tokenPortalUrl || "",
-                tokenPortalLabel:
-                  authData.tokenPortalLabel || t("Buat Token Provider", "Create Provider Token"),
+                tokenPortalLabel: authData.tokenPortalLabel || "Create Provider Token",
                 oauthAppPortalUrl: authData.oauthAppPortalUrl || "",
-                oauthAppPortalLabel:
-                  authData.oauthAppPortalLabel || t("Buat OAuth App", "Create OAuth App"),
+                oauthAppPortalLabel: authData.oauthAppPortalLabel || "Create OAuth App",
                 supportsOAuthApp: Boolean(authData.supportsOAuthApp),
                 callbackUrl:
                   authData.callbackUrl || `${window.location.origin}/api/mcp-auth/callback`,
@@ -175,7 +163,7 @@ export function AddMcpButton({
 
       setState("added");
     } catch {
-      setState(t("Error jaringan", "Network error"));
+      setState("Network error");
     }
   }
 
@@ -193,8 +181,8 @@ export function AddMcpButton({
         isError
           ? state
           : remoteAvailable
-          ? t("Sambungkan & otorisasi ke MCP resmi", "Connect & redirect to original MCP authorization")
-          : t("Simpan MCP ini ke workspace kamu", "Save this MCP entry to your workspace")
+          ? "Connect & redirect to original MCP authorization"
+          : "Save this MCP entry to your workspace"
       }
     >
       {isAdding ? (
@@ -205,20 +193,13 @@ export function AddMcpButton({
         <Plus size={13} />
       )}
       <span>
-        {isAdding
-          ? t("Menyambungkan...", "Connecting...")
-          : isAdded
-          ? t("Tersambung", "Connected")
-          : isError
-          ? t("Coba Lagi", "Retry")
-          : t("Sambungkan", "Connect")}
+        {isAdding ? "Connecting..." : isAdded ? "Connected" : isError ? "Retry" : "Connect"}
       </span>
     </button>
   );
 }
 
 export default function MyMcpPanel() {
-  const { lang, t } = useDriveLang();
   const [connections, setConnections] = useState([]);
   const [authorizedPrefixes, setAuthorizedPrefixes] = useState(() => new Set());
   const [loading, setLoading] = useState(true);
@@ -271,14 +252,11 @@ export default function MyMcpPanel() {
         );
       }
     } catch (err) {
-      setBanner({
-        type: "error",
-        text: err?.message || t("Gagal memuat koneksi tersimpan.", "Could not load saved connections."),
-      });
+      setBanner({ type: "error", text: err?.message || "Could not load saved connections." });
     } finally {
       setLoading(false);
     }
-  }, [t]);
+  }, []);
 
   useEffect(() => {
     const initialLoad = window.setTimeout(() => {
@@ -289,10 +267,7 @@ export default function MyMcpPanel() {
         const srv = params.get("server") || "MCP";
         setBanner({
           type: "success",
-          text:
-            lang === "en"
-              ? `${srv} authorized via OAuth and active in your DRIVE account!`
-              : `${srv} berhasil diotorisasi via OAuth & langsung aktif di akun DRIVE kamu!`,
+          text: `${srv} authorized via OAuth & active in your DRIVE account!`,
         });
         params.delete("mcp_auth");
         params.delete("server");
@@ -334,7 +309,7 @@ export default function MyMcpPanel() {
       window.removeEventListener("drive:auth-changed", refresh);
       window.removeEventListener("drive:open-mcp-auth", openAuth);
     };
-  }, [load, lang]);
+  }, [load]);
 
   async function loadToolsForConnection(item, forceRefresh = false) {
     const endpointUrl =
@@ -361,7 +336,7 @@ export default function MyMcpPanel() {
 
     try {
       const token = tokenRef.current || (await getAccessToken());
-      if (!token) throw new Error(t("Masuk terlebih dahulu.", "Sign in required."));
+      if (!token) throw new Error("Sign in required.");
       const res = await fetch("/api/mcp-auth/tools", {
         method: "POST",
         headers: {
@@ -403,7 +378,7 @@ export default function MyMcpPanel() {
           tools: [],
           total: 0,
           requiresAuth: false,
-          error: err?.message || t("Gagal memuat daftar tools.", "Failed to load tools list."),
+          error: err?.message || "Failed to load tools list.",
         },
       }));
     }
@@ -423,10 +398,7 @@ export default function MyMcpPanel() {
       "MCP Server";
 
     if (!endpointUrl) {
-      setBanner({
-        type: "error",
-        text: t("MCP ini tidak memiliki endpoint HTTPS remote.", "This MCP has no remote HTTPS endpoint."),
-      });
+      setBanner({ type: "error", text: "This MCP has no remote HTTPS endpoint." });
       return;
     }
 
@@ -434,7 +406,7 @@ export default function MyMcpPanel() {
     setBanner({ type: "", text: "" });
     try {
       const token = tokenRef.current || (await getAccessToken());
-      if (!token) throw new Error(t("Masuk terlebih dahulu.", "Sign in required."));
+      if (!token) throw new Error("Sign in required.");
       const res = await fetch("/api/mcp-auth/start", {
         method: "POST",
         headers: {
@@ -448,17 +420,14 @@ export default function MyMcpPanel() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || t("Gagal memulai otorisasi MCP.", "Failed to start MCP authorization."));
+      if (!res.ok) throw new Error(data.error || "Failed to start MCP authorization.");
 
       if (data.mode === "oauth" && data.authorizeUrl) {
         window.location.assign(data.authorizeUrl);
         return;
       }
       if (data.mode === "none") {
-        setBanner({
-          type: "success",
-          text: data.message || t(`${title} aktif tanpa login.`, `${title} active without login.`),
-        });
+        setBanner({ type: "success", text: data.message || `${title} active without login.` });
         setAuthorizedPrefixes((prev) => {
           const next = new Set(prev);
           next.add(String(item.id).slice(0, 12));
@@ -475,9 +444,9 @@ export default function MyMcpPanel() {
           endpointUrl,
           note: data.message,
           tokenPortalUrl: data.tokenPortalUrl || "",
-          tokenPortalLabel: data.tokenPortalLabel || t("Buat Token Provider", "Create Provider Token"),
+          tokenPortalLabel: data.tokenPortalLabel || "Create Provider Token",
           oauthAppPortalUrl: data.oauthAppPortalUrl || "",
-          oauthAppPortalLabel: data.oauthAppPortalLabel || t("Buat OAuth App", "Create OAuth App"),
+          oauthAppPortalLabel: data.oauthAppPortalLabel || "Create OAuth App",
           supportsOAuthApp: Boolean(data.supportsOAuthApp),
           callbackUrl: data.callbackUrl || `${window.location.origin}/api/mcp-auth/callback`,
         });
@@ -487,7 +456,7 @@ export default function MyMcpPanel() {
         setOauthClientSecret("");
       }
     } catch (err) {
-      setBanner({ type: "error", text: err?.message || t("Gagal otorisasi MCP.", "MCP authorization failed.") });
+      setBanner({ type: "error", text: err?.message || "MCP authorization failed." });
     } finally {
       setAuthBusyId("");
     }
@@ -525,7 +494,7 @@ export default function MyMcpPanel() {
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || t("Gagal menyimpan kredensial.", "Failed to save credentials."));
+      if (!res.ok) throw new Error(data.error || "Failed to save credentials.");
 
       if (data.mode === "oauth" && data.authorizeUrl) {
         window.location.assign(data.authorizeUrl);
@@ -534,10 +503,7 @@ export default function MyMcpPanel() {
 
       setBanner({
         type: "success",
-        text: t(
-          `Token untuk ${bearerTarget.title} berhasil disimpan & aktif.`,
-          `Token for ${bearerTarget.title} saved & active.`
-        ),
+        text: `Token for ${bearerTarget.title} saved & active.`,
       });
       const savedTarget = bearerTarget;
       setAuthorizedPrefixes((prev) => {
@@ -553,10 +519,7 @@ export default function MyMcpPanel() {
         true
       );
     } catch (err) {
-      setBanner({
-        type: "error",
-        text: err?.message || t("Gagal menyimpan kredensial.", "Failed to save credentials."),
-      });
+      setBanner({ type: "error", text: err?.message || "Failed to save credentials." });
     } finally {
       setAuthBusyId("");
     }
@@ -569,7 +532,7 @@ export default function MyMcpPanel() {
     );
     try {
       const token = tokenRef.current || (await getAccessToken());
-      if (!token) throw new Error(t("Masuk kembali.", "Sign in again."));
+      if (!token) throw new Error("Sign in again.");
       const response = await fetch(`/api/connections/${item.id}`, {
         method: "PATCH",
         headers: {
@@ -587,10 +550,7 @@ export default function MyMcpPanel() {
       setConnections((prev) =>
         prev.map((row) => (row.id === item.id ? { ...row, enabled: item.enabled } : row))
       );
-      setBanner({
-        type: "error",
-        text: err?.message || t("Gagal memperbarui koneksi.", "Could not update connection."),
-      });
+      setBanner({ type: "error", text: err?.message || "Could not update connection." });
     }
   }
 
@@ -599,7 +559,7 @@ export default function MyMcpPanel() {
     setConnections((prev) => prev.filter((row) => row.id !== item.id));
     try {
       const token = tokenRef.current || (await getAccessToken());
-      if (!token) throw new Error(t("Masuk kembali.", "Sign in again."));
+      if (!token) throw new Error("Sign in again.");
       const response = await fetch(`/api/connections/${item.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
@@ -611,10 +571,7 @@ export default function MyMcpPanel() {
       window.dispatchEvent(new Event("drive:connections-changed"));
     } catch (err) {
       setConnections(snapshot);
-      setBanner({
-        type: "error",
-        text: err?.message || t("Gagal menghapus koneksi.", "Could not remove connection."),
-      });
+      setBanner({ type: "error", text: err?.message || "Could not remove connection." });
     }
   }
 
@@ -655,12 +612,12 @@ export default function MyMcpPanel() {
       <div className="section-head">
         <div>
           <div className="eyebrow">
-            <span className="pulse" /> {t("WORKSPACE SAYA", "MY WORKSPACE")}
+            <span className="pulse" /> MY WORKSPACE
           </div>
-          <h1>{t("MCP Saya", "My MCPs")}</h1>
+          <h1>My MCPs</h1>
         </div>
         <button type="button" className="glass-chip-btn" onClick={load} disabled={loading}>
-          <RefreshCw size={13} className={loading ? "spin" : ""} /> {t("Muat Ulang", "Refresh")}
+          <RefreshCw size={13} className={loading ? "spin" : ""} /> Refresh
         </button>
       </div>
 
@@ -685,18 +642,18 @@ export default function MyMcpPanel() {
         <div className="my-mcp-counts">
           <div>
             <strong>{connections.length}</strong>
-            <span>{t("TERSIMPAN", "SAVED")}</span>
+            <span>SAVED</span>
           </div>
           <div>
             <strong className="is-accent">{activeCount}</strong>
-            <span>{t("AKTIF", "ACTIVE")}</span>
+            <span>ACTIVE</span>
           </div>
         </div>
-        <div className="my-mcp-filters" role="group" aria-label={t("Filter koneksi", "Filter connections")}>
+        <div className="my-mcp-filters" role="group" aria-label="Filter connections">
           {[
-            { id: "all", label: t("Semua", "All") },
-            { id: "active", label: t("Aktif", "Active") },
-            { id: "off", label: t("Nonaktif", "Off") },
+            { id: "all", label: "All" },
+            { id: "active", label: "Active" },
+            { id: "off", label: "Off" },
           ].map((opt) => (
             <button
               key={opt.id}
@@ -715,8 +672,8 @@ export default function MyMcpPanel() {
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder={t("Filter koneksi tersimpan...", "Filter saved connections...")}
-          aria-label={t("Filter koneksi tersimpan", "Filter saved connections")}
+          placeholder="Filter saved connections..."
+          aria-label="Filter saved connections"
         />
       </div>
 
@@ -729,7 +686,7 @@ export default function MyMcpPanel() {
           <div className="custom-fields">
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
               <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", color: "#7cd4ff", display: "inline-flex", alignItems: "center", gap: 6 }}>
-                <KeyRound size={13} /> {t("SAMBUNGKAN", "CONNECT")} — {bearerTarget.title.toUpperCase()}
+                <KeyRound size={13} /> CONNECT — {bearerTarget.title.toUpperCase()}
               </span>
               {bearerTarget.supportsOAuthApp && (
                 <div style={{ display: "flex", gap: 6 }}>
@@ -787,7 +744,7 @@ export default function MyMcpPanel() {
                     type="password"
                     value={bearerValue}
                     onChange={(e) => setBearerValue(e.target.value)}
-                    placeholder={t("Tempel token dari provider di sini...", "Paste your provider token here...")}
+                    placeholder="Paste your provider token here..."
                     required
                   />
                 </label>
@@ -813,7 +770,7 @@ export default function MyMcpPanel() {
                     onClick={() => copyUrl("oauth-cb", bearerTarget.callbackUrl)}
                   >
                     {copiedId === "oauth-cb" ? <Check size={11} /> : <Copy size={11} />}
-                    {copiedId === "oauth-cb" ? t("Disalin", "Copied") : t("Salin Callback", "Copy Callback")}
+                    {copiedId === "oauth-cb" ? "Copied" : "Copy Callback"}
                   </button>
                 </div>
                 <label className="custom-field-label">
@@ -821,17 +778,17 @@ export default function MyMcpPanel() {
                   <input
                     value={oauthClientId}
                     onChange={(e) => setOauthClientId(e.target.value)}
-                    placeholder={t("Masukkan Client ID dari OAuth App provider...", "Enter Client ID from provider OAuth App...")}
+                    placeholder="Enter Client ID from provider OAuth App..."
                     required
                   />
                 </label>
                 <label className="custom-field-label">
-                  <span>{t("OAUTH CLIENT SECRET (OPSIONAL)", "OAUTH CLIENT SECRET (OPTIONAL)")}</span>
+                  <span>OAUTH CLIENT SECRET (OPTIONAL)</span>
                   <input
                     type="password"
                     value={oauthClientSecret}
                     onChange={(e) => setOauthClientSecret(e.target.value)}
-                    placeholder={t("Masukkan Client Secret jika diminta provider...", "Enter Client Secret if required...")}
+                    placeholder="Enter Client Secret if required..."
                   />
                 </label>
               </>
@@ -843,16 +800,14 @@ export default function MyMcpPanel() {
                 className="custom-submit-btn"
                 disabled={authBusyId === bearerTarget.id}
               >
-                {authModeTab === "oauth_app"
-                  ? t("Lanjut Login OAuth", "Continue OAuth Login")
-                  : t("Simpan Token", "Save Token")}
+                {authModeTab === "oauth_app" ? "Continue OAuth Login" : "Save Token"}
               </button>
               <button
                 type="button"
                 className="glass-chip-btn"
                 onClick={() => setBearerTarget(null)}
               >
-                {t("Batal", "Cancel")}
+                Cancel
               </button>
             </div>
           </div>
@@ -862,24 +817,19 @@ export default function MyMcpPanel() {
       {!signedIn ? (
         <div className="empty-state">
           <ShieldCheck size={22} />
-          <h3>{t("Masuk untuk mengelola MCP kamu", "Sign in to manage your MCPs")}</h3>
-          <p>{t("Buka tab Akun lalu klik Masuk dengan Google.", "Open the Account tab and tap Sign in with Google.")}</p>
+          <h3>Sign in to manage your MCPs</h3>
+          <p>Open the Account tab and tap Sign in with Google.</p>
         </div>
       ) : loading ? (
         <div className="empty-state">
           <LoaderCircle size={22} className="spin" />
-          <h3>{t("Memuat MCP Saya...", "Loading My MCPs...")}</h3>
+          <h3>Loading My MCPs...</h3>
         </div>
       ) : visibleConnections.length === 0 ? (
         <div className="empty-state">
           <Cable size={22} />
-          <h3>{t("Belum ada koneksi MCP", "No MCP connections yet")}</h3>
-          <p>
-            {t(
-              "Buka tab Direktori untuk menyambungkan MCP resmi seperti GitHub, Supabase, atau Vercel.",
-              "Open the Directory tab to connect official MCPs like GitHub, Supabase, or Vercel."
-            )}
-          </p>
+          <h3>No MCP connections yet</h3>
+          <p>Open the Directory tab to connect official MCPs like GitHub, Supabase, or Vercel.</p>
         </div>
       ) : (
         <div className="my-mcp-list">
@@ -900,7 +850,7 @@ export default function MyMcpPanel() {
             const isAuthorizing = authBusyId === item.id;
             const isToolsOpen = openToolsId === item.id;
             const toolState = toolsById[item.id];
-            const authInfo = getAuthMethodLabel(endpoint, lang);
+            const authInfo = getAuthMethodLabel(endpoint);
             const isAuthorized =
               authInfo.isNoAuth ||
               authorizedPrefixes.has(String(item.id).slice(0, 12)) ||
@@ -924,7 +874,7 @@ export default function MyMcpPanel() {
                       <span className={`transport-pill ${authInfo.cls}`}>{authInfo.label}</span>
                       {isAuthorized && (
                         <span className="status is-enabled">
-                          <CheckCircle2 size={10} /> {t("Terhubung", "Connected")}
+                          <CheckCircle2 size={10} /> Connected
                         </span>
                       )}
                     </div>
@@ -955,9 +905,7 @@ export default function MyMcpPanel() {
                           ) : (
                             <ArrowUpRight size={11} />
                           )}
-                          {isAuthorizing
-                            ? t("Otorisasi...", "Authorizing...")
-                            : t("Otorisasi", "Authorize")}
+                          {isAuthorizing ? "Authorizing..." : "Authorize"}
                         </button>
                       )}
                       {endpoint && (
@@ -967,7 +915,7 @@ export default function MyMcpPanel() {
                           onClick={() => copyUrl(item.id, endpoint)}
                         >
                           {copiedId === item.id ? <Check size={11} /> : <Copy size={11} />}
-                          {copiedId === item.id ? t("Disalin", "Copied") : t("Salin URL", "Copy URL")}
+                          {copiedId === item.id ? "Copied" : "Copy URL"}
                         </button>
                       )}
                       <button
@@ -975,7 +923,7 @@ export default function MyMcpPanel() {
                         className="glass-chip-btn is-danger"
                         onClick={() => removeConnection(item)}
                       >
-                        <Trash2 size={11} /> {t("Hapus", "Remove")}
+                        <Trash2 size={11} /> Remove
                       </button>
                     </div>
                   </div>
@@ -996,25 +944,19 @@ export default function MyMcpPanel() {
                     {toolState?.loading ? (
                       <div className="mcp-tools-status">
                         <LoaderCircle size={14} className="spin" />
-                        <span>
-                          {t(`Mengambil daftar tools dari ${title}...`, `Loading tools from ${title}...`)}
-                        </span>
+                        <span>Loading tools from {title}...</span>
                       </div>
                     ) : toolState?.requiresAuth ? (
                       <div className="mcp-tools-status">
                         <span>
-                          {toolState.message ||
-                            t(
-                              "Perlu otorisasi untuk membaca daftar tools.",
-                              "Authorization required to list available tools."
-                            )}
+                          {toolState.message || "Authorization required to list available tools."}
                         </span>
                         <button
                           type="button"
                           className="glass-chip-btn"
                           onClick={() => authorizeUpstream(item)}
                         >
-                          <ArrowUpRight size={11} /> {t("Otorisasi sekarang", "Authorize now")}
+                          <ArrowUpRight size={11} /> Authorize now
                         </button>
                       </div>
                     ) : toolState?.error ? (
@@ -1025,30 +967,23 @@ export default function MyMcpPanel() {
                           className="glass-chip-btn"
                           onClick={() => loadToolsForConnection(item, true)}
                         >
-                          <RefreshCw size={11} /> {t("Coba lagi", "Retry")}
+                          <RefreshCw size={11} /> Retry
                         </button>
                       </div>
                     ) : (toolState?.tools || []).length === 0 ? (
                       <div className="mcp-tools-status">
-                        <span>
-                          {t(
-                            "Server tidak melaporkan tools publik saat ini.",
-                            "Server did not report any public tools right now."
-                          )}
-                        </span>
+                        <span>Server did not report any public tools right now.</span>
                       </div>
                     ) : (
                       <>
                         <div className="mcp-tools-head">
-                          <strong>
-                            {toolState.total} {t("tools siap digunakan", "tools ready to use")}
-                          </strong>
+                          <strong>{toolState.total} tools ready to use</strong>
                           <button
                             type="button"
                             className="glass-chip-btn"
                             onClick={() => loadToolsForConnection(item, true)}
                           >
-                            <RefreshCw size={11} /> {t("Muat Ulang", "Refresh")}
+                            <RefreshCw size={11} /> Refresh
                           </button>
                         </div>
                         {toolState.total > 6 && (
@@ -1058,7 +993,7 @@ export default function MyMcpPanel() {
                             onChange={(e) =>
                               setToolSearchById((prev) => ({ ...prev, [item.id]: e.target.value }))
                             }
-                            placeholder={t(`Filter ${toolState.total} tools...`, `Filter ${toolState.total} tools...`)}
+                            placeholder={`Filter ${toolState.total} tools...`}
                             aria-label={`Filter tools for ${title}`}
                           />
                         )}

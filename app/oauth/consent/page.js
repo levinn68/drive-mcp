@@ -162,25 +162,25 @@ export default function OAuthConsentPage() {
   const clientLabel = details?.client?.name || "MCP client";
 
   return (
-    <main className="oauth-page" style={{ background: "radial-gradient(ellipse at 50% -15%, rgba(118,255,90,.12), transparent 48%), radial-gradient(circle at 100% 100%, rgba(40,170,210,.15), transparent 35%), #080d12", color: "#f5f6ff" }}>
-      <div className="oauth-grid" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px),linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px)", backgroundSize: "42px 42px" }} />
-      <section className="oauth-card" style={{ background: "linear-gradient(145deg,rgba(22,35,42,.94),rgba(11,19,25,.97))", borderColor: "rgba(255,255,255,.12)", boxShadow: "0 30px 100px rgba(0,0,0,.5),inset 0 1px rgba(255,255,255,.07)" }}>
+    <main className="oauth-page" style={{ background: "radial-gradient(ellipse at 50% -15%, rgba(10,132,255,.22), transparent 50%), radial-gradient(circle at 100% 100%, rgba(90,200,250,.13), transparent 38%), #060a12", color: "#f5f9ff" }}>
+      <div className="oauth-grid" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px)", backgroundSize: "42px 42px" }} />
+      <section className="oauth-card" style={{ background: "linear-gradient(155deg,rgba(20,30,48,.92),rgba(9,14,24,.96))", borderColor: "rgba(255,255,255,.16)", boxShadow: "0 30px 100px rgba(0,0,0,.55),inset 0 1px rgba(255,255,255,.2)" }}>
         <div className="oauth-brand">
-          <div className="oauth-brand-mark" style={{ background: "linear-gradient(145deg,rgba(194,255,105,.2),rgba(61,145,130,.12))", borderColor: "rgba(194,255,105,.3)", color: "#d5ff8a", boxShadow: "0 8px 30px rgba(157,220,83,.12)" }}>
+          <div className="oauth-brand-mark" style={{ background: "linear-gradient(145deg,rgba(10,132,255,.26),rgba(90,200,250,.14))", borderColor: "rgba(124,212,255,.36)", color: "#8cdbff", boxShadow: "0 8px 28px rgba(10,132,255,.18)" }}>
             <ShieldCheck size={25} />
           </div>
           <div className="oauth-brand-copy"><div>DRIVE</div><small>One hub. Every connection.</small></div>
-          <div className="oauth-secure-pill" style={{ borderColor: "rgba(52,211,153,.2)", background: "rgba(16,185,129,.08)" }}><LockKeyhole size={11} /> Secure OAuth</div>
+          <div className="oauth-secure-pill" style={{ borderColor: "rgba(124,212,255,.28)", background: "rgba(10,132,255,.12)", color: "#bfe6ff" }}><LockKeyhole size={11} /> Secure OAuth</div>
         </div>
 
         {!authorizationId ? (
-          <div className="rounded-2xl p-4 text-sm" style={{ background: "rgba(248,113,113,.1)", color: "#fca5a5" }}>
+          <div className="rounded-2xl p-4 text-sm" style={{ background: "rgba(255,69,58,.14)", color: "#fca5a5" }}>
             Missing authorization_id. Restart the connection from your MCP client.
           </div>
         ) : !session ? (
           <>
             <div className="oauth-intro">
-              <div className="oauth-welcome-pill" style={{ background: "rgba(194,255,105,.12)" }}><Sparkles size={13} /> Welcome to DRIVE</div>
+              <div className="oauth-welcome-pill" style={{ background: "rgba(10,132,255,.16)", color: "#8cdbff" }}><Sparkles size={13} /> Welcome to DRIVE</div>
               <h1 className="oauth-title">{accountMode === "signup" ? "Create your account" : "Sign in to DRIVE"}</h1>
               <p className="oauth-subtitle">Sign in to continue to your DRIVE workspace.</p>
             </div>
@@ -192,8 +192,8 @@ export default function OAuthConsentPage() {
             <div className="oauth-divider"><span className="h-px flex-1 bg-white/10" /><span>or use email</span><span className="h-px flex-1 bg-white/10" /></div>
 
             <div className="oauth-tabs">
-              <button type="button" onClick={() => { setMode("password"); setError(""); setNotice(""); }} className="oauth-tab" style={mode === "password" ? { background: "rgba(194,255,105,.15)", color: "#e2ffad" } : { color: "rgba(255,255,255,.48)" }}>Password</button>
-              <button type="button" onClick={() => { setMode("magic"); setAccountMode("signin"); setError(""); setNotice(""); }} className="oauth-tab" style={mode === "magic" ? { background: "rgba(194,255,105,.15)", color: "#e2ffad" } : { color: "rgba(255,255,255,.48)" }}>Magic link</button>
+              <button type="button" onClick={() => { setMode("password"); setError(""); setNotice(""); }} className="oauth-tab" style={mode === "password" ? { background: "rgba(10,132,255,.22)", color: "#eef7ff" } : { color: "rgba(255,255,255,.52)" }}>Password</button>
+              <button type="button" onClick={() => { setMode("magic"); setAccountMode("signin"); setError(""); setNotice(""); }} className="oauth-tab" style={mode === "magic" ? { background: "rgba(10,132,255,.22)", color: "#eef7ff" } : { color: "rgba(255,255,255,.52)" }}>Magic link</button>
             </div>
 
             <form onSubmit={submitEmail} className="oauth-form">
@@ -213,7 +213,7 @@ export default function OAuthConsentPage() {
                   </span>
                 </label>
               )}
-              <button disabled={busy} className="oauth-submit-button" style={{ background: "linear-gradient(100deg,#d5ff78,#a8e85b)", color: "#10180b" }}>
+              <button disabled={busy} className="oauth-submit-button" style={{ background: "linear-gradient(135deg,#2b95ff,#0a84ff)", color: "#f7fbff", border: "1px solid rgba(145,212,255,.5)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.35),0 8px 22px rgba(10,132,255,.32)" }}>
                 {busy ? <LoaderCircle size={17} className="animate-spin" /> : <Mail size={17} />}
                 {mode === "magic" ? "Send magic link" : accountMode === "signup" ? "Create account" : "Sign in with email"}
               </button>
@@ -232,18 +232,18 @@ export default function OAuthConsentPage() {
           <>
             <div className="oauth-account-switch">
               <span>Signed in as <strong>{session.user?.email || "your account"}</strong></span>
-              <button type="button" onClick={switchAccount} disabled={busy}>Switch account</button>
+              <button type="button" onClick={switchAccount} disabled={busy} style={{ borderColor: "rgba(124,212,255,.35)", color: "#8cdbff" }}>Switch account</button>
             </div>
-            <div className="oauth-permission-eyebrow">Permission request</div>
+            <div className="oauth-permission-eyebrow" style={{ color: "#7cd4ff" }}>Permission request</div>
             <h1 className="oauth-title">Authorize {clientLabel}?</h1>
             <p className="oauth-subtitle">Review the access requested by this application before continuing.</p>
             <div className="oauth-details-box">
-              <div className="oauth-client-row"><LockKeyhole size={16} /> <span>Client</span><strong>{clientLabel}</strong></div>
+              <div className="oauth-client-row"><LockKeyhole size={16} style={{ color: "#7cd4ff" }} /> <span>Client</span><strong>{clientLabel}</strong></div>
               <div className="oauth-redirect">Redirect: {details.redirect_uri || "Not provided"}</div>
               <div className="oauth-scopes">
                 <div>Requested scopes</div>
                 {scopes.length ? (
-                  <div className="oauth-scope-list">{scopes.map((scope) => <span key={scope}>{scope}</span>)}</div>
+                  <div className="oauth-scope-list">{scopes.map((scope) => <span key={scope} style={{ borderColor: "rgba(124,212,255,.28)", background: "rgba(10,132,255,.14)", color: "#d6efff" }}>{scope}</span>)}</div>
                 ) : (
                   <p>No standard profile scopes requested. DRIVE permissions remain governed by your account settings.</p>
                 )}
@@ -255,7 +255,7 @@ export default function OAuthConsentPage() {
                 disabled={busy}
                 onClick={() => decide(true, false)}
                 className="oauth-submit-button"
-                style={{ background: "linear-gradient(100deg,#d5ff78,#a8e85b)", color: "#10180b" }}
+                style={{ background: "linear-gradient(135deg,#2b95ff,#0a84ff)", color: "#f7fbff", border: "1px solid rgba(145,212,255,.55)", boxShadow: "inset 0 1px 0 rgba(255,255,255,.35),0 8px 22px rgba(10,132,255,.32)" }}
               >
                 {busy ? <LoaderCircle size={17} className="animate-spin" /> : <CheckCircle2 size={17} />}
                 Approve &amp; Return to {clientLabel}
@@ -265,7 +265,7 @@ export default function OAuthConsentPage() {
                 disabled={busy}
                 onClick={() => decide(true, true)}
                 className="oauth-deny-button"
-                style={{ borderColor: "rgba(215,255,139,.35)", color: "#d7ff8b" }}
+                style={{ borderColor: "rgba(124,212,255,.36)", color: "#bfe6ff", background: "rgba(10,132,255,.1)" }}
               >
                 Approve &amp; Open Dashboard (with Return Button)
               </button>

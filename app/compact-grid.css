@@ -1,22 +1,115 @@
-/* DRIVE MCP — No-Slop App-First Cupertino Dark Glass & 2-Column Mobile Grid */
+/* DRIVE MCP — Unified iOS Liquid Glass Theme, Calibrated Lens Bubble & Tactile Motion */
+
+:root {
+  --drive-glass-bg: #060a12;
+  --drive-glass-blue: #0a84ff;
+  --drive-glass-ice: #5ac8fa;
+  --drive-glass-crystal: rgba(255, 255, 255, 0.14);
+  --drive-glass-border: rgba(255, 255, 255, 0.16);
+  --drive-glass-specular: rgba(255, 255, 255, 0.34);
+  --drive-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --drive-spring-pop: cubic-bezier(0.22, 1.15, 0.36, 1);
+}
 
 html,
 body {
+  background-color: var(--drive-glass-bg) !important;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
 }
 
-/* Sticky OAuth Return Bar */
+/* Unify Dashboard accent colors from acid lime -> Cupertino Liquid Glass Blue/Ice */
+.top-pill-btn.is-accent,
+.primary-btn,
+.hero-actions .primary-btn {
+  background: linear-gradient(135deg, #2b95ff, #0a84ff) !important;
+  color: #f7fbff !important;
+  border: 1px solid rgba(145, 212, 255, 0.55) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.38),
+    0 8px 22px rgba(10, 132, 255, 0.32) !important;
+}
+
+.eyebrow,
+.pulse,
+.account-active-icon,
+.hero h1 span,
+.workspace-hero h1 span,
+.hero-panel h1 span {
+  color: #7cd4ff !important;
+}
+
+.pulse {
+  background: #5ac8fa !important;
+  box-shadow: 0 0 10px rgba(90, 200, 250, 0.7) !important;
+}
+
+.account-active-icon {
+  background: linear-gradient(145deg, rgba(10, 132, 255, 0.24), rgba(90, 200, 250, 0.12)) !important;
+  border-color: rgba(124, 212, 255, 0.34) !important;
+}
+
+.category-chip.is-active,
+.segmented-pill.is-active {
+  background: linear-gradient(135deg, rgba(10, 132, 255, 0.28), rgba(90, 200, 250, 0.16)) !important;
+  border-color: rgba(124, 212, 255, 0.45) !important;
+  color: #eef7ff !important;
+}
+
+/* Calibrated Liquid Glass Bottom Dock & Sliding Lens Bubble (Proportional & Smooth) */
+.liquid-navbar-3,
+.floating-dock,
+.bottom-dock {
+  height: 60px !important;
+  padding: 5px !important;
+  background: rgba(12, 18, 30, 0.78) !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 14px 34px rgba(0, 0, 0, 0.42) !important;
+}
+
+.liquid-lens-pill {
+  top: 5px !important;
+  bottom: 5px !important;
+  left: 5px !important;
+  width: calc((100% - 10px) / 3) !important;
+  border-radius: 999px !important;
+  background: linear-gradient(
+    155deg,
+    rgba(255, 255, 255, 0.22),
+    rgba(90, 200, 250, 0.15) 55%,
+    rgba(255, 255, 255, 0.08)
+  ) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.42),
+    inset 0 -1px 1px rgba(90, 200, 250, 0.18),
+    0 4px 16px rgba(10, 132, 255, 0.2) !important;
+  transition:
+    transform 320ms var(--drive-spring),
+    opacity 200ms ease !important;
+  will-change: transform;
+}
+
+.liquid-navbar-3.is-gliding .liquid-lens-pill {
+  filter: brightness(1.08) !important;
+}
+
+/* Sticky OAuth Return Bar — Cupertino Liquid Glass */
 .oauth-return-bar {
   position: sticky;
   top: 0;
   z-index: 90;
   padding: calc(8px + env(safe-area-inset-top)) 12px 8px;
-  background: linear-gradient(135deg, rgba(14, 28, 20, 0.95), rgba(9, 16, 26, 0.97));
-  border-bottom: 1px solid rgba(215, 255, 139, 0.35);
-  -webkit-backdrop-filter: blur(22px) saturate(185%);
-  backdrop-filter: blur(22px) saturate(185%);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.38);
+  background: linear-gradient(135deg, rgba(10, 22, 40, 0.92), rgba(7, 13, 24, 0.96));
+  border-bottom: 1px solid rgba(124, 212, 255, 0.32);
+  -webkit-backdrop-filter: blur(24px) saturate(190%);
+  backdrop-filter: blur(24px) saturate(190%);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+  animation: driveToastIn 220ms var(--drive-spring) both;
 }
 
 .oauth-return-inner {
@@ -35,12 +128,12 @@ body {
   gap: 8px;
   font-size: 12px;
   line-height: 1.4;
-  color: #e6f4ea;
+  color: #e6f2ff;
   flex: 1 1 200px;
 }
 
 .oauth-return-icon {
-  color: #d7ff8b;
+  color: #5ac8fa;
   flex: none;
 }
 
@@ -58,13 +151,19 @@ body {
   min-height: 36px;
   padding: 0 14px;
   border-radius: 999px;
-  border: 1px solid rgba(215, 255, 139, 0.75);
-  background: linear-gradient(135deg, #d7ff8b, #9ef065);
-  color: #0b1407;
+  border: 1px solid rgba(145, 212, 255, 0.58);
+  background: linear-gradient(135deg, #2b95ff, #0a84ff);
+  color: #f7fbff;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 6px 18px rgba(10, 132, 255, 0.32);
+  transition: transform 110ms ease-out, filter 160ms ease;
+}
+
+.oauth-return-btn:active {
+  transform: scale(0.96);
 }
 
 .oauth-return-dismiss {
@@ -75,9 +174,14 @@ body {
   height: 34px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.07);
   color: #c1ccda;
   cursor: pointer;
+  transition: transform 100ms ease-out, background 150ms ease;
+}
+
+.oauth-return-dismiss:active {
+  transform: scale(0.94);
 }
 
 /* Strip generic landing-page filler cards & nested box clutter */
@@ -89,7 +193,7 @@ body {
   display: none !important;
 }
 
-/* Horizontal swipeable category rail instead of multi-row chip wall */
+/* Horizontal swipeable category rail */
 .mcp-category-filter,
 .skill-category-filter {
   display: flex !important;
@@ -110,6 +214,90 @@ body {
 .skill-category-filter .segmented-pill {
   flex: 0 0 auto !important;
   white-space: nowrap !important;
+  transition: transform 110ms ease-out, background 180ms ease, border-color 180ms ease !important;
+}
+
+.mcp-category-filter .category-chip:active,
+.skill-category-filter .segmented-pill:active {
+  transform: scale(0.96) !important;
+}
+
+/* NO SLOP ENGINE Motion Primitives (MO-069, MO-024, MO-099, MO-031, MO-119, MO-101) */
+@keyframes driveTabIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes driveCardIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes driveToastIn {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes driveSpringPop {
+  0% {
+    transform: scale(0.94);
+  }
+  65% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.app-panel {
+  animation: driveTabIn 200ms var(--drive-spring) both;
+}
+
+.integration-grid > .integration-card:nth-child(-n+6),
+.mkt-grid > .mkt-card:nth-child(-n+6) {
+  animation: driveCardIn 240ms var(--drive-spring) both;
+}
+
+.integration-grid > .integration-card:nth-child(2),
+.mkt-grid > .mkt-card:nth-child(2) { animation-delay: 25ms; }
+.integration-grid > .integration-card:nth-child(3),
+.mkt-grid > .mkt-card:nth-child(3) { animation-delay: 50ms; }
+.integration-grid > .integration-card:nth-child(4),
+.mkt-grid > .mkt-card:nth-child(4) { animation-delay: 75ms; }
+.integration-grid > .integration-card:nth-child(5),
+.mkt-grid > .mkt-card:nth-child(5) { animation-delay: 100ms; }
+.integration-grid > .integration-card:nth-child(6),
+.mkt-grid > .mkt-card:nth-child(6) { animation-delay: 125ms; }
+
+.integration-card button,
+.server-card button,
+.glass-chip-btn {
+  transition: transform 110ms ease-out, background 170ms ease, border-color 170ms ease !important;
+}
+
+.integration-card button:active,
+.server-card button:active,
+.glass-chip-btn:active {
+  transform: scale(0.96) !important;
 }
 
 /* Desktop: crisp 3-column extension store grid */
@@ -127,7 +315,6 @@ body {
 
 /* Mobile App-First Layout: flat obsidian canvas, compact hero, 2-column card grid */
 @media (max-width: 720px) {
-  /* Remove heavy outer section boxes-inside-boxes on mobile */
   .catalog-section,
   .platform-section,
   .my-mcps-section,
@@ -142,7 +329,6 @@ body {
     box-shadow: none !important;
   }
 
-  /* Compact the giant marketing hero so My MCPs & Directory appear immediately */
   .hero,
   .workspace-hero,
   .hero-panel {
@@ -168,7 +354,6 @@ body {
     margin-bottom: 14px !important;
   }
 
-  /* True 2-column compact card grid for MCPs and Skills */
   .integration-grid,
   .server-grid,
   .directory-grid,
@@ -191,9 +376,14 @@ body {
     padding: 12px !important;
     border-radius: 18px !important;
     min-width: 0 !important;
-    border: 1px solid rgba(255, 255, 255, 0.11) !important;
-    background: linear-gradient(155deg, rgba(24, 34, 48, 0.86), rgba(11, 17, 27, 0.94)) !important;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 8px 20px rgba(0, 0, 0, 0.24) !important;
+    border: 1px solid rgba(255, 255, 255, 0.13) !important;
+    background: linear-gradient(155deg, rgba(22, 33, 52, 0.82), rgba(10, 16, 28, 0.92)) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 8px 20px rgba(0, 0, 0, 0.28) !important;
+    transition: transform 140ms ease-out, border-color 180ms ease !important;
+  }
+
+  .integration-card:active {
+    transform: scale(0.985) !important;
   }
 
   .integration-card .card-top {
@@ -205,14 +395,19 @@ body {
     width: 30px !important;
     height: 30px !important;
     border-radius: 10px !important;
+    color: #7cd4ff !important;
+    background: rgba(10, 132, 255, 0.16) !important;
+    border-color: rgba(124, 212, 255, 0.28) !important;
   }
 
   .integration-card .status {
     font-size: 10px !important;
     padding: 3px 7px !important;
+    color: #bfe6ff !important;
+    background: rgba(10, 132, 255, 0.16) !important;
+    border-color: rgba(124, 212, 255, 0.28) !important;
   }
 
-  /* Hide clunky nested ID bar inside cards on mobile */
   .integration-card .server-id {
     display: none !important;
   }
@@ -276,5 +471,23 @@ body {
     font-weight: 650 !important;
     border-radius: 11px !important;
     justify-content: center !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-panel,
+  .oauth-return-bar,
+  .integration-grid > .integration-card,
+  .mkt-grid > .mkt-card {
+    animation: none !important;
+  }
+  .liquid-lens-pill,
+  .integration-card,
+  .integration-card button,
+  .oauth-return-btn,
+  .oauth-return-dismiss,
+  .mcp-category-filter .category-chip,
+  .skill-category-filter .segmented-pill {
+    transition: none !important;
   }
 }

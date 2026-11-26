@@ -6,6 +6,7 @@ import {
   BookOpen,
   Check,
   ExternalLink,
+  Layers,
   LoaderCircle,
   Plus,
   Power,
@@ -37,6 +38,8 @@ export default function SkillLibrary() {
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("");
   const [catalog, setCatalog] = useState([]);
+  const [totalRawSkills, setTotalRawSkills] = useState(0);
+  const [visibleLimit, setVisibleLimit] = useState(40);
   const [mySkills, setMySkills] = useState([]);
   const [loadingCatalog, setLoadingCatalog] = useState(true);
   const [loadingMy, setLoadingMy] = useState(false);
@@ -47,7 +50,6 @@ export default function SkillLibrary() {
     const map = new Set();
     for (const s of mySkills) {
       if (s.source_repo) map.add(s.source_repo.toLowerCase());
-      if (s.name) map.add(s.name.toLowerCase());
     }
     return map;
   }, [mySkills]);
@@ -78,6 +80,7 @@ export default function SkillLibrary() {
 
   const loadCatalog = useCallback(async (searchText = "") => {
     setLoadingCatalog(true);
+    setVisibleLimit(40);
     try {
       const trimmed = searchText.trim();
       const params = new URLSearchParams();
@@ -91,8 +94,8 @@ export default function SkillLibrary() {
         : Array.isArray(data.skills)
         ? data.skills
         : [];
+      setTotalRawSkills(Number(data.totalRawSkills || items.length || 0));
 
-      // Fallback to GitHub repository search when catalog returns empty for a specific query
       if (items.length === 0 && trimmed.length >= 2) {
         const ghRes = await fetch(`/api/skills/discover?q=${encodeURIComponent(trimmed)}`, {
           cache: "no-store",
@@ -108,8 +111,10 @@ export default function SkillLibrary() {
             category: "community",
             stars: Number(repo.stars || 0),
             verified: false,
+            skillCount: 1,
             installUrl: repo.html_url,
           }));
+          setTotalRawSkills(items.length);
         }
       }
       setCatalog(items);
@@ -128,22 +133,32 @@ export default function SkillLibrary() {
     return () => window.clearTimeout(timer);
   }, [loadCatalog, loadMySkills]);
 
-  const visibleCatalog = useMemo(() => {
+  const filteredCatalog = useMemo(() => {
     const cat = category.trim().toLowerCase();
     const q = query.trim().toLowerCase();
-    return catalog
-      .filter((item) => {
-        const itemCat = String(item.category || "").toLowerCase();
-        if (cat && !itemCat.includes(cat)) return false;
-        if (!q) return true;
-        const hay = [item.name, item.description, item.source, item.category, item.slug]
-          .filter(Boolean)
-          .join(" ")
-          .toLowerCase();
-        return hay.includes(q);
-      })
-      .slice(0, 60);
+    return catalog.filter((item) => {
+      const itemCat = String(item.category || "").toLowerCase();
+      if (cat && !itemCat.includes(cat)) return false;
+      if (!q) return true;
+      const hay = [
+        item.name,
+        item.description,
+        item.source,
+        item.category,
+        item.slug,
+        ...(Array.isArray(item.includedSkills) ? item.includedSkills : []),
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return hay.includes(q);
+    });
   }, [catalog, category, query]);
+
+  const visibleCatalog = useMemo(
+    () => filteredCatalog.slice(0, visibleLimit),
+    [filteredCatalog, visibleLimit]
+  );
 
   async function quickInstall(item) {
     const key = item.id || item.source || item.name;
@@ -182,15 +197,22 @@ export default function SkillLibrary() {
           slug: item.slug || item.name,
           name: item.name,
           description: item.description,
+          installAll: true,
         }),
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error([data.error, data.detail].filter(Boolean).join(": ") || "Gagal memasang Skill.");
+        throw new Error(
+          [data.error, data.detail].filter(Boolean).join(": ") || "Gagal memasang Skill."
+        );
       }
+      const installedCount = Number(data.installedCount || 1);
       setToast({
         type: "success",
-        message: `${item.name} berhasil dipasang & langsung aktif di DRIVE kamu.`,
+        message:
+          installedCount > 1
+            ? `${item.name} (${installedCount} skills di dalamnya) otomatis terpasang & aktif di DRIVE!`
+            : `${item.name} berhasil dipasang & langsung aktif di DRIVE kamu.`,
       });
       await loadMySkills();
     } catch (err) {
@@ -208,7 +230,6 @@ export default function SkillLibrary() {
     if (!supabase) return;
     const prevStatus = skill.status;
     const nextStatus = prevStatus === "enabled" ? "disabled" : "enabled";
-    // Optimistic 0ms UI flip
     setMySkills((prev) =>
       prev.map((item) => (item.id === skill.id ? { ...item, status: nextStatus } : item))
     );
@@ -302,7 +323,10 @@ export default function SkillLibrary() {
                 key={cat.label}
                 type="button"
                 className={`category-chip ${category === cat.id ? "is-active" : ""}`}
-                onClick={() => setCategory(cat.id)}
+                onClick={() => {
+                  setCategory(cat.id);
+                  setVisibleLimit(40);
+                }}
               >
                 {cat.label}
               </button>
@@ -311,9 +335,12 @@ export default function SkillLibrary() {
 
           <div className="directory-toolbar">
             <div className="directory-stats">
-              <strong>{catalog.length}</strong> skills indexed
+              <strong>{filteredCatalog.length.toLocaleString()}</strong> skill packs
+              {totalRawSkills > filteredCatalog.length && (
+                <span> ({totalRawSkills.toLocaleString()} skills)</span>
+              )}
               <span className="registry-live">
-                <i /> 1-Click Install
+                <i /> 1-Click Auto-Bundle
               </span>
             </div>
           </div>
@@ -330,71 +357,94 @@ export default function SkillLibrary() {
               <p>Try a different keyword or category.</p>
             </div>
           ) : (
-            <div className="integration-grid">
-              {visibleCatalog.map((item, idx) => {
-                const key = item.id || item.source || `${item.name}-${idx}`;
-                const isBusy = installingId === key;
-                const isInstalled =
-                  installedRepoKeys.has(String(item.name || "").toLowerCase()) ||
-                  installedRepoKeys.has(String(item.source || "").toLowerCase());
-                const repoUrl = item.installUrl || (item.source ? `https://github.com/${item.source}` : "");
-                return (
-                  <article key={key} className="integration-card server-card">
-                    <div className="card-top">
-                      <div className="integration-icon">
-                        <BookOpen size={15} />
-                      </div>
-                      <span className="status">
-                        {item.verified ? (
-                          <>
-                            <ShieldCheck size={10} /> Verified
-                          </>
-                        ) : (
-                          item.category || "Skill"
-                        )}
-                      </span>
-                    </div>
+            <>
+              <div className="integration-grid">
+                {visibleCatalog.map((item, idx) => {
+                  const key = item.id || item.source || `${item.name}-${idx}`;
+                  const isBusy = installingId === key;
+                  const isInstalled = installedRepoKeys.has(String(item.source || "").toLowerCase());
+                  const repoUrl =
+                    item.installUrl || (item.source ? `https://github.com/${item.source}` : "");
+                  const count = Number(item.skillCount || 1);
 
-                    <div className="server-meta">
-                      {item.stars > 0 && (
-                        <span className="version-pill">
-                          <Star size={10} /> {Number(item.stars).toLocaleString()}
-                        </span>
-                      )}
-                      {item.category && <span className="transport-pill">{item.category}</span>}
-                    </div>
-
-                    <h3>{item.name || item.source}</h3>
-                    <p>{item.description || "Agent Skill siap dipasang 1-klik ke akun DRIVE."}</p>
-
-                    <div className="card-bottom">
-                      {repoUrl ? (
-                        <div className="server-actions">
-                          <a href={repoUrl} target="_blank" rel="noreferrer">
-                            Source <ExternalLink size={11} />
-                          </a>
+                  return (
+                    <article key={key} className="integration-card server-card">
+                      <div className="card-top">
+                        <div className="integration-icon">
+                          {count > 1 ? <Layers size={15} /> : <BookOpen size={15} />}
                         </div>
-                      ) : null}
-                      <button
-                        type="button"
-                        disabled={isBusy}
-                        className={`skill-install-btn ${isInstalled ? "is-installed" : ""}`}
-                        onClick={() => quickInstall(item)}
-                      >
-                        {isBusy ? (
-                          <LoaderCircle size={13} className="spin" />
-                        ) : isInstalled ? (
-                          <Check size={13} />
-                        ) : (
-                          <Plus size={13} />
+                        <span className="status">
+                          {count > 1 ? (
+                            `${count} skills`
+                          ) : item.verified ? (
+                            <>
+                              <ShieldCheck size={10} /> Verified
+                            </>
+                          ) : (
+                            item.category || "Skill"
+                          )}
+                        </span>
+                      </div>
+
+                      <div className="server-meta">
+                        {item.stars > 0 && (
+                          <span className="version-pill">
+                            <Star size={10} /> {Number(item.stars).toLocaleString()}
+                          </span>
                         )}
-                        {isBusy ? "Installing..." : isInstalled ? "Terpasang" : "Install"}
-                      </button>
-                    </div>
-                  </article>
-                );
-              })}
-            </div>
+                        {item.category && <span className="transport-pill">{item.category}</span>}
+                      </div>
+
+                      <h3>{item.name || item.source}</h3>
+                      <p>{item.description || "Agent Skill siap dipasang 1-klik ke akun DRIVE."}</p>
+
+                      <div className="card-bottom">
+                        {repoUrl ? (
+                          <div className="server-actions">
+                            <a href={repoUrl} target="_blank" rel="noreferrer">
+                              Source <ExternalLink size={11} />
+                            </a>
+                          </div>
+                        ) : null}
+                        <button
+                          type="button"
+                          disabled={isBusy}
+                          className={`skill-install-btn ${isInstalled ? "is-installed" : ""}`}
+                          onClick={() => quickInstall(item)}
+                        >
+                          {isBusy ? (
+                            <LoaderCircle size={13} className="spin" />
+                          ) : isInstalled ? (
+                            <Check size={13} />
+                          ) : (
+                            <Plus size={13} />
+                          )}
+                          {isBusy
+                            ? "Installing..."
+                            : isInstalled
+                            ? "Terpasang"
+                            : count > 1
+                            ? `Install Pack (${count})`
+                            : "Install"}
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+
+              {visibleLimit < filteredCatalog.length && (
+                <div className="load-more-row" style={{ marginTop: 14 }}>
+                  <button
+                    type="button"
+                    className="load-more-button"
+                    onClick={() => setVisibleLimit((prev) => prev + 48)}
+                  >
+                    Load more ({filteredCatalog.length - visibleLimit} remaining)
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </section>
       ) : (

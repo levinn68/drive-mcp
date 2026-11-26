@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 
 const REGISTRY = "https://registry.modelcontextprotocol.io";
+const GLAMA_API = "https://glama.ai/api/mcp/v1/servers";
 
 // Curated, widely-used official Remote Streamable HTTP MCP servers that work immediately via URL/OAuth
 const VERIFIED_POPULAR_MCPS = [
@@ -248,13 +249,76 @@ function usageRank(entry) {
   return isRemote ? 500 : 2000;
 }
 
+async function fetchOfficialRegistry(apiSearch, maxPages = 22) {
+  const results = [];
+  let cursor = "";
+  for (let i = 0; i < maxPages; i += 1) {
+    const params = new URLSearchParams({ limit: "100", version: "latest" });
+    if (apiSearch.length >= 2) params.set("search", apiSearch);
+    if (cursor) params.set("cursor", cursor);
+
+    const response = await fetch(`${REGISTRY}/v0.1/servers?${params}`, {
+      headers: { accept: "application/json" },
+      next: { revalidate: 1800 },
+      signal: AbortSignal.timeout(6500),
+    });
+    if (!response.ok) break;
+    const payload = await response.json();
+    const batch = Array.isArray(payload?.servers) ? payload.servers : [];
+    results.push(...batch);
+    cursor = payload?.metadata?.nextCursor || "";
+    if (!cursor || results.length >= 2200) break;
+  }
+  return results;
+}
+
+async function fetchGlamaDirectory(apiSearch, maxPages = 10) {
+  const results = [];
+  let cursor = "";
+  for (let i = 0; i < maxPages; i += 1) {
+    const params = new URLSearchParams({ first: "100" });
+    if (apiSearch.length >= 2) params.set("query", apiSearch);
+    if (cursor) params.set("after", cursor);
+
+    const response = await fetch(`${GLAMA_API}?${params}`, {
+      headers: { accept: "application/json", "user-agent": "DRIVE-MCP/2.0" },
+      next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(6500),
+    });
+    if (!response.ok) break;
+    const payload = await response.json();
+    const batch = Array.isArray(payload?.servers) ? payload.servers : [];
+    for (const item of batch) {
+      if (!item?.name) continue;
+      const slug = item.slug || item.id || item.name;
+      const repoUrl = item.repository?.url || "";
+      results.push({
+        server: {
+          name: `${item.namespace || "glama"}/${slug}`,
+          title: item.name,
+          version: "glama",
+          description: item.description || "Indexed from Glama MCP Directory.",
+          repository: repoUrl ? { url: repoUrl } : undefined,
+          remotes: item.url && /^https?:\/\//i.test(item.url) && item.url.includes("mcp")
+            ? [{ type: "streamable-http", url: item.url }]
+            : [],
+          packages: [],
+        },
+      });
+    }
+    cursor = payload?.pageInfo?.hasNextPage ? payload?.pageInfo?.endCursor || "" : "";
+    if (!cursor || results.length >= 1000) break;
+  }
+  return results;
+}
+
 async function getServers(query) {
   const all = [];
   const seen = new Set();
   const trimmed = (query || "").trim();
   const lower = trimmed.toLowerCase();
+  const apiSearch = lower && lower !== "remote" ? trimmed : "";
 
-  // 1. Always include matching verified popular remote MCPs first
   for (const item of VERIFIED_POPULAR_MCPS) {
     const hay = [
       item.server.title,
@@ -270,39 +334,26 @@ async function getServers(query) {
     }
   }
 
-  // 2. Fetch live Official MCP Registry entries (up to 1,000)
-  let cursor = "";
-  const apiSearch = lower && lower !== "remote" ? trimmed : "";
-  const maxPages = apiSearch ? 4 : 10;
+  const [officialRes, glamaRes] = await Promise.allSettled([
+    fetchOfficialRegistry(apiSearch, apiSearch ? 5 : 22),
+    fetchGlamaDirectory(apiSearch, apiSearch ? 3 : 10),
+  ]);
 
-  try {
-    for (let i = 0; i < maxPages; i += 1) {
-      const params = new URLSearchParams({ limit: "100", version: "latest" });
-      if (apiSearch.length >= 2) params.set("search", apiSearch);
-      if (cursor) params.set("cursor", cursor);
+  const combined = [
+    ...(officialRes.status === "fulfilled" ? officialRes.value : []),
+    ...(glamaRes.status === "fulfilled" ? glamaRes.value : []),
+  ];
 
-      const response = await fetch(`${REGISTRY}/v0.1/servers?${params}`, {
-        headers: { accept: "application/json" },
-        next: { revalidate: 1800 },
-        signal: AbortSignal.timeout(8000),
-      });
-      if (!response.ok) break;
-      const payload = await response.json();
-      const batch = Array.isArray(payload?.servers) ? payload.servers : [];
-      for (const entry of batch) {
-        const key = String(entry?.server?.name || entry?.name || "").toLowerCase();
-        if (!key || seen.has(key)) continue;
-        if (lower === "remote" && !(entry?.server?.remotes?.length > 0)) continue;
-        seen.add(key);
-        all.push(entry);
-      }
-      cursor = payload?.metadata?.nextCursor || "";
-      if (!cursor || all.length >= 1000) break;
-    }
-    return { servers: all, unavailable: false };
-  } catch {
-    return { servers: all, unavailable: all.length === 0 };
+  for (const entry of combined) {
+    const key = String(entry?.server?.name || entry?.name || "").toLowerCase();
+    if (!key || seen.has(key)) continue;
+    if (lower === "remote" && !(entry?.server?.remotes?.length > 0)) continue;
+    seen.add(key);
+    all.push(entry);
+    if (all.length >= 3000) break;
   }
+
+  return { servers: all, unavailable: all.length === 0 };
 }
 
 function details(entry) {
@@ -338,7 +389,7 @@ function ServerCard({ entry }) {
       <div className="server-meta">
         <span className="transport-pill">{item.transport}</span>
         <span className="version-pill">
-          {item.version === "official" || item.version === "free" ? item.version : `v${item.version}`}
+          {["official", "free", "glama"].includes(item.version) ? item.version : `v${item.version}`}
         </span>
       </div>
 
@@ -367,7 +418,7 @@ function ServerCard({ entry }) {
 export default async function Home({ searchParams }) {
   const params = await searchParams;
   const query = typeof params?.q === "string" ? params.q : "";
-  const page = Math.max(0, Math.min(41, Number.parseInt(params?.page || "0", 10) || 0));
+  const page = Math.max(0, Math.min(130, Number.parseInt(params?.page || "0", 10) || 0));
   const pageSize = 24;
 
   const data = await getServers(query);
@@ -395,7 +446,7 @@ export default async function Home({ searchParams }) {
         <input
           name="q"
           defaultValue={query}
-          placeholder="Search MCPs (GitHub, Supabase, Vercel, Figma...)"
+          placeholder="Search 3,000+ MCPs (GitHub, Supabase, Vercel...)"
           aria-label="Search MCP servers"
         />
         <button type="submit">Search</button>
@@ -418,7 +469,8 @@ export default async function Home({ searchParams }) {
 
       <div className="directory-toolbar">
         <div className="directory-stats">
-          <strong>{servers.length}</strong> {query ? `results for "${query}"` : "MCPs ready"}
+          <strong>{servers.length.toLocaleString()}</strong>{" "}
+          {query ? `results for "${query}"` : "MCPs indexed"}
           <span className="registry-live">
             <i /> Verified Remote First
           </span>

@@ -7,11 +7,13 @@ import SkillLibrary from "../components/skill-library";
 const REGISTRY = "https://registry.modelcontextprotocol.io";
 const GLAMA_API = "https://glama.ai/api/mcp/v1/servers";
 
-// Curated, widely-used official Remote Streamable HTTP MCP servers
+// Curated, widely-used official Remote Streamable HTTP MCP servers with auth type & popularity stars
 const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "github",
+    authType: "pat",
+    stars: 24800,
     server: {
       name: "com.github/github-mcp-server",
       title: "GitHub MCP",
@@ -24,6 +26,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "cloud",
+    authType: "oauth",
+    stars: 14200,
     server: {
       name: "com.vercel/vercel-mcp",
       title: "Vercel MCP",
@@ -36,6 +40,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "database",
+    authType: "oauth",
+    stars: 16900,
     server: {
       name: "com.supabase/supabase-mcp",
       title: "Supabase MCP",
@@ -48,6 +54,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "search",
+    authType: "none",
+    stars: 38500,
     server: {
       name: "com.upstash/context7-mcp",
       title: "Context7 Docs MCP",
@@ -60,6 +68,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "design",
+    authType: "oauth_catalog",
+    stars: 12800,
     server: {
       name: "com.figma/figma-mcp",
       title: "Figma Dev Mode MCP",
@@ -72,6 +82,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "productivity",
+    authType: "oauth",
+    stars: 11400,
     server: {
       name: "com.notion/notion-mcp",
       title: "Notion MCP",
@@ -84,6 +96,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "productivity",
+    authType: "oauth",
+    stars: 9600,
     server: {
       name: "app.linear/linear-mcp",
       title: "Linear MCP",
@@ -96,6 +110,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "cloud",
+    authType: "oauth",
+    stars: 8900,
     server: {
       name: "dev.sentry/sentry-mcp",
       title: "Sentry MCP",
@@ -108,6 +124,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "search",
+    authType: "none",
+    stars: 15400,
     server: {
       name: "com.deepwiki/deepwiki-mcp",
       title: "DeepWiki MCP",
@@ -120,6 +138,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "search",
+    authType: "none",
+    stars: 18200,
     server: {
       name: "com.openai/docs-mcp",
       title: "OpenAI Docs MCP",
@@ -132,6 +152,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "finance",
+    authType: "oauth",
+    stars: 13500,
     server: {
       name: "com.stripe/stripe-mcp",
       title: "Stripe MCP",
@@ -144,6 +166,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "finance",
+    authType: "oauth",
+    stars: 6400,
     server: {
       name: "com.paypal/paypal-mcp",
       title: "PayPal MCP",
@@ -156,6 +180,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "search",
+    authType: "pat",
+    stars: 7800,
     server: {
       name: "ai.exa/exa-mcp",
       title: "Exa AI Search MCP",
@@ -168,6 +194,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "database",
+    authType: "oauth",
+    stars: 8200,
     server: {
       name: "tech.neon/neon-mcp",
       title: "Neon Postgres MCP",
@@ -180,6 +208,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "productivity",
+    authType: "oauth",
+    stars: 9200,
     server: {
       name: "com.atlassian/rovo-mcp",
       title: "Atlassian Jira & Confluence",
@@ -192,6 +222,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "ai",
+    authType: "oauth",
+    stars: 11900,
     server: {
       name: "co.hf/huggingface-mcp",
       title: "Hugging Face MCP",
@@ -204,6 +236,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "cloud",
+    authType: "none",
+    stars: 10500,
     server: {
       name: "com.cloudflare/docs-mcp",
       title: "Cloudflare Docs MCP",
@@ -216,6 +250,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "cloud",
+    authType: "oauth",
+    stars: 10200,
     server: {
       name: "com.cloudflare/workers-bindings-mcp",
       title: "Cloudflare Workers MCP",
@@ -228,6 +264,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "data",
+    authType: "oauth",
+    stars: 6800,
     server: {
       name: "com.posthog/posthog-mcp",
       title: "PostHog Analytics MCP",
@@ -240,6 +278,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "browser",
+    authType: "pat",
+    stars: 14600,
     server: {
       name: "dev.firecrawl/firecrawl-mcp",
       title: "Firecrawl Web Scraper MCP",
@@ -252,6 +292,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "search",
+    authType: "pat",
+    stars: 7200,
     server: {
       name: "com.tavily/tavily-mcp",
       title: "Tavily AI Search MCP",
@@ -264,6 +306,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "browser",
+    authType: "pat",
+    stars: 6100,
     server: {
       name: "com.apify/apify-mcp",
       title: "Apify Actors & Scraping MCP",
@@ -276,6 +320,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "productivity",
+    authType: "oauth",
+    stars: 5300,
     server: {
       name: "com.asana/asana-mcp",
       title: "Asana Tasks MCP",
@@ -288,6 +334,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "messaging",
+    authType: "oauth",
+    stars: 4900,
     server: {
       name: "com.intercom/intercom-mcp",
       title: "Intercom Support MCP",
@@ -300,6 +348,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "finance",
+    authType: "oauth",
+    stars: 4500,
     server: {
       name: "com.squareup/square-mcp",
       title: "Square Commerce MCP",
@@ -312,6 +362,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "design",
+    authType: "oauth",
+    stars: 5100,
     server: {
       name: "com.webflow/webflow-mcp",
       title: "Webflow Sites & CMS MCP",
@@ -324,6 +376,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "coding",
+    authType: "oauth",
+    stars: 8700,
     server: {
       name: "com.prisma/prisma-mcp",
       title: "Prisma Postgres MCP",
@@ -336,6 +390,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "productivity",
+    authType: "oauth",
+    stars: 5900,
     server: {
       name: "com.hubspot/hubspot-mcp",
       title: "HubSpot CRM MCP",
@@ -348,6 +404,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "cloud",
+    authType: "oauth",
+    stars: 6200,
     server: {
       name: "com.netlify/netlify-mcp",
       title: "Netlify Deploy MCP",
@@ -360,6 +418,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "messaging",
+    authType: "oauth",
+    stars: 9800,
     server: {
       name: "com.slack/slack-mcp",
       title: "Slack Workspace MCP",
@@ -372,6 +432,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "security",
+    authType: "pat",
+    stars: 5600,
     server: {
       name: "io.snyk/snyk-mcp",
       title: "Snyk Security MCP",
@@ -384,6 +446,8 @@ const VERIFIED_POPULAR_MCPS = [
   {
     verifiedPopular: true,
     category: "data",
+    authType: "pat",
+    stars: 6300,
     server: {
       name: "com.datadog/datadog-mcp",
       title: "Datadog Observability MCP",
@@ -428,10 +492,20 @@ function classifyMcpCategory(explicitCategory, text) {
   return "coding";
 }
 
+function inferAuthType(explicitAuthType, isRemote, text) {
+  if (explicitAuthType) return explicitAuthType;
+  const lower = String(text || "").toLowerCase();
+  if (!isRemote) return "none";
+  if (/\b(zero[- ]auth|no[- ]auth|public|docs)\b/.test(lower)) return "none";
+  if (/\b(api key|pat|token|bearer)\b/.test(lower)) return "pat";
+  return "oauth";
+}
+
 function usageRank(entry) {
   if (entry?.verifiedPopular) return 0;
   const server = entry?.server || entry || {};
   const isRemote = Array.isArray(server.remotes) && server.remotes.length > 0;
+  const stars = Number(entry?.stars || entry?._stars || 0);
   const haystack = [
     server.name,
     server.title,
@@ -442,14 +516,14 @@ function usageRank(entry) {
     .toLowerCase();
   const index = USAGE_RANK_TERMS.findIndex((term) => haystack.includes(term));
   if (index >= 0) return (isRemote ? 10 : 100) + index;
-  if (entry?._stars > 500) return isRemote ? 200 : 800;
-  return isRemote ? 500 : 2000;
+  if (stars > 0) return Math.max(150, 1800 - Math.min(1600, Math.floor(stars / 5)));
+  return isRemote ? 500 : 2200;
 }
 
-async function fetchOfficialRegistry(apiSearch, maxPages = 24) {
+async function fetchOfficialRegistry(apiSearch, maxPages = 35) {
   const results = [];
   let cursor = "";
-  const deadline = Date.now() + 8500;
+  const deadline = Date.now() + 9000;
   for (let i = 0; i < maxPages && Date.now() < deadline; i += 1) {
     const params = new URLSearchParams({ limit: "100", version: "latest" });
     if (apiSearch.length >= 2) params.set("search", apiSearch);
@@ -466,7 +540,7 @@ async function fetchOfficialRegistry(apiSearch, maxPages = 24) {
       const batch = Array.isArray(payload?.servers) ? payload.servers : [];
       results.push(...batch);
       cursor = payload?.metadata?.nextCursor || "";
-      if (!cursor || results.length >= 2400) break;
+      if (!cursor || results.length >= 3500) break;
     } catch {
       break;
     }
@@ -474,10 +548,10 @@ async function fetchOfficialRegistry(apiSearch, maxPages = 24) {
   return results;
 }
 
-async function fetchGlamaDirectory(apiSearch, maxPages = 16) {
+async function fetchGlamaDirectory(apiSearch, maxPages = 22) {
   const results = [];
   let cursor = "";
-  const deadline = Date.now() + 8500;
+  const deadline = Date.now() + 9000;
   for (let i = 0; i < maxPages && Date.now() < deadline; i += 1) {
     const params = new URLSearchParams({ first: "100" });
     if (apiSearch.length >= 2) params.set("query", apiSearch);
@@ -485,7 +559,7 @@ async function fetchGlamaDirectory(apiSearch, maxPages = 16) {
 
     try {
       const response = await fetch(`${GLAMA_API}?${params}`, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/2.4" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/2.6" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(4500),
       });
@@ -496,7 +570,9 @@ async function fetchGlamaDirectory(apiSearch, maxPages = 16) {
         if (!item?.name) continue;
         const slug = item.slug || item.id || item.name;
         const repoUrl = item.repository?.url || "";
+        const stars = Number(item.repository?.stargazersCount || item.stars || 0);
         results.push({
+          _stars: stars,
           server: {
             name: `${item.namespace || "glama"}/${slug}`,
             title: item.name,
@@ -512,7 +588,7 @@ async function fetchGlamaDirectory(apiSearch, maxPages = 16) {
         });
       }
       cursor = payload?.pageInfo?.hasNextPage ? payload?.pageInfo?.endCursor || "" : "";
-      if (!cursor || results.length >= 1600) break;
+      if (!cursor || results.length >= 2200) break;
     } catch {
       break;
     }
@@ -523,19 +599,31 @@ async function fetchGlamaDirectory(apiSearch, maxPages = 16) {
 async function fetchGithubPopularMcps(apiSearch) {
   const headers = {
     accept: "application/vnd.github+json",
-    "user-agent": "DRIVE-MCP/2.4",
+    "user-agent": "DRIVE-MCP/2.6",
   };
   if (process.env.GITHUB_TOKEN) {
     headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
   }
-  const qBase = apiSearch
-    ? `${apiSearch} topic:mcp-server stars:>5`
-    : "topic:mcp-server stars:>15";
-  const pages = apiSearch ? [1, 2] : [1, 2, 3, 4, 5, 6];
+  const queryList = apiSearch
+    ? [`${apiSearch} topic:mcp-server stars:>5`]
+    : [
+        "topic:mcp-server stars:>15",
+        "topic:model-context-protocol stars:>20",
+        "mcp-server in:name stars:>25",
+      ];
+
+  const requests = [];
+  for (const qStr of queryList) {
+    const pages = apiSearch ? [1, 2] : [1, 2, 3, 4];
+    for (const page of pages) {
+      requests.push({ qStr, page });
+    }
+  }
+
   const settled = await Promise.allSettled(
-    pages.map(async (page) => {
+    requests.map(async ({ qStr, page }) => {
       const url = new URL("https://api.github.com/search/repositories");
-      url.searchParams.set("q", qBase);
+      url.searchParams.set("q", qStr);
       url.searchParams.set("sort", "stars");
       url.searchParams.set("order", "desc");
       url.searchParams.set("per_page", "100");
@@ -563,7 +651,7 @@ async function fetchGithubPopularMcps(apiSearch) {
           title: repo.name
             .replace(/[-_]+/g, " ")
             .replace(/\b\w/g, (c) => c.toUpperCase()),
-          version: `${Number(repo.stargazers_count || 0).toLocaleString()}★`,
+          version: "github",
           description:
             repo.description ||
             `Popular open-source MCP server (${Number(repo.stargazers_count || 0).toLocaleString()} GitHub stars).`,
@@ -588,27 +676,31 @@ function serializeServer(entry) {
   const name = server.title || server.name || "Unnamed MCP";
   const id = server.name || "";
   const description = server.description || "MCP server indexed in DRIVE Directory.";
-  const category = classifyMcpCategory(
-    entry?.category,
-    `${name} ${id} ${description} ${typeof repo === "string" ? repo : repo?.url || ""}`
-  );
+  const isRemote = remotes.length > 0;
+  const repoStr = typeof repo === "string" ? repo : repo?.url || "";
+  const category = classifyMcpCategory(entry?.category, `${name} ${id} ${description} ${repoStr}`);
+  const authType = inferAuthType(entry?.authType, isRemote, `${name} ${description}`);
+  const stars = Number(entry?.stars || entry?._stars || 0);
+
   return {
     name,
     id,
     description,
     version: server.version || "latest",
-    transport: remotes.length ? "Remote HTTP" : packages.length ? "STDIO" : "Registry",
-    repository: typeof repo === "string" ? repo : repo?.url || "",
-    isRemote: remotes.length > 0,
+    transport: isRemote ? "Remote HTTP" : packages.length ? "STDIO" : "Registry",
+    repository: repoStr,
+    isRemote,
     verifiedPopular: Boolean(entry?.verifiedPopular),
     category,
+    authType,
+    stars,
     rawEntry: {
       server: {
         name: id,
         title: name,
         version: server.version || "latest",
         description,
-        repository: typeof repo === "string" ? { url: repo } : repo || undefined,
+        repository: repoStr ? { url: repoStr } : undefined,
         remotes: remotes.slice(0, 2),
       },
     },
@@ -628,8 +720,8 @@ async function getServers(query) {
   }
 
   const [officialRes, glamaRes, githubRes] = await Promise.allSettled([
-    fetchOfficialRegistry(apiSearch, apiSearch ? 6 : 24),
-    fetchGlamaDirectory(apiSearch, apiSearch ? 4 : 16),
+    fetchOfficialRegistry(apiSearch, apiSearch ? 8 : 35),
+    fetchGlamaDirectory(apiSearch, apiSearch ? 5 : 22),
     fetchGithubPopularMcps(apiSearch),
   ]);
 
@@ -644,7 +736,7 @@ async function getServers(query) {
     if (!key || seen.has(key)) continue;
     seen.add(key);
     all.push(entry);
-    if (all.length >= 3500) break;
+    if (all.length >= 5200) break;
   }
 
   all.sort((a, b) => usageRank(a) - usageRank(b));

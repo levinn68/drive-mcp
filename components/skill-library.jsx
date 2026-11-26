@@ -6,7 +6,11 @@ import {
   BookOpen,
   ExternalLink,
   FileArchive,
+  FileCode2,
   FileText,
+  Folder,
+  FolderTree,
+  Globe,
   Layers,
   LoaderCircle,
   Plus,
@@ -16,6 +20,7 @@ import {
   Star,
   Trash2,
   Upload,
+  X,
 } from "lucide-react";
 
 const SKILL_CATEGORIES = [
@@ -57,6 +62,16 @@ function normalizeSkillKey(raw) {
     .replace(/\/+$/, "");
 }
 
+function sanitizeCardDesc(raw, fallback) {
+  const txt = String(raw || "")
+    .replace(/^[>|][-+]?\s*$/g, "")
+    .replace(/^[>|][-+]?\s+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (txt.length < 4) return fallback;
+  return txt.length > 155 ? `${txt.slice(0, 152).trimEnd()}…` : txt;
+}
+
 export default function SkillLibrary() {
   const [subTab, setSubTab] = useState("discover");
   const [query, setQuery] = useState("");
@@ -69,6 +84,12 @@ export default function SkillLibrary() {
   const [loadingMy, setLoadingMy] = useState(false);
   const [installingId, setInstallingId] = useState("");
   const [toast, setToast] = useState({ type: "", message: "" });
+
+  // Skill Detail & Structure Inspector modal state
+  const [inspectLang, setInspectLang] = useState("id");
+  const [inspectTarget, setInspectTarget] = useState(null);
+  const [inspectData, setInspectData] = useState(null);
+  const [inspectLoading, setInspectLoading] = useState(false);
 
   // Custom Skill Upload state
   const [uploadFiles, setUploadFiles] = useState([]);
@@ -110,7 +131,7 @@ export default function SkillLibrary() {
       }
       const { data, error } = await supabase
         .from("user_skills")
-        .select("id,name,description,source_repo,skill_path,status,updated_at")
+        .select("id,name,description,source_repo,skill_path,skill_md,status,updated_at")
         .order("updated_at", { ascending: false });
       if (!error && Array.isArray(data)) {
         setMySkills(data);
@@ -180,7 +201,6 @@ export default function SkillLibrary() {
     const q = query.trim().toLowerCase();
 
     return catalog.filter((item) => {
-      // 1. Hide Skills already installed in My Skills
       const itemId = normalizeSkillKey(item.id);
       const itemSource = normalizeSkillKey(item.source);
       const itemName = normalizeSkillKey(item.name);
@@ -195,11 +215,9 @@ export default function SkillLibrary() {
         return false;
       }
 
-      // 2. Category filter
       const itemCat = String(item.category || "").toLowerCase();
       if (cat && itemCat !== cat && !itemCat.includes(cat)) return false;
 
-      // 3. Search filter
       if (!q) return true;
       const hay = [
         item.name,
@@ -220,6 +238,40 @@ export default function SkillLibrary() {
     () => filteredCatalog.slice(0, visibleLimit),
     [filteredCatalog, visibleLimit]
   );
+
+  async function openSkillInspector(item) {
+    setInspectTarget(item);
+    setInspectData(null);
+    setInspectLoading(true);
+    try {
+      const res = await fetch("/api/skills/inspect-tree", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          repository: item.source || item.source_repo || "",
+          skillPath: item.skill_path || "",
+          slug: item.slug || "",
+          name: item.name || "",
+          description: item.description || "",
+          category: item.category || "",
+          skillMd: item.skill_md || "",
+        }),
+      });
+      const data = await res.json();
+      setInspectData(data);
+    } catch {
+      setInspectData({
+        name: item.name,
+        entries: [],
+        summary: {
+          id: "Gagal memuat struktur folder & file dari GitHub saat ini.",
+          en: "Could not load repository folder & file structure right now.",
+        },
+      });
+    } finally {
+      setInspectLoading(false);
+    }
+  }
 
   async function quickInstall(item) {
     const key = item.id || item.source || item.name;
@@ -436,6 +488,149 @@ export default function SkillLibrary() {
         </div>
       )}
 
+      {inspectTarget && (
+        <div
+          className="skill-inspector-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Detail Skill ${inspectTarget.name}`}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setInspectTarget(null);
+          }}
+        >
+          <div className="skill-inspector-modal">
+            <div className="skill-inspector-head">
+              <div>
+                <div className="eyebrow" style={{ marginBottom: 4 }}>
+                  SKILL INSPECTOR
+                </div>
+                <h3>{inspectData?.name || inspectTarget.name}</h3>
+                {(inspectTarget.source || inspectTarget.source_repo) && (
+                  <small>{inspectTarget.source || inspectTarget.source_repo}</small>
+                )}
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <div className="lang-toggle-group" role="group" aria-label="Language">
+                  <button
+                    type="button"
+                    className={inspectLang === "id" ? "is-active" : ""}
+                    onClick={() => setInspectLang("id")}
+                  >
+                    <Globe size={11} /> ID
+                  </button>
+                  <button
+                    type="button"
+                    className={inspectLang === "en" ? "is-active" : ""}
+                    onClick={() => setInspectLang("en")}
+                  >
+                    EN
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  className="oauth-return-dismiss"
+                  aria-label="Close inspector"
+                  onClick={() => setInspectTarget(null)}
+                >
+                  <X size={15} />
+                </button>
+              </div>
+            </div>
+
+            {inspectLoading ? (
+              <div className="empty-state" style={{ padding: "28px 12px" }}>
+                <LoaderCircle size={22} className="spin" />
+                <p>
+                  {inspectLang === "id"
+                    ? "Membaca struktur folder, file, dan fungsi Skill..."
+                    : "Reading folder structure, files, and Skill purpose..."}
+                </p>
+              </div>
+            ) : (
+              <div className="skill-inspector-body">
+                <div className="skill-inspector-section">
+                  <h4>
+                    {inspectLang === "id" ? "Fungsi & Kegunaan" : "Purpose & Capabilities"}
+                  </h4>
+                  <p>
+                    {inspectLang === "id"
+                      ? inspectData?.summary?.id
+                      : inspectData?.summary?.en}
+                  </p>
+                </div>
+
+                {inspectData?.headings?.length > 0 && (
+                  <div className="skill-inspector-section">
+                    <h4>{inspectLang === "id" ? "Bagian Utama" : "Key Sections"}</h4>
+                    <div className="custom-policy-pills">
+                      {inspectData.headings.map((h) => (
+                        <span key={h}>{h}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="skill-inspector-section">
+                  <h4>
+                    <FolderTree size={13} />{" "}
+                    {inspectLang === "id"
+                      ? `Struktur Folder & File (${inspectData?.entries?.length || 0})`
+                      : `Folder & File Structure (${inspectData?.entries?.length || 0})`}
+                  </h4>
+                  {inspectData?.entries?.length > 0 ? (
+                    <div className="skill-tree-list">
+                      {inspectData.entries.map((entry) => (
+                        <div key={entry.fullPath || entry.path} className="skill-tree-row">
+                          <span className="skill-tree-name">
+                            {entry.type === "folder" ? (
+                              <Folder size={13} className="is-folder" />
+                            ) : (
+                              <FileCode2 size={13} className="is-file" />
+                            )}
+                            <code>{entry.path}</code>
+                          </span>
+                          {entry.type === "file" && entry.size > 0 && (
+                            <small>{(entry.size / 1024).toFixed(1)} KB</small>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={{ margin: 0 }}>
+                      {inspectLang === "id"
+                        ? "Skill ini berbentuk file instruksi tunggal (SKILL.md)."
+                        : "This skill is stored as a single instruction file (SKILL.md)."}
+                    </p>
+                  )}
+                </div>
+
+                {inspectData?.preview && (
+                  <details className="skill-preview-details">
+                    <summary>
+                      {inspectLang === "id" ? "Lihat isi SKILL.md" : "Preview SKILL.md"}
+                    </summary>
+                    <pre>{inspectData.preview}</pre>
+                  </details>
+                )}
+
+                {inspectData?.repoUrl && (
+                  <a
+                    href={inspectData.repoUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="glass-chip-btn"
+                    style={{ width: "fit-content", textDecoration: "none" }}
+                  >
+                    <ExternalLink size={12} />{" "}
+                    {inspectLang === "id" ? "Buka Repositori GitHub" : "Open GitHub Repository"}
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {subTab === "discover" ? (
         <section className="catalog-section" id="skills-directory">
           <form className="catalog-search" onSubmit={handleSearchSubmit}>
@@ -443,7 +638,7 @@ export default function SkillLibrary() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search 3,000+ Skills (react, supabase, audit, nextjs...)"
+              placeholder="Search 5,000+ Skills (react, supabase, audit, nextjs...)"
               aria-label="Search Agent Skills"
             />
             <button type="submit">Search</button>
@@ -519,7 +714,7 @@ export default function SkillLibrary() {
 
                       <div className="server-meta">
                         {item.stars > 0 && (
-                          <span className="version-pill">
+                          <span className="version-pill is-star-pill">
                             <Star size={10} /> {Number(item.stars).toLocaleString()}
                           </span>
                         )}
@@ -527,16 +722,28 @@ export default function SkillLibrary() {
                       </div>
 
                       <h3>{item.name || item.source}</h3>
-                      <p>{item.description || "Agent Skill siap dipasang 1-klik ke akun DRIVE."}</p>
+                      <p>
+                        {sanitizeCardDesc(
+                          item.description,
+                          "Agent Skill siap dipasang 1-klik ke akun DRIVE."
+                        )}
+                      </p>
 
                       <div className="card-bottom">
-                        {repoUrl ? (
-                          <div className="server-actions">
+                        <div className="server-actions">
+                          <button
+                            type="button"
+                            className="glass-chip-btn"
+                            onClick={() => openSkillInspector(item)}
+                          >
+                            <FolderTree size={11} /> Struktur
+                          </button>
+                          {repoUrl ? (
                             <a href={repoUrl} target="_blank" rel="noreferrer">
                               Source <ExternalLink size={11} />
                             </a>
-                          </div>
-                        ) : null}
+                          ) : null}
+                        </div>
                         <button
                           type="button"
                           disabled={isBusy}
@@ -602,8 +809,23 @@ export default function SkillLibrary() {
                       </span>
                     </div>
                     <h3>{skill.name}</h3>
-                    <p>{skill.description || skill.source_repo || "Installed DRIVE Skill"}</p>
+                    <p>
+                      {sanitizeCardDesc(
+                        skill.description,
+                        skill.source_repo
+                          ? `Skill terpasang dari ${skill.source_repo}.`
+                          : "Installed DRIVE Skill."
+                      )}
+                    </p>
                     <div className="card-bottom">
+                      <button
+                        type="button"
+                        className="glass-chip-btn"
+                        style={{ width: "100%", justifyContent: "center" }}
+                        onClick={() => openSkillInspector(skill)}
+                      >
+                        <FolderTree size={11} /> Detail & Struktur (ID/EN)
+                      </button>
                       <div className="server-actions">
                         <button
                           type="button"

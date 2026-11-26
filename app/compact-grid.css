@@ -1,4 +1,4 @@
-/* DRIVE MCP — App-First Cupertino Liquid Glass v2.5 (Zero-Clip Cards + MCP Tools Drawer + OAuth DCR/CIMD) */
+/* DRIVE MCP — App-First Cupertino Liquid Glass v2.6 (Zero-Clip + Auth Badges + Skill Inspector ID/EN + 5K Catalog) */
 
 :root {
   --drive-glass-bg: #060a12;
@@ -190,6 +190,225 @@ body {
   animation: driveTabIn 200ms var(--drive-spring) both;
 }
 
+/* Auth Type & Star Badges */
+.transport-pill.is-auth-none {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  color: #86efac !important;
+  background: rgba(48, 209, 88, 0.14) !important;
+  border: 1px solid rgba(48, 209, 88, 0.34) !important;
+}
+
+.transport-pill.is-auth-oauth {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  color: #8cdbff !important;
+  background: rgba(10, 132, 255, 0.16) !important;
+  border: 1px solid rgba(124, 212, 255, 0.36) !important;
+}
+
+.transport-pill.is-auth-pat {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  color: #fcd34d !important;
+  background: rgba(245, 158, 11, 0.15) !important;
+  border: 1px solid rgba(251, 191, 36, 0.35) !important;
+}
+
+.version-pill.is-star-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 3px !important;
+  color: #fde68a !important;
+  background: rgba(250, 204, 21, 0.12) !important;
+  border: 1px solid rgba(250, 204, 21, 0.3) !important;
+}
+
+/* Skill Inspector Modal (ID/EN + Folder/File Tree) */
+.skill-inspector-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-items: center;
+  padding: 14px;
+  background: rgba(3, 7, 15, 0.76);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  animation: driveTabIn 160ms var(--drive-spring) both;
+}
+
+.skill-inspector-modal {
+  width: min(100%, 620px);
+  max-height: 86svh;
+  overflow-y: auto;
+  padding: 18px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: linear-gradient(155deg, rgba(16, 27, 45, 0.96), rgba(7, 12, 22, 0.98));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 24px 60px rgba(0, 0, 0, 0.6);
+}
+
+.skill-inspector-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.skill-inspector-head h3 {
+  margin: 0;
+  font-size: 17px;
+  color: #f4f8ff;
+  line-height: 1.25;
+}
+
+.skill-inspector-head small {
+  display: block;
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: #8fa4be;
+  overflow-wrap: anywhere;
+}
+
+.lang-toggle-group {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.lang-toggle-group button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #9cb0c7;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.lang-toggle-group button.is-active {
+  background: linear-gradient(135deg, #2b95ff, #0a84ff);
+  color: #f7fbff;
+}
+
+.skill-inspector-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.skill-inspector-section h4 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #7cd4ff;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.skill-inspector-section p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #dce8f6;
+}
+
+.skill-tree-list {
+  display: grid;
+  gap: 5px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 10px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(5, 10, 18, 0.68);
+}
+
+.skill-tree-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 6px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.skill-tree-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.skill-tree-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.skill-tree-name .is-folder {
+  color: #7cd4ff;
+  flex: none;
+}
+
+.skill-tree-name .is-file {
+  color: #9cb0c7;
+  flex: none;
+}
+
+.skill-tree-name code {
+  color: #e6f0fc;
+  font-size: 11.5px;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.skill-tree-row small {
+  color: #7e94ad;
+  font-size: 10.5px;
+  flex: none;
+}
+
+.skill-preview-details {
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(5, 10, 18, 0.56);
+  padding: 10px 12px;
+}
+
+.skill-preview-details summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: #8cdbff;
+}
+
+.skill-preview-details pre {
+  margin: 10px 0 0;
+  max-height: 240px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #b7c8dc;
+}
+
 /* My MCPs Instant iOS Switch, Zero-Clip Cards & Tools Drawer */
 .my-mcp-summary-strip {
   display: flex;
@@ -255,7 +474,7 @@ body {
 .my-mcp-row-title {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   flex-wrap: wrap;
   margin-bottom: 4px;
 }
@@ -266,6 +485,15 @@ body {
   line-height: 1.3;
   overflow-wrap: anywhere;
   word-break: break-word;
+}
+
+.my-mcp-row-title .status.is-enabled {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #86efac;
+  background: rgba(48, 209, 88, 0.16);
+  border: 1px solid rgba(48, 209, 88, 0.35);
 }
 
 .my-mcp-row-copy p {
@@ -883,6 +1111,8 @@ body {
   background: rgba(255, 255, 255, 0.07);
   color: #c1ccda;
   cursor: pointer;
+  display: grid;
+  place-items: center;
 }
 
 /* Flat Canvas Sections & Swipeable Category Rail */
@@ -1223,6 +1453,7 @@ body {
   .oauth-return-bar,
   .custom-form-alert,
   .mcp-tools-drawer,
+  .skill-inspector-backdrop,
   .skill-install-btn.is-installed,
   .add-mcp-btn.is-installed,
   .integration-grid > .integration-card,

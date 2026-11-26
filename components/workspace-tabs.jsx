@@ -6,12 +6,10 @@ import {
   BookOpen,
   Cable,
   Check,
-  Command,
   Compass,
   Copy,
   Globe,
   Layers,
-  Link2,
   LockKeyhole,
   LogIn,
   LogOut,
@@ -22,6 +20,7 @@ import {
   User,
 } from "lucide-react";
 import { useDriveLang } from "./lang-context";
+import DriveLogo from "./drive-logo";
 
 const NAV_ITEMS = [
   { id: "mcp", label: "MCP Hub", short: "MCP", path: "/mcp", icon: Cable },
@@ -279,7 +278,7 @@ function AccountStatusPanel({ onNavigate, serverCount = 0 }) {
         <div className="account-panel-head">
           <div className="account-panel-title">
             <span className="account-mini-icon">
-              <Link2 size={15} />
+              <DriveLogo size={20} />
             </span>
             <div>
               <h3>DRIVE Universal MCP Gateway</h3>
@@ -435,7 +434,6 @@ export default function WorkspaceTabs({
     MCP_SUBTABS.findIndex((item) => item.id === mcpView)
   );
 
-  // Instant 0ms SPA tab switch + clean URL sync (/mcp, /skills, /acc)
   const selectTab = useCallback((nextTab, pushUrl = true) => {
     setActive((prev) => {
       if (prev !== nextTab) {
@@ -556,14 +554,12 @@ export default function WorkspaceTabs({
 
   return (
     <main className="drive-app">
-      {/* Neutral Silver-Pearl Studio Ambient Orbs for True Optical Glassmorphism */}
       <div className="ios-ambient-orbs" aria-hidden="true">
         <span className="ios-orb orb-1" />
         <span className="ios-orb orb-2" />
         <span className="ios-orb orb-3" />
       </div>
 
-      {/* Clean Apple Liquid Glass Topbar */}
       <header className="app-topbar">
         <button
           type="button"
@@ -575,7 +571,7 @@ export default function WorkspaceTabs({
           }}
         >
           <span className="brand-mark">
-            <Command size={17} />
+            <DriveLogo size={20} />
           </span>
           <span>DRIVE</span>
         </button>
@@ -626,7 +622,6 @@ export default function WorkspaceTabs({
         </div>
       </header>
 
-      {/* Persistent SPA Panels (/mcp, /skills, /acc) */}
       <section className="app-content" aria-live="polite">
         <div className="app-panel" hidden={active !== "mcp"}>
           <div className="drive-mcp-workspace">
@@ -680,7 +675,6 @@ export default function WorkspaceTabs({
         </div>
       </section>
 
-      {/* Floating Pure Liquid Glass 3-Tab Dock */}
       <div className="bottom-dock-stage">
         <nav
           ref={dockRef}

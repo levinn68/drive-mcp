@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowUpRight, CheckCircle2, X } from "lucide-react";
+import { ArrowUpRight, X } from "lucide-react";
+import DriveLogo from "./drive-logo";
 
 const STORAGE_URL_KEY = "drive:oauth_callback";
 const STORAGE_CLIENT_KEY = "drive:oauth_client";
@@ -88,25 +89,28 @@ export default function OAuthReturnBanner() {
   }
 
   return (
-    <div className="oauth-return-bar" role="region" aria-label="Selesaikan koneksi OAuth">
+    <div className="oauth-return-bar" role="region" aria-label="Finish OAuth connection">
       <div className="oauth-return-inner">
         <div className="oauth-return-copy">
-          <CheckCircle2 size={16} className="oauth-return-icon" />
-          <span>
-            Selesai atur DRIVE? Klik tombol ini untuk kembali &amp; menyambungkan ke <strong>{pending.label}</strong>.
+          <span className="oauth-return-icon">
+            <DriveLogo size={18} />
           </span>
+          <div>
+            <strong>Return to {pending.label}</strong>
+            <small>Finish connecting DRIVE when ready</small>
+          </div>
         </div>
         <div className="oauth-return-actions">
           <button type="button" className="oauth-return-btn" onClick={finishReturn}>
-            Kembali ke {pending.label} <ArrowUpRight size={15} />
+            Return to {pending.label} <ArrowUpRight size={14} />
           </button>
           <button
             type="button"
             className="oauth-return-dismiss"
             onClick={dismiss}
-            aria-label="Tutup banner kembali ke provider"
+            aria-label="Dismiss return banner"
           >
-            <X size={15} />
+            <X size={14} />
           </button>
         </div>
       </div>

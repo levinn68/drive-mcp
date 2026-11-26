@@ -2,8 +2,13 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 export const revalidate = 3600;
+export const maxDuration = 60;
 
 const NPM_SEARCH_API = "https://registry.npmjs.org/-/v1/search";
+const LOBEHUB_AGENTS_INDEX = "https://chat-agents.lobehub.com/index.json";
+
+const TARGET_SKILLS_COUNT = 20500;
+const PER_CATEGORY_PASS1_CAP = 2300;
 
 const CURATED_POPULAR_SKILLS = [
   {
@@ -164,27 +169,40 @@ const CURATED_POPULAR_SKILLS = [
   },
 ];
 
+// Evenly balanced topics across all 16 categories so no single domain dominates
 const SKILLS_SH_TOPICS = [
-  "react", "next", "typescript", "javascript", "python", "supabase", "vercel", "tailwind",
-  "docker", "kubernetes", "aws", "cloudflare", "azure", "gcp", "security", "audit", "test",
-  "playwright", "vitest", "jest", "design", "ui", "ux", "figma", "css", "sql", "postgres",
-  "prisma", "drizzle", "mongodb", "redis", "ai", "agent", "mcp", "llm", "prompt", "rag",
-  "git", "github", "api", "graphql", "rest", "stripe", "auth", "oauth", "mobile", "ios",
-  "android", "flutter", "expo", "swift", "kotlin", "docs", "pdf", "excel", "slides",
-  "data", "analytics", "seo", "marketing", "workflow", "debug", "refactor", "performance",
-  "rust", "go", "java", "node", "vue", "svelte", "astro", "scrape", "browser", "cli",
-  "video", "remotion", "animation", "3d", "three", "webgl", "game", "unity", "shader",
-  "notion", "linear", "jira", "slack", "discord", "email", "calendar", "crm", "shopify",
-  "web3", "solana", "ethereum", "terraform", "linux", "bash", "nginx", "ci", "deploy",
-  "architecture", "review", "clean", "plan", "research", "writing", "copywriting", "brand",
-  "fastapi", "django", "rails", "laravel", "php", "csharp", "dotnet", "cpp", "zig", "elixir",
-  "firebase", "neon", "planetscale", "clickhouse", "snowflake", "dbt", "airflow", "kafka",
-  "sentry", "datadog", "grafana", "prometheus", "opentelemetry", "accessibility", "i18n",
-  "saas", "landing", "pricing", "onboarding", "growth", "product", "pitch", "startup",
-  "shadcn", "radix", "framer", "gsap", "canvas", "svg", "chart", "dashboard", "admin",
-  "webhook", "queue", "worker", "cron", "cache", "search", "vector", "embedding", "eval",
-  "voice", "tts", "whisper", "image", "vision", "ocr", "markdown", "latex", "notion",
-  "obsidian", "telegram", "whatsapp", "twilio", "resend", "posthog", "mixpanel", "hubspot",
+  // Frontend & UI
+  "react", "next", "vue", "svelte", "angular", "astro", "tailwind", "shadcn", "radix", "css",
+  // Backend & API
+  "node", "express", "fastapi", "django", "rails", "laravel", "golang", "rust", "graphql", "stripe", "webhook", "auth",
+  // AI & Agents
+  "ai", "agent", "mcp", "llm", "prompt", "rag", "vector", "embedding", "eval", "langchain", "openai", "claude",
+  // Database & SQL
+  "sql", "postgres", "supabase", "prisma", "drizzle", "mongodb", "redis", "neon", "clickhouse", "firebase",
+  // DevOps & Cloud
+  "docker", "kubernetes", "aws", "cloudflare", "vercel", "terraform", "linux", "nginx", "ci", "deploy", "grafana", "sentry",
+  // Security & Audit
+  "security", "audit", "owasp", "pentest", "oauth", "encryption", "compliance", "vulnerability",
+  // Testing & QA
+  "test", "playwright", "cypress", "vitest", "jest", "pytest", "debug", "tdd", "qa", "benchmark",
+  // Design & UX
+  "design", "ui", "ux", "figma", "accessibility", "typography", "svg", "framer", "branding", "wireframe",
+  // Media & 3D
+  "video", "remotion", "animation", "3d", "three", "webgl", "audio", "image", "voice", "ffmpeg", "game", "unity",
+  // Data & Analytics
+  "data", "analytics", "pandas", "dbt", "snowflake", "chart", "dashboard", "excel", "csv", "posthog", "ml",
+  // Mobile & Native
+  "mobile", "ios", "android", "flutter", "expo", "swift", "kotlin", "react-native",
+  // Docs & Writing
+  "docs", "pdf", "markdown", "latex", "slides", "writing", "copywriting", "readme", "changelog", "research",
+  // Marketing & SEO
+  "seo", "marketing", "growth", "landing", "saas", "pricing", "onboarding", "newsletter", "ads", "hubspot",
+  // Web3 & Crypto
+  "web3", "solana", "ethereum", "solidity", "defi", "wallet", "blockchain",
+  // Automation & Scraping
+  "workflow", "automation", "scrape", "browser", "cron", "queue", "cli", "n8n", "telegram", "whatsapp",
+  // Productivity & Ops
+  "productivity", "notion", "linear", "jira", "slack", "discord", "email", "calendar", "obsidian", "crm", "shopify", "startup",
 ];
 
 const AWESOME_README_URLS = [
@@ -197,23 +215,40 @@ const AWESOME_README_URLS = [
 ];
 
 const CATEGORY_RULES = [
-  { id: "frontend", rx: /\b(react|next\.?js|vue|svelte|angular|tailwind|css|html|frontend|ui component|shadcn|vite|astro)\b/i },
-  { id: "media", rx: /\b(remotion|video|audio|animation|motion|three\.?js|webgl|shader|3d|ffmpeg|podcast|image|canvas)\b/i },
-  { id: "backend", rx: /\b(api|backend|node\.?js|express|fastify|nestjs|django|fastapi|flask|go|golang|rust|graphql|rest|webhook|stripe|payment|auth|oauth|jwt|microservice)\b/i },
-  { id: "ai", rx: /\b(ai|llm|agent|mcp|prompt|rag|embedding|vector|openai|claude|gemini|anthropic|langchain|langgraph|crewai|autogen|eval|fine-?tun)\b/i },
-  { id: "database", rx: /\b(sql|postgres|postgresql|mysql|sqlite|supabase|prisma|drizzle|mongo|mongodb|redis|clickhouse|database|schema|migration|neon|planetscale)\b/i },
-  { id: "devops", rx: /\b(docker|kubernetes|k8s|terraform|aws|gcp|azure|vercel|cloudflare|ci\/cd|github actions|deploy|linux|nginx|helm|ansible|devops|infra|cloud)\b/i },
-  { id: "security", rx: /\b(security|audit|owasp|pentest|vuln|cve|ssrf|xss|csrf|encrypt|crypto|secret|compliance|soc2|rbac|rls|hardening)\b/i },
+  { id: "frontend", rx: /\b(react|next\.?js|vue|svelte|angular|tailwind|css|html|frontend|ui component|shadcn|vite|astro|radix|framer)\b/i },
+  { id: "media", rx: /\b(remotion|video|audio|animation|motion|three\.?js|webgl|shader|3d|ffmpeg|podcast|image|canvas|music|suno|midjourney|stable diffusion|game|unity|godot)\b/i },
+  { id: "database", rx: /\b(sql|postgres|postgresql|mysql|sqlite|supabase|prisma|drizzle|mongo|mongodb|redis|clickhouse|database|schema|migration|neon|planetscale|firebase)\b/i },
+  { id: "devops", rx: /\b(docker|kubernetes|k8s|terraform|aws|gcp|azure|vercel|cloudflare|ci\/cd|github actions|deploy|linux|nginx|helm|ansible|devops|infra|cloud|sentry|grafana)\b/i },
+  { id: "security", rx: /\b(security|audit|owasp|pentest|vuln|cve|ssrf|xss|csrf|encrypt|secret|compliance|soc2|rbac|rls|hardening|cybersecurity)\b/i },
   { id: "testing", rx: /\b(test|testing|playwright|cypress|jest|vitest|pytest|qa|e2e|unit test|debug|debugging|tdd|benchmark|lint)\b/i },
-  { id: "design", rx: /\b(design|ux|figma|typography|color|brand|logo|wireframe|prototype|accessibility|a11y|glass|layout|illustration)\b/i },
-  { id: "data", rx: /\b(data|analytics|pandas|numpy|dbt|spark|snowflake|bigquery|tableau|chart|visualization|etl|pipeline|ml|machine learning|jupyter|excel|csv)\b/i },
+  { id: "design", rx: /\b(design|ux|figma|typography|color|brand|logo|wireframe|prototype|accessibility|a11y|glass|layout|illustration|sketch|ppt|powerpoint)\b/i },
+  { id: "data", rx: /\b(data|analytics|pandas|numpy|dbt|spark|snowflake|bigquery|tableau|chart|visualization|etl|pipeline|ml|machine learning|jupyter|excel|csv|posthog)\b/i },
   { id: "mobile", rx: /\b(mobile|ios|android|swift|swiftui|kotlin|flutter|react native|expo|apk|xcode|capacitor)\b/i },
-  { id: "docs", rx: /\b(doc|docs|documentation|readme|markdown|writing|copywriting|blog|changelog|technical writing|pdf|latex|slides|pptx|docx)\b/i },
-  { id: "marketing", rx: /\b(seo|marketing|growth|landing page|conversion|ads|social media|newsletter|email campaign|gtm|brand voice)\b/i },
-  { id: "web3", rx: /\b(web3|blockchain|solana|ethereum|solidity|smart contract|defi|wallet|nft)\b/i },
-  { id: "automation", rx: /\b(automat|workflow|cron|scrape|scraping|crawler|browser|n8n|zapier|make\.com|slack bot|telegram|discord bot|cli|script)\b/i },
-  { id: "productivity", rx: /\b(productivity|notion|linear|jira|calendar|email|gmail|meeting|summary|plan|planning|roadmap|project management|kanban|obsidian)\b/i },
+  { id: "web3", rx: /\b(web3|blockchain|solana|ethereum|solidity|smart contract|defi|wallet|nft|crypto)\b/i },
+  { id: "marketing", rx: /\b(seo|marketing|growth|landing page|conversion|ads|social media|newsletter|email campaign|gtm|brand voice|sales|ecommerce|amazon|shopify|pitch)\b/i },
+  { id: "docs", rx: /\b(doc|docs|documentation|readme|markdown|writing|copywriting|blog|changelog|technical writing|pdf|latex|slides|pptx|docx|translation|academic|essay|summary)\b/i },
+  { id: "automation", rx: /\b(automat|workflow|cron|scrape|scraping|crawler|browser|n8n|zapier|make\.com|slack bot|telegram|discord bot|cli|script|webhook)\b/i },
+  { id: "backend", rx: /\b(api|backend|node\.?js|express|fastify|nestjs|django|fastapi|flask|go|golang|rust|graphql|rest|stripe|payment|auth|oauth|jwt|microservice|php|laravel|rails)\b/i },
+  { id: "ai", rx: /\b(ai|llm|agent|mcp|prompt|rag|embedding|vector|openai|claude|gemini|anthropic|langchain|langgraph|crewai|autogen|eval|fine-?tun)\b/i },
+  { id: "productivity", rx: /\b(productivity|notion|linear|jira|calendar|email|gmail|meeting|plan|planning|roadmap|project management|kanban|obsidian|career|interview|finance|accounting|education|tutor)\b/i },
 ];
+
+const LOBEHUB_CAT_MAP = {
+  programming: "backend",
+  design: "design",
+  copywriting: "docs",
+  marketing: "marketing",
+  office: "productivity",
+  career: "productivity",
+  academic: "docs",
+  education: "docs",
+  translation: "docs",
+  games: "media",
+  entertainment: "media",
+  life: "productivity",
+  general: "ai",
+  emotions: "productivity",
+};
 
 function classifySkillCategory(rawCategory, text) {
   const hay = `${rawCategory || ""} ${text || ""}`;
@@ -221,6 +256,7 @@ function classifySkillCategory(rawCategory, text) {
     if (rule.rx.test(hay)) return rule.id;
   }
   const clean = String(rawCategory || "").toLowerCase().trim();
+  if (LOBEHUB_CAT_MAP[clean]) return LOBEHUB_CAT_MAP[clean];
   if (clean && clean !== "other" && clean !== "uncategorized") {
     if (clean.includes("dev") || clean.includes("code") || clean.includes("eng")) return "backend";
     return clean;
@@ -232,6 +268,7 @@ function cleanDescription(raw, fallback) {
   const txt = String(raw || "")
     .replace(/^[>|][-+]?\s*$/g, "")
     .replace(/^[>|][-+]?\s+/g, "")
+    .replace(/\s+/g, " ")
     .trim();
   return txt.length >= 4 ? txt : fallback;
 }
@@ -243,14 +280,15 @@ function formatTitle(raw, fallback) {
   return base.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+// Non-GitHub Source 1: skills.sh search across 150+ balanced topics
 async function fetchSkillsShSearch(q) {
-  const headers = { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/3.0" };
+  const headers = { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.0" };
   const queries = q ? [q] : SKILLS_SH_TOPICS;
   const rows = [];
-  const deadline = Date.now() + 13500;
+  const deadline = Date.now() + 16500;
 
-  for (let start = 0; start < queries.length && Date.now() < deadline; start += 28) {
-    const batch = queries.slice(start, start + 28);
+  for (let start = 0; start < queries.length && Date.now() < deadline; start += 32) {
+    const batch = queries.slice(start, start + 32);
     const settled = await Promise.allSettled(
       batch.map(async (term) => {
         const url = new URL("https://skills.sh/api/search");
@@ -259,7 +297,7 @@ async function fetchSkillsShSearch(q) {
         const res = await fetch(url, {
           headers,
           next: { revalidate: q ? 900 : 3600 },
-          signal: AbortSignal.timeout(5500),
+          signal: AbortSignal.timeout(5000),
         });
         if (!res.ok) return [];
         const payload = await res.json();
@@ -271,21 +309,20 @@ async function fetchSkillsShSearch(q) {
       })
     );
     for (const r of settled) {
-      if (r.status === "fulfilled" && r.value.length) {
-        rows.push(...r.value);
-      }
+      if (r.status === "fulfilled" && r.value.length) rows.push(...r.value);
     }
-    if (rows.length >= 26000) break;
+    if (rows.length >= 34000) break;
   }
   return rows;
 }
 
+// Non-GitHub Source 2: skillsdirectory.com public registry
 async function fetchSkillsDirectory(q) {
-  const totalPages = q ? 12 : 75;
+  const totalPages = q ? 12 : 95;
   const allRows = [];
-  const deadline = Date.now() + 13000;
-  for (let start = 0; start < totalPages && Date.now() < deadline; start += 20) {
-    const batch = Array.from({ length: Math.min(20, totalPages - start) }, (_, i) => start + i);
+  const deadline = Date.now() + 16000;
+  for (let start = 0; start < totalPages && Date.now() < deadline; start += 24) {
+    const batch = Array.from({ length: Math.min(24, totalPages - start) }, (_, i) => start + i);
     const settled = await Promise.allSettled(
       batch.map(async (page) => {
         const url = new URL("https://www.skillsdirectory.com/api/registry");
@@ -294,9 +331,9 @@ async function fetchSkillsDirectory(q) {
         url.searchParams.set("sort", "stars");
         if (q) url.searchParams.set("q", q);
         const res = await fetch(url, {
-          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/3.0" },
+          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.0" },
           next: { revalidate: q ? 900 : 3600 },
-          signal: AbortSignal.timeout(5500),
+          signal: AbortSignal.timeout(5000),
         });
         if (!res.ok) return [];
         const payload = await res.json();
@@ -310,79 +347,120 @@ async function fetchSkillsDirectory(q) {
   return allRows;
 }
 
-async function fetchNpmSkillPackages(q) {
-  const queries = q
-    ? [`${q} agent skill`]
-    : [
-        "agent-skill",
-        "claude-skill",
-        "codex-skill",
-        "cursor-rules",
-        "ai-agent-skills",
-        "skill-md",
-        "copilot-instructions",
-        "windsurf-rules",
-        "cline-rules",
-        "mcp-skill",
-      ];
-
-  const requests = [];
-  for (const text of queries) {
-    const offsets = q ? [0] : [0, 250, 500];
-    for (const from of offsets) {
-      requests.push({ text, from });
+// Non-GitHub Source 3: LobeHub Public Agent Skills Index (multi-domain non-coding + coding!)
+async function fetchLobeHubSkills(q) {
+  try {
+    const res = await fetch(LOBEHUB_AGENTS_INDEX, {
+      headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.0" },
+      next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(7000),
+    });
+    if (!res.ok) return [];
+    const payload = await res.json();
+    const agents = Array.isArray(payload?.agents) ? payload.agents : [];
+    const out = [];
+    for (const agent of agents) {
+      const id = String(agent?.identifier || "").trim();
+      const title = String(agent?.meta?.title || id).trim();
+      const desc = String(agent?.meta?.description || "").trim();
+      const rawCat = String(agent?.meta?.category || "").trim().toLowerCase();
+      if (!id || !title) continue;
+      if (q && !`${title} ${id} ${desc} ${rawCat}`.toLowerCase().includes(q)) continue;
+      const mappedCat = LOBEHUB_CAT_MAP[rawCat] || "";
+      const tokenScore = Math.min(2500, Math.max(180, Number(agent.tokenUsage || 300)));
+      out.push({
+        repository: `lobehub/${id}`,
+        name: title,
+        slug: id,
+        description: desc || `LobeHub AI Agent Skill (${title}).`,
+        category: mappedCat,
+        author: agent.author || "lobehub",
+        stars: tokenScore,
+        installs: tokenScore,
+        verified: true,
+        sourceLabel: "LobeHub",
+        installUrl: `https://lobehub.com/discover/assistant/${id}`,
+      });
     }
+    return out;
+  } catch {
+    return [];
+  }
+}
+
+// Non-GitHub Source 4: npm Public Registry across 24 diverse skill/prompt/workflow queries
+const NPM_BALANCED_SKILL_QUERIES = [
+  "agent-skill", "claude-skill", "codex-skill", "cursor-rules",
+  "ai-agent-skills", "skill-md", "copilot-instructions", "windsurf-rules",
+  "cline-rules", "mcp-skill", "prompt-template", "ai-prompt",
+  "agent-workflow", "langchain-tool", "crewai", "mastra",
+  "ai-assistant", "seo-agent", "design-system-tokens", "security-audit-cli",
+  "playwright-agent", "sql-agent", "data-pipeline-agent", "code-review-ai",
+];
+
+async function fetchNpmSkillPackages(q) {
+  const queries = q ? [`${q} agent skill`] : NPM_BALANCED_SKILL_QUERIES;
+  const requests = [];
+  for (let idx = 0; idx < queries.length; idx += 1) {
+    const text = queries[idx];
+    const offsets = q ? [0] : idx < 8 ? [0, 250, 500] : [0, 250];
+    for (const from of offsets) requests.push({ text, from });
   }
 
-  const settled = await Promise.allSettled(
-    requests.map(async ({ text, from }) => {
-      const url = new URL(NPM_SEARCH_API);
-      url.searchParams.set("text", text);
-      url.searchParams.set("size", "250");
-      url.searchParams.set("from", String(from));
-      const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/3.0" },
-        next: { revalidate: 3600 },
-        signal: AbortSignal.timeout(6500),
-      });
-      if (!res.ok) return [];
-      const payload = await res.json();
-      return Array.isArray(payload?.objects) ? payload.objects : [];
-    })
-  );
-
   const parsed = [];
-  for (const r of settled) {
-    if (r.status !== "fulfilled") continue;
-    for (const obj of r.value) {
-      const pkg = obj?.package;
-      if (!pkg?.name) continue;
-      const popScore = Math.round(Number(obj?.score?.detail?.popularity || 0) * 1400);
-      const repoUrl = pkg.links?.repository || "";
-      const ghMatch = repoUrl.match(/github\.com\/([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)/i);
-      const cleanSource = ghMatch ? ghMatch[1].replace(/\.git$/i, "") : `npm/${pkg.name}`;
-      parsed.push({
-        repository: cleanSource,
-        name: pkg.name.replace(/^@[^/]+\//, ""),
-        slug: pkg.name.replace(/^@/, "").replace(/[^a-z0-9-]+/gi, "-").toLowerCase(),
-        description: pkg.description || `Published npm Agent Skill package (${pkg.name}).`,
-        author: pkg.publisher?.username || "npm",
-        stars: popScore,
-        installs: popScore,
-        verified: popScore >= 300,
-        sourceLabel: "npm",
-        installUrl: pkg.links?.homepage || pkg.links?.npm || `https://www.npmjs.com/package/${pkg.name}`,
-      });
+  const deadline = Date.now() + 15000;
+  for (let start = 0; start < requests.length && Date.now() < deadline; start += 20) {
+    const batch = requests.slice(start, start + 20);
+    const settled = await Promise.allSettled(
+      batch.map(async ({ text, from }) => {
+        const url = new URL(NPM_SEARCH_API);
+        url.searchParams.set("text", text);
+        url.searchParams.set("size", "250");
+        url.searchParams.set("from", String(from));
+        const res = await fetch(url, {
+          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.0" },
+          next: { revalidate: 3600 },
+          signal: AbortSignal.timeout(5500),
+        });
+        if (!res.ok) return [];
+        const payload = await res.json();
+        return Array.isArray(payload?.objects) ? payload.objects : [];
+      })
+    );
+
+    for (const r of settled) {
+      if (r.status !== "fulfilled") continue;
+      for (const obj of r.value) {
+        const pkg = obj?.package;
+        if (!pkg?.name) continue;
+        const popScore = Math.round(Number(obj?.score?.detail?.popularity || 0) * 1400);
+        const repoUrl = pkg.links?.repository || "";
+        const ghMatch = repoUrl.match(/github\.com\/([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)/i);
+        const cleanSource = ghMatch ? ghMatch[1].replace(/\.git$/i, "") : `npm/${pkg.name}`;
+        parsed.push({
+          repository: cleanSource,
+          name: pkg.name.replace(/^@[^/]+\//, ""),
+          slug: pkg.name.replace(/^@/, "").replace(/[^a-z0-9-]+/gi, "-").toLowerCase(),
+          description: pkg.description || `Published npm Agent Skill package (${pkg.name}).`,
+          author: pkg.publisher?.username || "npm",
+          stars: popScore,
+          installs: popScore,
+          verified: popScore >= 300,
+          sourceLabel: "npm",
+          installUrl: pkg.links?.homepage || pkg.links?.npm || `https://www.npmjs.com/package/${pkg.name}`,
+        });
+      }
     }
   }
   return parsed;
 }
 
+// Source 5: Curated Awesome Agent Skills Lists
 async function fetchAwesomeReadmes(q) {
   const settled = await Promise.allSettled(
     AWESOME_README_URLS.map(async (readmeUrl) => {
       const res = await fetch(readmeUrl, {
-        headers: { "user-agent": "DRIVE-Skills-Catalog/3.0" },
+        headers: { "user-agent": "DRIVE-Skills-Catalog/4.0" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(6000),
       });
@@ -414,20 +492,51 @@ async function fetchAwesomeReadmes(q) {
   return settled.flatMap((r) => (r.status === "fulfilled" ? r.value : []));
 }
 
+function balanceByCategory(sortedItems, targetCount, perCategoryCap) {
+  if (sortedItems.length <= targetCount) return sortedItems;
+  const picked = [];
+  const overflow = [];
+  const catCounts = new Map();
+
+  for (const item of sortedItems) {
+    if (item.sourceLabel === "Official") {
+      picked.push(item);
+      catCounts.set(item.category, (catCounts.get(item.category) || 0) + 1);
+      continue;
+    }
+    const c = catCounts.get(item.category) || 0;
+    if (c < perCategoryCap) {
+      picked.push(item);
+      catCounts.set(item.category, c + 1);
+    } else {
+      overflow.push(item);
+    }
+    if (picked.length >= targetCount) break;
+  }
+
+  for (const item of overflow) {
+    if (picked.length >= targetCount) break;
+    picked.push(item);
+  }
+  return picked;
+}
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const q = (searchParams.get("q") || "").trim().slice(0, 100).toLowerCase();
 
   try {
-    const [shRes, dirRes, npmRes, awesomeRes] = await Promise.allSettled([
+    const [shRes, dirRes, lobeRes, npmRes, awesomeRes] = await Promise.allSettled([
       fetchSkillsShSearch(q),
       fetchSkillsDirectory(q),
+      fetchLobeHubSkills(q),
       fetchNpmSkillPackages(q),
       fetchAwesomeReadmes(q),
     ]);
 
     const shRows = shRes.status === "fulfilled" ? shRes.value : [];
     const dirRows = dirRes.status === "fulfilled" ? dirRes.value : [];
+    const lobeRows = lobeRes.status === "fulfilled" ? lobeRes.value : [];
     const npmRows = npmRes.status === "fulfilled" ? npmRes.value : [];
     const awesomeRows = awesomeRes.status === "fulfilled" ? awesomeRes.value : [];
 
@@ -457,17 +566,14 @@ export async function GET(request) {
         if (Number(item.installs || 0) > existing.installs) existing.installs = Number(item.installs || 0);
         if (item.verified) existing.verified = true;
         const candidateDesc = cleanDescription(item.description, "");
-        if (
-          candidateDesc &&
-          (!existing.description || existing.description.startsWith("Popular Agent Skill"))
-        ) {
+        if (candidateDesc && (!existing.description || existing.description.startsWith("Popular Agent Skill"))) {
           existing.description = candidateDesc;
         }
         return;
       }
 
       const repoCount = perRepoCount.get(repoKey) || 0;
-      if (!bypassRepoCap && repoCount >= 18) return;
+      if (!bypassRepoCap && repoCount >= 22) return;
       perRepoCount.set(repoKey, repoCount + 1);
 
       const displayName = formatTitle(rawName, cleanRepo.split("/")[1]);
@@ -477,9 +583,11 @@ export async function GET(request) {
         item.description,
         `Popular Agent Skill from ${cleanRepo}${installs ? ` · ${installs.toLocaleString()} installs` : ""}.`
       );
-      const category = classifySkillCategory(item.category, `${displayName} ${slug} ${cleanRepo} ${desc}`);
+      const category = classifySkillCategory(item.category, `${displayName} ${slug} ${desc}`);
       const defaultUrl = cleanRepo.startsWith("npm/")
         ? `https://www.npmjs.com/package/${cleanRepo.slice(4)}`
+        : cleanRepo.startsWith("lobehub/")
+        ? `https://lobehub.com/discover/assistant/${cleanRepo.slice(8)}`
         : `https://github.com/${cleanRepo}`;
       const targetUrl = item.installUrl || defaultUrl;
 
@@ -488,7 +596,13 @@ export async function GET(request) {
         name: displayName,
         slug: slug || cleanRepo.split("/")[1] || rawName,
         source: cleanRepo,
-        sourceLabel: item.sourceLabel || (cleanRepo.startsWith("npm/") ? "npm" : "skills.sh"),
+        sourceLabel:
+          item.sourceLabel ||
+          (cleanRepo.startsWith("npm/")
+            ? "npm"
+            : cleanRepo.startsWith("lobehub/")
+            ? "LobeHub"
+            : "skills.sh"),
         description: desc,
         category,
         author: item.author || cleanRepo.split("/")[0] || null,
@@ -497,16 +611,18 @@ export async function GET(request) {
         verified: Boolean(item.verified) || installs >= 1000 || stars >= 500,
         installUrl: targetUrl,
         url: targetUrl,
-        sourceType: cleanRepo.startsWith("npm/") ? "npm" : "registry",
+        sourceType: cleanRepo.startsWith("npm/")
+          ? "npm"
+          : cleanRepo.startsWith("lobehub/")
+          ? "lobehub"
+          : "registry",
         skillCount: 1,
       });
     }
 
     for (const curated of CURATED_POPULAR_SKILLS) {
       const hay = `${curated.name} ${curated.description} ${curated.source} ${curated.category}`.toLowerCase();
-      if (!q || hay.includes(q)) {
-        upsert(curated.source, curated, true);
-      }
+      if (!q || hay.includes(q)) upsert(curated.source, curated, true);
     }
 
     for (const item of shRows) {
@@ -537,6 +653,10 @@ export async function GET(request) {
       });
     }
 
+    for (const item of lobeRows) {
+      upsert(item.repository, item, true);
+    }
+
     for (const item of npmRows) {
       upsert(item.repository, item);
     }
@@ -545,13 +665,13 @@ export async function GET(request) {
       upsert(item.repository, item);
     }
 
-    const items = [...uniqueSkills.values()]
-      .sort((a, b) => {
-        const scoreA = a.installs * 2 + a.stars;
-        const scoreB = b.installs * 2 + b.stars;
-        return scoreB - scoreA;
-      })
-      .slice(0, 13500);
+    const sorted = [...uniqueSkills.values()].sort((a, b) => {
+      const scoreA = a.installs * 2 + a.stars;
+      const scoreB = b.installs * 2 + b.stars;
+      return scoreB - scoreA;
+    });
+
+    const items = balanceByCategory(sorted, TARGET_SKILLS_COUNT, PER_CATEGORY_PASS1_CAP);
 
     const categoryCounts = {};
     for (const item of items) {
@@ -563,9 +683,9 @@ export async function GET(request) {
         items,
         count: items.length,
         totalRawSkills,
-        target: 13000,
+        target: 20000,
         categories: categoryCounts,
-        source: "skills.sh + Skills Directory + npm + Curated Agent Skills",
+        source: "skills.sh + SkillsDirectory + LobeHub + npm + Curated",
         query: q || null,
       },
       {

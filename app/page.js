@@ -5,11 +5,17 @@ import WorkspaceTabs from "../components/workspace-tabs";
 import SkillLibrary from "../components/skill-library";
 
 export const revalidate = 3600;
+export const maxDuration = 60;
 
 const REGISTRY = "https://registry.modelcontextprotocol.io";
 const GLAMA_API = "https://glama.ai/api/mcp/v1/servers";
 const NPM_SEARCH_API = "https://registry.npmjs.org/-/v1/search";
 const PULSEMCP_API = "https://api.pulsemcp.com/v0beta/servers";
+const DOCKER_HUB_API = "https://hub.docker.com/v2/search/repositories/";
+const CRATES_IO_API = "https://crates.io/api/v1/crates";
+
+const TARGET_MCP_COUNT = 20500;
+const PER_CATEGORY_PASS1_CAP = 2300;
 
 const VERIFIED_POPULAR_MCPS = [
   {
@@ -494,26 +500,27 @@ const VERIFIED_POPULAR_MCPS = [
   },
 ];
 
+// Domain-first classification rules (github placed after domain categories & never matched on repo URL)
 const MCP_CATEGORY_RULES = [
-  { id: "github", rx: /\b(github|gitlab|bitbucket|git\b|pull request|commit|repo|codebase)\b/i },
-  { id: "database", rx: /\b(sql|postgres|postgresql|mysql|sqlite|supabase|neon|mongo|mongodb|redis|clickhouse|prisma|drizzle|planetscale|turso|database|dbhub|bigquery|snowflake)\b/i },
-  { id: "cloud", rx: /\b(vercel|cloudflare|aws|azure|gcp|google cloud|netlify|railway|render|docker|kubernetes|k8s|terraform|sentry|devops|deploy|infra|hosting)\b/i },
-  { id: "ai", rx: /\b(ai\b|llm|agent|hugging ?face|openai|anthropic|claude|gemini|ollama|langchain|vector|embedding|rag|model|prompt|memory|knowledge graph)\b/i },
-  { id: "browser", rx: /\b(playwright|puppeteer|selenium|browser|chrome|crawl|firecrawl|apify|scrape|scraping|web ?fetch|headless)\b/i },
-  { id: "search", rx: /\b(search|docs|documentation|wiki|deepwiki|context7|exa|tavily|brave|perplexity|arxiv|wikipedia|pubmed|knowledge)\b/i },
-  { id: "design", rx: /\b(figma|design|webflow|canva|storybook|ui|ux|css|tailwind|blender|3d|svg|font|color)\b/i },
-  { id: "media", rx: /\b(video|audio|music|youtube|spotify|ffmpeg|image|photo|podcast|remotion|elevenlabs|tts|speech|whisper)\b/i },
-  { id: "ecommerce", rx: /\b(shopify|square|woocommerce|ecommerce|store|cart|product catalog|inventory|order)\b/i },
-  { id: "finance", rx: /\b(stripe|paypal|plaid|finance|payment|invoice|billing|stock|trading|market|sec\b|edgar|bank|accounting)\b/i },
-  { id: "web3", rx: /\b(crypto|blockchain|ethereum|solana|web3|wallet|defi|nft|token|onchain|evm|bitcoin)\b/i },
-  { id: "crm", rx: /\b(hubspot|salesforce|crm|pipedrive|zoho|lead|sales|marketing|mailchimp|klaviyo)\b/i },
-  { id: "maps", rx: /\b(maps|geo|location|weather|flight|travel|hotel|route|gps|places|openstreetmap)\b/i },
-  { id: "automation", rx: /\b(zapier|n8n|make\.com|workflow|automat|cron|webhook|trigger|pipeline|rpa)\b/i },
-  { id: "messaging", rx: /\b(slack|discord|telegram|whatsapp|email|gmail|outlook|resend|twilio|intercom|zendesk|chat|sms|social|twitter|x\.com|linkedin)\b/i },
-  { id: "security", rx: /\b(security|snyk|auth|oauth|clerk|vault|secret|vuln|cve|pentest|scan|audit|firewall|compliance|encrypt)\b/i },
-  { id: "data", rx: /\b(analytics|posthog|datadog|grafana|prometheus|metabase|tableau|mixpanel|amplitude|chart|excel|sheets|csv|metrics|observability|telemetry)\b/i },
-  { id: "productivity", rx: /\b(notion|linear|jira|confluence|atlassian|asana|trello|monday|clickup|todo|calendar|drive|airtable|obsidian)\b/i },
-  { id: "coding", rx: /\b(code|dev|devtools|ide|vscode|xcode|android|ios|npm|python|typescript|react|next\.js|svelte|rust|go|shell|terminal|sandbox|filesystem|lint|test)\b/i },
+  { id: "database", rx: /\b(sql|postgres|postgresql|mysql|sqlite|supabase|neon|mongo|mongodb|redis|clickhouse|prisma|drizzle|planetscale|turso|database|dbhub|bigquery|snowflake|duckdb|cassandra|dynamodb|neo4j|qdrant|pinecone|milvus)\b/i },
+  { id: "cloud", rx: /\b(vercel|cloudflare|aws|azure|gcp|google cloud|netlify|railway|render|docker|kubernetes|k8s|terraform|sentry|devops|deploy|infra|hosting|heroku|fly\.io|digitalocean|helm|ansible)\b/i },
+  { id: "browser", rx: /\b(playwright|puppeteer|selenium|browser|chrome|crawl|firecrawl|apify|scrape|scraping|web ?fetch|headless|browserbase|stagehand)\b/i },
+  { id: "finance", rx: /\b(stripe|paypal|plaid|finance|payment|invoice|billing|stock|trading|market|sec\b|edgar|bank|accounting|yahoo finance|alphavantage|quickbooks|xero|forex|portfolio)\b/i },
+  { id: "web3", rx: /\b(crypto|blockchain|ethereum|solana|web3|wallet|defi|nft|token|onchain|evm|bitcoin|binance|coinbase|uniswap|polygon|arbitrum|sui|aptos)\b/i },
+  { id: "design", rx: /\b(figma|design|webflow|canva|storybook|ui|ux|css|tailwind|blender|3d|svg|font|color|sketch|framer|penpot|excalidraw|mermaid)\b/i },
+  { id: "media", rx: /\b(video|audio|music|youtube|spotify|ffmpeg|image|photo|podcast|remotion|elevenlabs|tts|speech|whisper|midjourney|flux|comfyui|stable diffusion|plex|vimeo)\b/i },
+  { id: "ecommerce", rx: /\b(shopify|square|woocommerce|ecommerce|e-commerce|store|cart|product catalog|inventory|order|amazon|ebay|etsy|magento|bigcommerce)\b/i },
+  { id: "crm", rx: /\b(hubspot|salesforce|crm|pipedrive|zoho|lead|sales|marketing|mailchimp|klaviyo|apollo|attio|zendesk|freshdesk|ads|seo|semrush|ahrefs)\b/i },
+  { id: "maps", rx: /\b(maps|geo|location|weather|flight|travel|hotel|route|gps|places|openstreetmap|mapbox|airbnb|uber|transit|gis|geospatial)\b/i },
+  { id: "security", rx: /\b(security|snyk|auth|oauth|clerk|vault|secret|vuln|cve|pentest|scan|audit|firewall|compliance|encrypt|owasp|semgrep|trivy|sonarqube|burp|shodan)\b/i },
+  { id: "data", rx: /\b(analytics|posthog|datadog|grafana|prometheus|metabase|tableau|mixpanel|amplitude|chart|excel|sheets|csv|metrics|observability|telemetry|jupyter|pandas|dbt|airflow|kafka)\b/i },
+  { id: "messaging", rx: /\b(slack|discord|telegram|whatsapp|email|gmail|outlook|resend|twilio|intercom|chat|sms|social|twitter|x\.com|linkedin|bluesky|mastodon|reddit|teams|zoom)\b/i },
+  { id: "automation", rx: /\b(zapier|n8n|make\.com|workflow|automat|cron|webhook|trigger|pipeline|rpa|home assistant|iot|smart home|mqtt|ifttt|temporal)\b/i },
+  { id: "productivity", rx: /\b(notion|linear|jira|confluence|atlassian|asana|trello|monday|clickup|todo|calendar|google drive|airtable|obsidian|evernote|todoist|notes|docs|pdf|docx|pptx)\b/i },
+  { id: "search", rx: /\b(search|documentation|wiki|deepwiki|context7|exa|tavily|brave|perplexity|arxiv|wikipedia|pubmed|knowledge|news|rss|weather|scholar|semantic scholar)\b/i },
+  { id: "ai", rx: /\b(ai\b|llm|agent|hugging ?face|openai|anthropic|claude|gemini|ollama|langchain|vector|embedding|rag|model|prompt|memory|knowledge graph|mcp-proxy|gateway|reasoning)\b/i },
+  { id: "github", rx: /\b(github|gitlab|bitbucket|git\b|pull request|commit|code review|ci\/cd|actions)\b/i },
+  { id: "coding", rx: /\b(code|dev|devtools|ide|vscode|xcode|android|ios|npm|python|typescript|react|next\.js|svelte|rust|go|shell|terminal|sandbox|filesystem|lint|test|debugger|lsp)\b/i },
 ];
 
 function classifyMcpCategory(explicitCategory, text) {
@@ -533,10 +540,11 @@ function inferAuthType(explicitAuthType, isRemote, text) {
   return "oauth";
 }
 
-async function fetchOfficialRegistry(apiSearch, maxPages = 65) {
+// 1. Official MCP Registry (up to 7,500 servers)
+async function fetchOfficialRegistry(apiSearch, maxPages = 75) {
   const results = [];
   let cursor = "";
-  const deadline = Date.now() + 13500;
+  const deadline = Date.now() + 16000;
   for (let i = 0; i < maxPages && Date.now() < deadline; i += 1) {
     const params = new URLSearchParams({ limit: "100", version: "latest" });
     if (apiSearch.length >= 2) params.set("search", apiSearch);
@@ -544,7 +552,7 @@ async function fetchOfficialRegistry(apiSearch, maxPages = 65) {
 
     try {
       const response = await fetch(`${REGISTRY}/v0.1/servers?${params}`, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/3.0" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.0" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(4500),
       });
@@ -555,7 +563,7 @@ async function fetchOfficialRegistry(apiSearch, maxPages = 65) {
         results.push({ ...item, sourceLabel: "Official Registry" });
       }
       cursor = payload?.metadata?.nextCursor || "";
-      if (!cursor || results.length >= 6500) break;
+      if (!cursor || results.length >= 7500) break;
     } catch {
       break;
     }
@@ -563,128 +571,173 @@ async function fetchOfficialRegistry(apiSearch, maxPages = 65) {
   return results;
 }
 
-async function fetchGlamaDirectory(apiSearch, maxPages = 45) {
+// 2. Glama MCP Registry (130,000+ servers) — queried BOTH generally AND across 18 balanced categories!
+const GLAMA_BALANCED_QUERIES = [
+  "database", "cloud", "browser", "finance", "crypto", "design", "video",
+  "ecommerce", "crm", "maps", "security", "analytics", "slack", "workflow",
+  "notion", "search", "ai", "github", "docker", "email", "weather", "pdf",
+];
+
+async function fetchGlamaDirectory(apiSearch) {
   const results = [];
-  let cursor = "";
-  const deadline = Date.now() + 13500;
-  for (let i = 0; i < maxPages && Date.now() < deadline; i += 1) {
-    const params = new URLSearchParams({ first: "100" });
-    if (apiSearch.length >= 2) params.set("query", apiSearch);
-    if (cursor) params.set("after", cursor);
+  const deadline = Date.now() + 16500;
 
-    try {
-      const response = await fetch(`${GLAMA_API}?${params}`, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/3.0" },
-        next: { revalidate: 3600 },
-        signal: AbortSignal.timeout(4500),
-      });
-      if (!response.ok) break;
-      const payload = await response.json();
-      const batch = Array.isArray(payload?.servers) ? payload.servers : [];
-      for (const item of batch) {
-        if (!item?.name) continue;
-        const slug = item.slug || item.id || item.name;
-        const repoUrl = item.url || item.repository?.url || `https://glama.ai/mcp/servers/${slug}`;
-        const stars = Number(item.repository?.stargazersCount || item.stars || 0);
-        results.push({
-          _stars: stars,
-          sourceLabel: "Glama",
-          server: {
-            name: `${item.namespace || "glama"}/${slug}`,
-            title: item.name,
-            version: "glama",
-            description: item.description || "Indexed from Glama MCP Directory.",
-            repository: repoUrl ? { url: repoUrl } : undefined,
-            remotes:
-              item.url && /^https?:\/\//i.test(item.url) && item.url.includes("mcp")
-                ? [{ type: "streamable-http", url: item.url }]
-                : [],
-            packages: [],
-          },
+  // 2a. General cursor pagination (fast broad sweep)
+  const generalTask = (async () => {
+    const out = [];
+    let cursor = "";
+    const maxPages = apiSearch ? 8 : 38;
+    for (let i = 0; i < maxPages && Date.now() < deadline; i += 1) {
+      const params = new URLSearchParams({ first: "100" });
+      if (apiSearch.length >= 2) params.set("query", apiSearch);
+      if (cursor) params.set("after", cursor);
+      try {
+        const res = await fetch(`${GLAMA_API}?${params}`, {
+          headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.0" },
+          next: { revalidate: 3600 },
+          signal: AbortSignal.timeout(4500),
         });
+        if (!res.ok) break;
+        const payload = await res.json();
+        const batch = Array.isArray(payload?.servers) ? payload.servers : [];
+        out.push(...batch);
+        cursor = payload?.pageInfo?.hasNextPage ? payload?.pageInfo?.endCursor || "" : "";
+        if (!cursor || out.length >= 3800) break;
+      } catch {
+        break;
       }
-      cursor = payload?.pageInfo?.hasNextPage ? payload?.pageInfo?.endCursor || "" : "";
-      if (!cursor || results.length >= 4500) break;
-    } catch {
-      break;
     }
+    return out;
+  })();
+
+  // 2b. Parallel category-balanced sweeps so every domain is richly represented
+  const categoryTask = apiSearch
+    ? Promise.resolve([])
+    : (async () => {
+        const out = [];
+        for (let i = 0; i < GLAMA_BALANCED_QUERIES.length && Date.now() < deadline; i += 11) {
+          const batchTerms = GLAMA_BALANCED_QUERIES.slice(i, i + 11);
+          const settled = await Promise.allSettled(
+            batchTerms.map(async (term) => {
+              const params = new URLSearchParams({ first: "100", query: term });
+              const res = await fetch(`${GLAMA_API}?${params}`, {
+                headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.0" },
+                next: { revalidate: 3600 },
+                signal: AbortSignal.timeout(4500),
+              });
+              if (!res.ok) return [];
+              const payload = await res.json();
+              return Array.isArray(payload?.servers) ? payload.servers : [];
+            })
+          );
+          for (const r of settled) {
+            if (r.status === "fulfilled" && r.value.length) out.push(...r.value);
+          }
+        }
+        return out;
+      })();
+
+  const [genRows, catRows] = await Promise.all([generalTask, categoryTask]);
+  for (const item of [...genRows, ...catRows]) {
+    if (!item?.name) continue;
+    const slug = item.slug || item.id || item.name;
+    const repoUrl = item.url || item.repository?.url || `https://glama.ai/mcp/servers/${slug}`;
+    const stars = Number(item.repository?.stargazersCount || item.stars || 0);
+    results.push({
+      _stars: stars,
+      sourceLabel: "Glama",
+      server: {
+        name: `${item.namespace || "glama"}/${slug}`,
+        title: item.name,
+        version: "glama",
+        description: item.description || "Indexed from Glama MCP Directory.",
+        repository: { url: repoUrl },
+        remotes:
+          item.url && /^https?:\/\//i.test(item.url) && item.url.includes("mcp")
+            ? [{ type: "streamable-http", url: item.url }]
+            : [],
+        packages: [],
+      },
+    });
   }
   return results;
 }
+
+// 3. npm Public Registry — balanced across 20 MCP categories!
+const NPM_BALANCED_MCP_QUERIES = [
+  "mcp-server", "modelcontextprotocol", "@modelcontextprotocol", "fastmcp",
+  "mcp database", "mcp postgres", "mcp cloud", "mcp docker",
+  "mcp browser", "mcp playwright", "mcp finance", "mcp stripe",
+  "mcp crypto", "mcp design", "mcp figma", "mcp security",
+  "mcp slack", "mcp notion", "mcp search", "mcp analytics",
+  "mcp shopify", "mcp maps", "mcp media", "mcp workflow",
+];
 
 async function fetchNpmMcpServers(apiSearch) {
-  const queries = apiSearch
-    ? [`${apiSearch} mcp`]
-    : [
-        "mcp-server",
-        "modelcontextprotocol",
-        "mcp server",
-        "@modelcontextprotocol",
-        "mcp-tool",
-        "fastmcp",
-        "mcp-client",
-        "mcp-proxy",
-        "mcp-bridge",
-        "mcp-adapter",
-      ];
-
+  const queries = apiSearch ? [`${apiSearch} mcp`] : NPM_BALANCED_MCP_QUERIES;
   const requests = [];
-  for (const text of queries) {
-    const offsets = apiSearch ? [0, 250] : [0, 250, 500, 750];
+  for (let idx = 0; idx < queries.length; idx += 1) {
+    const text = queries[idx];
+    const offsets = apiSearch ? [0, 250] : idx < 4 ? [0, 250, 500] : [0, 250];
     for (const from of offsets) {
       requests.push({ text, from });
     }
   }
 
-  const settled = await Promise.allSettled(
-    requests.map(async ({ text, from }) => {
-      const url = new URL(NPM_SEARCH_API);
-      url.searchParams.set("text", text);
-      url.searchParams.set("size", "250");
-      url.searchParams.set("from", String(from));
-      const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/3.0" },
-        next: { revalidate: 3600 },
-        signal: AbortSignal.timeout(6500),
-      });
-      if (!res.ok) return [];
-      const payload = await res.json();
-      return Array.isArray(payload?.objects) ? payload.objects : [];
-    })
-  );
-
   const items = [];
-  for (const r of settled) {
-    if (r.status !== "fulfilled") continue;
-    for (const obj of r.value) {
-      const pkg = obj?.package;
-      if (!pkg?.name) continue;
-      const popScore = Math.round(Number(obj?.score?.detail?.popularity || 0) * 1800);
-      const npmLink = pkg.links?.homepage || pkg.links?.npm || `https://www.npmjs.com/package/${pkg.name}`;
-      const cleanTitle = pkg.name
-        .replace(/^@[^/]+\//, "")
-        .replace(/[-_]+/g, " ")
-        .replace(/\b\w/g, (c) => c.toUpperCase());
-      items.push({
-        _stars: popScore,
-        sourceLabel: "npm",
-        server: {
-          name: `npm/${pkg.name}`,
-          title: cleanTitle,
-          version: pkg.version || "npm",
-          description: pkg.description || `Published npm MCP server package (${pkg.name}).`,
-          repository: { url: npmLink },
-          remotes: [],
-          packages: [{ registryType: "npm", identifier: pkg.name }],
-        },
-      });
+  const deadline = Date.now() + 15000;
+  for (let start = 0; start < requests.length && Date.now() < deadline; start += 20) {
+    const batch = requests.slice(start, start + 20);
+    const settled = await Promise.allSettled(
+      batch.map(async ({ text, from }) => {
+        const url = new URL(NPM_SEARCH_API);
+        url.searchParams.set("text", text);
+        url.searchParams.set("size", "250");
+        url.searchParams.set("from", String(from));
+        const res = await fetch(url, {
+          headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.0" },
+          next: { revalidate: 3600 },
+          signal: AbortSignal.timeout(5500),
+        });
+        if (!res.ok) return [];
+        const payload = await res.json();
+        return Array.isArray(payload?.objects) ? payload.objects : [];
+      })
+    );
+
+    for (const r of settled) {
+      if (r.status !== "fulfilled") continue;
+      for (const obj of r.value) {
+        const pkg = obj?.package;
+        if (!pkg?.name) continue;
+        const popScore = Math.round(Number(obj?.score?.detail?.popularity || 0) * 1800);
+        const npmLink = pkg.links?.homepage || pkg.links?.npm || `https://www.npmjs.com/package/${pkg.name}`;
+        const cleanTitle = pkg.name
+          .replace(/^@[^/]+\//, "")
+          .replace(/[-_]+/g, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase());
+        items.push({
+          _stars: popScore,
+          sourceLabel: "npm",
+          server: {
+            name: `npm/${pkg.name}`,
+            title: cleanTitle,
+            version: pkg.version || "npm",
+            description: pkg.description || `Published npm MCP server package (${pkg.name}).`,
+            repository: { url: npmLink },
+            remotes: [],
+            packages: [{ registryType: "npm", identifier: pkg.name }],
+          },
+        });
+      }
     }
   }
   return items;
 }
 
+// 4. PulseMCP Public Directory API
 async function fetchPulseMcpServers(apiSearch) {
-  const pages = apiSearch ? [0, 1] : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
+  const pages = apiSearch ? [0, 1] : Array.from({ length: 18 }, (_, i) => i);
   const settled = await Promise.allSettled(
     pages.map(async (page) => {
       const url = new URL(PULSEMCP_API);
@@ -692,7 +745,7 @@ async function fetchPulseMcpServers(apiSearch) {
       url.searchParams.set("offset", String(page * 100));
       if (apiSearch) url.searchParams.set("query", apiSearch);
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/3.0" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.0" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(5500),
       });
@@ -727,10 +780,124 @@ async function fetchPulseMcpServers(apiSearch) {
   return items;
 }
 
+// 5. Docker Hub Public MCP Container Registry (Non-GitHub!)
+async function fetchDockerHubMcps(apiSearch) {
+  const queries = apiSearch ? [`${apiSearch} mcp`] : ["mcp-server", "modelcontextprotocol", "mcp-proxy", "mcp"];
+  const requests = [];
+  for (const q of queries) {
+    const pages = apiSearch ? [1] : [1, 2, 3, 4];
+    for (const page of pages) requests.push({ q, page });
+  }
+
+  const settled = await Promise.allSettled(
+    requests.map(async ({ q, page }) => {
+      const url = new URL(DOCKER_HUB_API);
+      url.searchParams.set("query", q);
+      url.searchParams.set("page_size", "100");
+      url.searchParams.set("page", String(page));
+      const res = await fetch(url, {
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.0" },
+        next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(5500),
+      });
+      if (!res.ok) return [];
+      const payload = await res.json();
+      return Array.isArray(payload?.results) ? payload.results : [];
+    })
+  );
+
+  const items = [];
+  for (const r of settled) {
+    if (r.status !== "fulfilled") continue;
+    for (const repo of r.value) {
+      const name = String(repo?.repo_name || "").trim();
+      const desc = String(repo?.short_description || "").trim();
+      if (!name) continue;
+      if (!/\bmcp\b|model[- ]?context[- ]?protocol/i.test(`${name} ${desc}`)) continue;
+      const pulls = Number(repo.pull_count || 0);
+      const stars = Math.max(Number(repo.star_count || 0) * 10, Math.round(Math.sqrt(pulls) * 4));
+      const cleanTitle = (name.split("/")[1] || name)
+        .replace(/[-_]+/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+      items.push({
+        _stars: stars,
+        sourceLabel: "Docker Hub",
+        server: {
+          name: `docker/${name}`,
+          title: cleanTitle,
+          version: "docker",
+          description: desc || `Containerized MCP server on Docker Hub (${pulls.toLocaleString()} pulls).`,
+          repository: { url: `https://hub.docker.com/r/${name}` },
+          remotes: [],
+          packages: [{ registryType: "docker", identifier: name }],
+        },
+      });
+    }
+  }
+  return items;
+}
+
+// 6. Crates.io Rust MCP Registry (Non-GitHub!)
+async function fetchCratesIoMcps(apiSearch) {
+  const queries = apiSearch ? [`${apiSearch} mcp`] : ["mcp-server", "model-context-protocol", "rmcp", "mcp"];
+  const requests = [];
+  for (const q of queries) {
+    const pages = apiSearch ? [1] : [1, 2, 3];
+    for (const page of pages) requests.push({ q, page });
+  }
+
+  const settled = await Promise.allSettled(
+    requests.map(async ({ q, page }) => {
+      const url = new URL(CRATES_IO_API);
+      url.searchParams.set("q", q);
+      url.searchParams.set("per_page", "100");
+      url.searchParams.set("page", String(page));
+      url.searchParams.set("sort", "downloads");
+      const res = await fetch(url, {
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.0 (https://drive-mcp-five.vercel.app)" },
+        next: { revalidate: 3600 },
+        signal: AbortSignal.timeout(5500),
+      });
+      if (!res.ok) return [];
+      const payload = await res.json();
+      return Array.isArray(payload?.crates) ? payload.crates : [];
+    })
+  );
+
+  const items = [];
+  for (const r of settled) {
+    if (r.status !== "fulfilled") continue;
+    for (const c of r.value) {
+      const name = String(c?.name || "").trim();
+      const desc = String(c?.description || "").trim();
+      if (!name) continue;
+      if (!/\bmcp\b|model[- ]?context[- ]?protocol/i.test(`${name} ${desc}`)) continue;
+      const downloads = Number(c.downloads || 0);
+      const stars = Math.round(Math.sqrt(downloads) * 3);
+      const cleanTitle = name.replace(/[-_]+/g, " ").replace(/\b\w/g, (ch) => ch.toUpperCase());
+      items.push({
+        _stars: stars,
+        sourceLabel: "Crates.io",
+        server: {
+          name: `crates/${name}`,
+          title: cleanTitle,
+          version: c.max_version || "rust",
+          description: desc || `Rust MCP server crate on Crates.io (${downloads.toLocaleString()} downloads).`,
+          repository: { url: c.homepage || c.repository || `https://crates.io/crates/${name}` },
+          remotes: [],
+          packages: [{ registryType: "cargo", identifier: name }],
+        },
+      });
+    }
+  }
+  return items;
+}
+
+// 7. Supplemental GitHub MCPs (kept lightweight so non-GitHub sources lead)
 async function fetchGithubPopularMcps(apiSearch) {
   const headers = {
     accept: "application/vnd.github+json",
-    "user-agent": "DRIVE-MCP/3.0",
+    "user-agent": "DRIVE-MCP/4.0",
   };
   if (process.env.GITHUB_TOKEN) {
     headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
@@ -738,19 +905,15 @@ async function fetchGithubPopularMcps(apiSearch) {
   const queryList = apiSearch
     ? [`${apiSearch} topic:mcp-server stars:>5`]
     : [
-        "topic:mcp-server stars:>100",
-        "topic:mcp-server stars:25..100",
-        "topic:mcp-server stars:8..24",
-        "topic:model-context-protocol stars:>20",
-        "mcp-server in:name stars:>15",
+        "topic:mcp-server stars:>120",
+        "topic:mcp-server stars:30..120",
+        "topic:model-context-protocol stars:>25",
       ];
 
   const requests = [];
   for (const qStr of queryList) {
-    const pages = apiSearch ? [1, 2] : [1, 2, 3, 4];
-    for (const page of pages) {
-      requests.push({ qStr, page });
-    }
+    const pages = apiSearch ? [1, 2] : [1, 2, 3];
+    for (const page of pages) requests.push({ qStr, page });
   }
 
   const settled = await Promise.allSettled(
@@ -764,37 +927,35 @@ async function fetchGithubPopularMcps(apiSearch) {
       const res = await fetch(url, {
         headers,
         next: { revalidate: 3600 },
-        signal: AbortSignal.timeout(6500),
+        signal: AbortSignal.timeout(5500),
       });
       if (!res.ok) return [];
       const payload = await res.json();
-      return Array.isArray(payload.items) ? payload.items : [];
+      return Array.isArray(payload?.items) ? payload.items : [];
     })
   );
 
   const items = [];
-  for (const r of settled) {
-    if (r.status !== "fulfilled") continue;
-    for (const repo of r.value) {
+  for (const res of settled) {
+    if (res.status !== "fulfilled") continue;
+    for (const repo of res.value) {
       if (!repo?.full_name || repo.archived) continue;
       items.push({
         _stars: Number(repo.stargazers_count || 0),
         sourceLabel: "GitHub",
         server: {
           name: `github/${repo.full_name}`,
-          title: repo.name
-            .replace(/[-_]+/g, " ")
-            .replace(/\b\w/g, (c) => c.toUpperCase()),
+          title: repo.name.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
           version: "github",
           description:
             repo.description ||
-            `Popular open-source MCP server (${Number(repo.stargazers_count || 0).toLocaleString()} stars).`,
+            `Open-source MCP server (${Number(repo.stargazers_count || 0).toLocaleString()} stars).`,
           repository: { url: repo.homepage || repo.html_url },
           remotes:
             repo.homepage && /^https:\/\/.*mcp/i.test(repo.homepage)
               ? [{ type: "streamable-http", url: repo.homepage }]
               : [],
-          packages: [{ identifier: repo.full_name }],
+          packages: [],
         },
       });
     }
@@ -812,7 +973,9 @@ function serializeServer(entry) {
   const description = server.description || "MCP server indexed in DRIVE Directory.";
   const isRemote = remotes.length > 0;
   const repoStr = typeof repo === "string" ? repo : repo?.url || "";
-  const category = classifyMcpCategory(entry?.category, `${name} ${id} ${description} ${repoStr}`);
+  // Classify ONLY on title + clean slug + description (NEVER on github.com URLs!)
+  const cleanIdForCat = id.replace(/^(github|glama|npm|pulsemcp|docker|crates)\//i, "");
+  const category = classifyMcpCategory(entry?.category, `${name} ${cleanIdForCat} ${description}`);
   const authType = inferAuthType(entry?.authType, isRemote, `${name} ${description}`);
   const stars = Number(entry?.stars || entry?._stars || 0);
 
@@ -842,6 +1005,35 @@ function serializeServer(entry) {
   };
 }
 
+function balanceByCategory(sortedItems, targetCount, perCategoryCap) {
+  if (sortedItems.length <= targetCount) return sortedItems;
+  const picked = [];
+  const overflow = [];
+  const catCounts = new Map();
+
+  for (const item of sortedItems) {
+    if (item.verifiedPopular) {
+      picked.push(item);
+      catCounts.set(item.category, (catCounts.get(item.category) || 0) + 1);
+      continue;
+    }
+    const c = catCounts.get(item.category) || 0;
+    if (c < perCategoryCap) {
+      picked.push(item);
+      catCounts.set(item.category, c + 1);
+    } else {
+      overflow.push(item);
+    }
+    if (picked.length >= targetCount) break;
+  }
+
+  for (const item of overflow) {
+    if (picked.length >= targetCount) break;
+    picked.push(item);
+  }
+  return picked;
+}
+
 async function getServers(query) {
   const trimmed = (query || "").trim().slice(0, 120);
   const lower = trimmed.toLowerCase();
@@ -854,19 +1046,24 @@ async function getServers(query) {
     all.push(item);
   }
 
-  const [officialRes, glamaRes, npmRes, pulseRes, githubRes] = await Promise.allSettled([
-    fetchOfficialRegistry(apiSearch, apiSearch ? 8 : 65),
-    fetchGlamaDirectory(apiSearch, apiSearch ? 6 : 45),
-    fetchNpmMcpServers(apiSearch),
-    fetchPulseMcpServers(apiSearch),
-    fetchGithubPopularMcps(apiSearch),
-  ]);
+  const [officialRes, glamaRes, npmRes, pulseRes, dockerRes, cratesRes, githubRes] =
+    await Promise.allSettled([
+      fetchOfficialRegistry(apiSearch, apiSearch ? 10 : 75),
+      fetchGlamaDirectory(apiSearch),
+      fetchNpmMcpServers(apiSearch),
+      fetchPulseMcpServers(apiSearch),
+      fetchDockerHubMcps(apiSearch),
+      fetchCratesIoMcps(apiSearch),
+      fetchGithubPopularMcps(apiSearch),
+    ]);
 
   const combined = [
     ...(officialRes.status === "fulfilled" ? officialRes.value : []),
     ...(glamaRes.status === "fulfilled" ? glamaRes.value : []),
     ...(npmRes.status === "fulfilled" ? npmRes.value : []),
     ...(pulseRes.status === "fulfilled" ? pulseRes.value : []),
+    ...(dockerRes.status === "fulfilled" ? dockerRes.value : []),
+    ...(cratesRes.status === "fulfilled" ? cratesRes.value : []),
     ...(githubRes.status === "fulfilled" ? githubRes.value : []),
   ];
 
@@ -875,20 +1072,22 @@ async function getServers(query) {
     if (!key || seen.has(key)) continue;
     seen.add(key);
     all.push(entry);
-    if (all.length >= 13500) break;
+    if (all.length >= 28000) break;
   }
 
   const serialized = all.map(serializeServer);
   serialized.sort((a, b) => {
-    if (b.stars !== a.stars) return b.stars - a.stars;
     if (b.verifiedPopular !== a.verifiedPopular) return Number(b.verifiedPopular) - Number(a.verifiedPopular);
+    if (b.stars !== a.stars) return b.stars - a.stars;
     if (b.isRemote !== a.isRemote) return Number(b.isRemote) - Number(a.isRemote);
     return a.name.localeCompare(b.name);
   });
 
+  const balanced = balanceByCategory(serialized, TARGET_MCP_COUNT, PER_CATEGORY_PASS1_CAP);
+
   return {
-    servers: serialized,
-    unavailable: serialized.length === 0,
+    servers: balanced,
+    unavailable: balanced.length === 0,
   };
 }
 

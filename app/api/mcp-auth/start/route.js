@@ -66,7 +66,7 @@ function getProviderHints(endpointUrl) {
       envClientSecret: process.env.SUPABASE_MCP_CLIENT_SECRET || "",
       tokenPortalUrl: "https://supabase.com/dashboard/account/tokens",
       tokenPortalLabel: "Buat Supabase Access Token",
-      preferCimd: true,
+      preferCimd: false,
       defaultScopes: "",
     };
   }
@@ -76,7 +76,7 @@ function getProviderHints(endpointUrl) {
       envClientSecret: "",
       tokenPortalUrl: "https://dashboard.stripe.com/apikeys",
       tokenPortalLabel: "Buka Stripe API Keys",
-      preferCimd: true,
+      preferCimd: false,
       defaultScopes: "",
     };
   }
@@ -86,7 +86,7 @@ function getProviderHints(endpointUrl) {
       envClientSecret: "",
       tokenPortalUrl: "https://www.notion.so/profile/integrations",
       tokenPortalLabel: "Buka Notion Integrations",
-      preferCimd: true,
+      preferCimd: false,
       defaultScopes: "",
     };
   }
@@ -96,7 +96,7 @@ function getProviderHints(endpointUrl) {
       envClientSecret: "",
       tokenPortalUrl: "https://linear.app/settings/api",
       tokenPortalLabel: "Buka Linear API Settings",
-      preferCimd: true,
+      preferCimd: false,
       defaultScopes: "",
     };
   }
@@ -106,7 +106,7 @@ function getProviderHints(endpointUrl) {
       envClientSecret: "",
       tokenPortalUrl: "https://www.figma.com/developers/api#access-tokens",
       tokenPortalLabel: "Buat Figma Personal Access Token",
-      preferCimd: true,
+      preferCimd: false,
       defaultScopes: "",
     };
   }
@@ -116,7 +116,7 @@ function getProviderHints(endpointUrl) {
       envClientSecret: "",
       tokenPortalUrl: "https://sentry.io/settings/account/api/auth-tokens/",
       tokenPortalLabel: "Buat Sentry Auth Token",
-      preferCimd: true,
+      preferCimd: false,
       defaultScopes: "",
     };
   }
@@ -126,7 +126,7 @@ function getProviderHints(endpointUrl) {
       envClientSecret: "",
       tokenPortalUrl: "https://dash.cloudflare.com/profile/api-tokens",
       tokenPortalLabel: "Buat Cloudflare API Token",
-      preferCimd: true,
+      preferCimd: false,
       defaultScopes: "",
     };
   }
@@ -136,7 +136,7 @@ function getProviderHints(endpointUrl) {
       envClientSecret: "",
       tokenPortalUrl: "https://console.neon.tech/app/settings/api-keys",
       tokenPortalLabel: "Buat Neon API Key",
-      preferCimd: true,
+      preferCimd: false,
       defaultScopes: "",
     };
   }
@@ -171,7 +171,7 @@ async function getUserClient(request) {
 async function fetchJsonSafe(url) {
   try {
     const res = await fetch(url, {
-      headers: { accept: "application/json", "user-agent": "DRIVE-MCP-Gateway/2.4" },
+      headers: { accept: "application/json", "user-agent": "DRIVE-MCP-Gateway/2.5" },
       cache: "no-store",
       signal: AbortSignal.timeout(6500),
     });
@@ -202,7 +202,7 @@ async function discoverUpstreamOAuth(endpointUrl) {
         params: {
           protocolVersion: "2025-03-26",
           capabilities: {},
-          clientInfo: { name: "DRIVE MCP", version: "2.4" },
+          clientInfo: { name: "DRIVE MCP", version: "2.5" },
         },
       }),
       signal: AbortSignal.timeout(6000),
@@ -365,23 +365,21 @@ export async function POST(request) {
   const { metadata, canonicalResource } = discovery;
   const scopes = discovery.scopes || hints.defaultScopes || "";
 
-  // MCP OAuth 2.1 Client Registration Priority:
+  // MCP OAuth 2.1 Client Registration Order:
   // 1. User-supplied or Pre-registered OAuth App credentials
   let clientId = customClientId || hints.envClientId || "";
   let clientSecret = customClientSecret || hints.envClientSecret || "";
   let registrationMethod = clientId ? "preregistered" : "";
 
-  // 2. Client ID Metadata Document (CIMD) — MCP 2025-11-25 standard (used by Vercel MCP, etc.)
-  const supportsCimd =
-    Boolean(metadata.client_id_metadata_document_supported) ||
-    (hints.preferCimd && reqOrigin.startsWith("https://"));
-
-  if (!clientId && supportsCimd && reqOrigin.startsWith("https://")) {
+  // 2. CIMD ONLY when server explicitly advertises client_id_metadata_document_supported: true
+  //    or for verified CIMD hosts (Vercel MCP). NEVER force CIMD on DCR-only hosts like Supabase or Figma!
+  const explicitCimdSupported = metadata.client_id_metadata_document_supported === true;
+  if (!clientId && (explicitCimdSupported || hints.preferCimd) && reqOrigin.startsWith("https://")) {
     clientId = cimdClientId;
     registrationMethod = "cimd";
   }
 
-  // 3. RFC 7591 Dynamic Client Registration fallback
+  // 3. RFC 7591 Dynamic Client Registration (used by Supabase MCP, Figma MCP, Notion, Linear, Sentry, Stripe, etc.)
   if (!clientId && metadata.registration_endpoint) {
     try {
       const regRes = await fetch(metadata.registration_endpoint, {
@@ -405,10 +403,6 @@ export async function POST(request) {
         clientId = reg.client_id || "";
         clientSecret = reg.client_secret || "";
         registrationMethod = "dcr";
-      } else if (reqOrigin.startsWith("https://") && metadata.client_id_metadata_document_supported !== false) {
-        // If DCR rejected our redirect URI (e.g. HTTP 400), try CIMD URL client_id as standard MCP 2025-11-25 fallback
-        clientId = cimdClientId;
-        registrationMethod = "cimd_fallback";
       }
     } catch {
       // Fall through to manual credentials prompt
@@ -422,7 +416,7 @@ export async function POST(request) {
       callbackUrl: redirectUri,
       tokenPortalUrl: hints.tokenPortalUrl,
       tokenPortalLabel: hints.tokenPortalLabel,
-      message: `${serverTitle} memerlukan Personal Access Token (PAT) atau OAuth App Client ID & Secret sendiri karena provider belum membuka pendaftaran OAuth otomatis.`,
+      message: `${serverTitle} memerlukan Personal Access Token (PAT) atau OAuth App Client ID & Secret sendiri untuk menyambungkan akun.`,
     });
   }
 

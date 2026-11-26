@@ -6,6 +6,8 @@ import {
   BookOpen,
   Check,
   ExternalLink,
+  FileArchive,
+  FileText,
   Layers,
   LoaderCircle,
   Plus,
@@ -14,6 +16,7 @@ import {
   ShieldCheck,
   Star,
   Trash2,
+  Upload,
 } from "lucide-react";
 
 const SKILL_CATEGORIES = [
@@ -24,6 +27,12 @@ const SKILL_CATEGORIES = [
   { id: "data", label: "Data" },
   { id: "security", label: "Security" },
   { id: "productivity", label: "Productivity" },
+];
+
+const SKILL_SUBTABS = [
+  { id: "discover", label: "Directory" },
+  { id: "my", label: "My Skills" },
+  { id: "custom", label: "+ Custom" },
 ];
 
 function getSupabase() {
@@ -45,6 +54,13 @@ export default function SkillLibrary() {
   const [loadingMy, setLoadingMy] = useState(false);
   const [installingId, setInstallingId] = useState("");
   const [toast, setToast] = useState({ type: "", message: "" });
+
+  // Custom Skill Upload state
+  const [uploadFiles, setUploadFiles] = useState([]);
+  const [customName, setCustomName] = useState("");
+  const [customDesc, setCustomDesc] = useState("");
+  const [customContent, setCustomContent] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   const installedRepoKeys = useMemo(() => {
     const map = new Set();
@@ -225,11 +241,82 @@ export default function SkillLibrary() {
     }
   }
 
+  async function handleCustomUpload(event) {
+    event.preventDefault();
+    setUploading(true);
+    setToast({ type: "", message: "" });
+    try {
+      const supabase = getSupabase();
+      if (!supabase) throw new Error("Authentication belum dikonfigurasi.");
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: {
+            redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent("/")}`,
+          },
+        });
+        return;
+      }
+
+      let res;
+      if (uploadFiles.length > 0) {
+        const fd = new FormData();
+        if (customName.trim()) fd.append("name", customName.trim());
+        if (customDesc.trim()) fd.append("description", customDesc.trim());
+        for (const f of uploadFiles) fd.append("files", f);
+        res = await fetch("/api/skills/upload", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${session.access_token}` },
+          body: fd,
+        });
+      } else {
+        res = await fetch("/api/skills/upload", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            name: customName.trim(),
+            description: customDesc.trim(),
+            content: customContent.trim(),
+          }),
+        });
+      }
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal upload Custom Skill.");
+
+      const count = Number(data.installedCount || 1);
+      setToast({
+        type: "success",
+        message:
+          count > 1
+            ? `${count} custom skills dari arsip berhasil diekstrak & langsung aktif!`
+            : `Custom skill "${data.skills?.[0]?.name || customName}" berhasil dipasang & aktif!`,
+      });
+      setUploadFiles([]);
+      setCustomName("");
+      setCustomDesc("");
+      setCustomContent("");
+      await loadMySkills();
+      setSubTab("my");
+    } catch (err) {
+      setToast({ type: "error", message: err?.message || "Gagal upload Custom Skill." });
+    } finally {
+      setUploading(false);
+    }
+  }
+
   async function toggleSkill(skill) {
     const supabase = getSupabase();
     if (!supabase) return;
     const prevStatus = skill.status;
-    const nextStatus = prevStatus === "enabled" ? "disabled" : "enabled";
+    // DB constraint user_skills_status_check allows 'saved' | 'reviewed' | 'enabled' (NOT 'disabled')
+    const nextStatus = prevStatus === "enabled" ? "saved" : "enabled";
     setMySkills((prev) =>
       prev.map((item) => (item.id === skill.id ? { ...item, status: nextStatus } : item))
     );
@@ -262,36 +349,37 @@ export default function SkillLibrary() {
     loadCatalog(query);
   }
 
-  const subIndex = subTab === "discover" ? 0 : 1;
+  const subIndex = Math.max(
+    0,
+    SKILL_SUBTABS.findIndex((t) => t.id === subTab)
+  );
 
   return (
     <div className="drive-mcp-workspace">
       <div className="drive-subtabs-wrap">
         <div
-          className="drive-subtabs is-2"
+          className="drive-subtabs"
           role="tablist"
           aria-label="Skills sections"
           style={{ "--sub-index": subIndex }}
         >
           <span className="drive-subtabs-pill" aria-hidden="true" />
-          <button
-            type="button"
-            role="tab"
-            aria-selected={subTab === "discover"}
-            className={`drive-subtab-btn ${subTab === "discover" ? "is-active" : ""}`}
-            onClick={() => setSubTab("discover")}
-          >
-            Directory
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={subTab === "my"}
-            className={`drive-subtab-btn ${subTab === "my" ? "is-active" : ""}`}
-            onClick={() => setSubTab("my")}
-          >
-            My Skills ({mySkills.length})
-          </button>
+          {SKILL_SUBTABS.map((tab) => {
+            const isActive = subTab === tab.id;
+            const label = tab.id === "my" ? `My Skills (${mySkills.length})` : tab.label;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                className={`drive-subtab-btn ${isActive ? "is-active" : ""}`}
+                onClick={() => setSubTab(tab.id)}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -447,7 +535,7 @@ export default function SkillLibrary() {
             </>
           )}
         </section>
-      ) : (
+      ) : subTab === "my" ? (
         <section className="catalog-section" id="my-skills">
           {loadingMy ? (
             <div className="empty-state">
@@ -458,7 +546,7 @@ export default function SkillLibrary() {
             <div className="empty-state">
               <BookOpen size={22} />
               <h3>Belum ada Skill terpasang</h3>
-              <p>Buka tab Directory lalu klik Install di kartu Skill mana saja.</p>
+              <p>Buka tab Directory atau + Custom untuk memasang Skill pertama kamu.</p>
             </div>
           ) : (
             <div className="integration-grid">
@@ -500,6 +588,101 @@ export default function SkillLibrary() {
               })}
             </div>
           )}
+        </section>
+      ) : (
+        <section className="platform-section" id="custom-skill">
+          <div className="section-head">
+            <div>
+              <div className="eyebrow">CUSTOM SKILL</div>
+              <h1>Upload or Write Skill</h1>
+              <p className="section-intro">
+                Upload file <strong>.zip</strong> (ekstrak otomatis), <strong>.md</strong>,{" "}
+                <strong>.txt</strong>, atau tulis instruksi Skill langsung di sini.
+              </p>
+            </div>
+          </div>
+
+          <form className="custom-form-clean" onSubmit={handleCustomUpload}>
+            <div className="custom-fields">
+              <label className="custom-field-label">
+                <span>
+                  <FileArchive size={13} /> UPLOAD FILE (.ZIP, .MD, .TXT)
+                </span>
+                <input
+                  type="file"
+                  accept=".zip,.md,.markdown,.txt"
+                  multiple
+                  onChange={(e) => setUploadFiles(Array.from(e.target.files || []))}
+                  style={{ padding: "10px" }}
+                />
+              </label>
+
+              {uploadFiles.length > 0 && (
+                <div className="custom-policy-pills">
+                  {uploadFiles.map((f) => (
+                    <span key={f.name}>
+                      <FileText size={11} /> {f.name}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <label className="custom-field-label">
+                <span>
+                  <BookOpen size={13} /> SKILL NAME {uploadFiles.length ? "(OPTIONAL)" : ""}
+                </span>
+                <input
+                  value={customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  placeholder="e.g. No Slop Frontend Architect"
+                  required={uploadFiles.length === 0}
+                />
+              </label>
+
+              <label className="custom-field-label">
+                <span>SHORT DESCRIPTION (OPTIONAL)</span>
+                <input
+                  value={customDesc}
+                  onChange={(e) => setCustomDesc(e.target.value)}
+                  placeholder="Kapan AI harus memakai skill ini..."
+                />
+              </label>
+
+              {uploadFiles.length === 0 && (
+                <label className="custom-field-label">
+                  <span>
+                    <FileText size={13} /> SKILL INSTRUCTIONS (MARKDOWN / TEXT)
+                  </span>
+                  <textarea
+                    value={customContent}
+                    onChange={(e) => setCustomContent(e.target.value)}
+                    placeholder="# Instructions&#10;Tulis aturan, workflow, atau format output yang harus diikuti AI..."
+                    rows={6}
+                    required
+                    style={{
+                      width: "100%",
+                      padding: "10px 13px",
+                      borderRadius: 14,
+                      border: "1px solid rgba(255,255,255,0.15)",
+                      background: "rgba(6,11,20,0.62)",
+                      color: "#f4f8ff",
+                      fontSize: 13,
+                      fontFamily: "inherit",
+                    }}
+                  />
+                </label>
+              )}
+
+              <button type="submit" className="custom-submit-btn" disabled={uploading}>
+                {uploading ? <LoaderCircle size={15} className="spin" /> : <Upload size={15} />}
+                {uploading
+                  ? "Extracting & Saving..."
+                  : uploadFiles.length
+                  ? `Upload & Install (${uploadFiles.length} file)`
+                  : "Save & Activate Skill"}
+              </button>
+            </div>
+          </form>
         </section>
       )}
     </div>

@@ -3,9 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 import {
+  ArrowUpRight,
   Cable,
   Check,
   Copy,
+  KeyRound,
   LoaderCircle,
   Plus,
   RefreshCw,
@@ -62,12 +64,42 @@ export function AddMcpButton({ serverName, version, registryEntry, remoteAvailab
         body: JSON.stringify({ serverName, version, registryEntry }),
       });
       const result = await response.json();
-      if (response.ok) {
-        setState("added");
-        window.dispatchEvent(new Event("drive:connections-changed"));
-      } else {
+      if (!response.ok) {
         setState([result.error, result.detail].filter(Boolean).join(": ") || "Could not add");
+        return;
       }
+
+      window.dispatchEvent(new Event("drive:connections-changed"));
+
+      // Automatically initiate upstream MCP OAuth handshake if this is a Remote HTTP MCP
+      const endpointUrl =
+        registryEntry?.server?.remotes?.[0]?.url ||
+        result?.connection?.server?.endpoint_url ||
+        result?.connection?.server?.remote_url ||
+        "";
+      const connectionId = result?.connection?.id || "";
+
+      if (remoteAvailable && endpointUrl && connectionId) {
+        const authRes = await fetch("/api/mcp-auth/start", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            connectionId,
+            endpointUrl,
+            serverTitle: registryEntry?.server?.title || serverName,
+          }),
+        });
+        const authData = await authRes.json().catch(() => ({}));
+        if (authData.mode === "oauth" && authData.authorizeUrl) {
+          window.location.assign(authData.authorizeUrl);
+          return;
+        }
+      }
+
+      setState("added");
     } catch {
       setState("Network error");
     }
@@ -87,7 +119,7 @@ export function AddMcpButton({ serverName, version, registryEntry, remoteAvailab
         isError
           ? state
           : remoteAvailable
-          ? "Connect this remote MCP to your DRIVE workspace"
+          ? "Connect & authorize this remote MCP"
           : "Save this MCP entry to your workspace"
       }
     >
@@ -99,7 +131,7 @@ export function AddMcpButton({ serverName, version, registryEntry, remoteAvailab
         <Plus size={12} />
       )}
       <span>
-        {isBusy ? "Adding..." : isAdded ? "Connected" : isError ? "Retry" : "Connect"}
+        {isBusy ? "Connecting..." : isAdded ? "Connected" : isError ? "Retry" : "Connect"}
       </span>
     </button>
   );
@@ -112,14 +144,15 @@ export default function MyMcpPanel() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [copiedId, setCopiedId] = useState("");
-  const [error, setError] = useState("");
+  const [authBusyId, setAuthBusyId] = useState("");
+  const [bearerTarget, setBearerTarget] = useState(null);
+  const [bearerValue, setBearerValue] = useState("");
+  const [banner, setBanner] = useState({ type: "", text: "" });
 
-  // Cache token in memory so ON/OFF toggles execute with 0ms UI delay and no extra getSession roundtrip
   const tokenRef = useRef("");
 
   const load = useCallback(async () => {
     setLoading(true);
-    setError("");
     try {
       const token = await getAccessToken();
       tokenRef.current = token || "";
@@ -139,14 +172,40 @@ export default function MyMcpPanel() {
       }
       setConnections(Array.isArray(data.connections) ? data.connections : []);
     } catch (err) {
-      setError(err?.message || "Could not load saved connections.");
+      setBanner({ type: "error", text: err?.message || "Could not load saved connections." });
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    const initialLoad = window.setTimeout(() => load(), 0);
+    const initialLoad = window.setTimeout(() => {
+      load();
+      // Check if returning from an upstream MCP OAuth consent screen
+      const params = new URLSearchParams(window.location.search);
+      const authStatus = params.get("mcp_auth");
+      if (authStatus === "connected") {
+        const srv = params.get("server") || "MCP";
+        setBanner({
+          type: "success",
+          text: `Otorisasi ${srv} berhasil! Akun kamu sekarang terhubung langsung lewat DRIVE gateway.`,
+        });
+        params.delete("mcp_auth");
+        params.delete("server");
+        const clean = `${window.location.pathname}${params.toString() ? `?${params}` : ""}`;
+        window.history.replaceState(null, "", clean);
+      } else if (authStatus === "error") {
+        const reason = params.get("reason") || "oauth_failed";
+        setBanner({
+          type: "error",
+          text: `Otorisasi upstream MCP gagal (${reason}). Kamu bisa coba lagi atau pakai API Key / Token.`,
+        });
+        params.delete("mcp_auth");
+        params.delete("reason");
+        const clean = `${window.location.pathname}${params.toString() ? `?${params}` : ""}`;
+        window.history.replaceState(null, "", clean);
+      }
+    }, 0);
     const refresh = () => load();
     window.addEventListener("drive:connections-changed", refresh);
     window.addEventListener("drive:auth-changed", refresh);
@@ -157,12 +216,103 @@ export default function MyMcpPanel() {
     };
   }, [load]);
 
+  async function authorizeUpstream(item) {
+    const endpointUrl =
+      item.server?.endpoint_url ||
+      item.server?.remote_url ||
+      item.server?.remotes?.[0]?.url ||
+      "";
+    const title =
+      item.server?.title || item.server?.display_name || item.server?.server_name || "MCP";
+    if (!endpointUrl) {
+      setBanner({
+        type: "error",
+        text: `${title} tidak memiliki Remote HTTP URL (server STDIO lokal).`,
+      });
+      return;
+    }
+
+    setAuthBusyId(item.id);
+    setBanner({ type: "", text: "" });
+    try {
+      const token = tokenRef.current || (await getAccessToken());
+      if (!token) throw new Error("Sign in terlebih dahulu.");
+      const res = await fetch("/api/mcp-auth/start", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          connectionId: item.id,
+          endpointUrl,
+          serverTitle: title,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal memulai otorisasi MCP.");
+
+      if (data.mode === "oauth" && data.authorizeUrl) {
+        // Redirect directly to the original MCP website's OAuth screen
+        window.location.assign(data.authorizeUrl);
+        return;
+      }
+      if (data.mode === "none") {
+        setBanner({ type: "success", text: data.message || `${title} aktif tanpa login.` });
+        await load();
+        return;
+      }
+      if (data.mode === "bearer") {
+        setBearerTarget({ id: item.id, title, endpointUrl, note: data.message });
+        setBearerValue("");
+      }
+    } catch (err) {
+      setBanner({ type: "error", text: err?.message || "Gagal otorisasi MCP." });
+    } finally {
+      setAuthBusyId("");
+    }
+  }
+
+  async function saveBearerToken(event) {
+    event.preventDefault();
+    if (!bearerTarget || !bearerValue.trim()) return;
+    setAuthBusyId(bearerTarget.id);
+    try {
+      const token = tokenRef.current || (await getAccessToken());
+      const res = await fetch("/api/mcp-auth/start", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          connectionId: bearerTarget.id,
+          endpointUrl: bearerTarget.endpointUrl,
+          serverTitle: bearerTarget.title,
+          bearerToken: bearerValue.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal menyimpan API Key.");
+      setBanner({
+        type: "success",
+        text: `Token untuk ${bearerTarget.title} berhasil disimpan & aktif.`,
+      });
+      setBearerTarget(null);
+      setBearerValue("");
+      await load();
+    } catch (err) {
+      setBanner({ type: "error", text: err?.message || "Gagal menyimpan token." });
+    } finally {
+      setAuthBusyId("");
+    }
+  }
+
   async function toggleConnection(item) {
     const prevEnabled = Boolean(item.enabled);
     const nextEnabled = !prevEnabled;
-    setError("");
+    setBanner({ type: "", text: "" });
 
-    // Instant 0ms optimistic UI toggle
     setConnections((prev) =>
       prev.map((row) => (row.id === item.id ? { ...row, enabled: nextEnabled } : row))
     );
@@ -185,17 +335,16 @@ export default function MyMcpPanel() {
         throw new Error(result.error || "Could not update toggle state.");
       }
     } catch (err) {
-      // Revert cleanly if server rejected the toggle
       setConnections((prev) =>
         prev.map((row) => (row.id === item.id ? { ...row, enabled: prevEnabled } : row))
       );
-      setError(err?.message || "Could not update MCP state.");
+      setBanner({ type: "error", text: err?.message || "Could not update MCP state." });
     }
   }
 
   async function removeConnection(item) {
     const snapshot = connections;
-    setError("");
+    setBanner({ type: "", text: "" });
     setConnections((prev) => prev.filter((row) => row.id !== item.id));
     try {
       const token = tokenRef.current || (await getAccessToken());
@@ -210,7 +359,7 @@ export default function MyMcpPanel() {
       }
     } catch (err) {
       setConnections(snapshot);
-      setError(err?.message || "Could not remove connection.");
+      setBanner({ type: "error", text: err?.message || "Could not remove connection." });
     }
   }
 
@@ -299,10 +448,56 @@ export default function MyMcpPanel() {
         />
       </div>
 
-      {error && (
-        <div className="custom-form-alert is-error" role="alert" style={{ marginBottom: 12 }}>
-          <span>{error}</span>
+      {banner.text && (
+        <div
+          className={`custom-form-alert ${banner.type === "error" ? "is-error" : "is-success"}`}
+          role={banner.type === "error" ? "alert" : "status"}
+          style={{ marginBottom: 12 }}
+        >
+          <span>{banner.text}</span>
         </div>
+      )}
+
+      {bearerTarget && (
+        <form
+          className="custom-form-clean"
+          onSubmit={saveBearerToken}
+          style={{ marginBottom: 14 }}
+        >
+          <div className="custom-fields">
+            <label className="custom-field-label">
+              <span>
+                <KeyRound size={13} /> API KEY / BEARER TOKEN — {bearerTarget.title.toUpperCase()}
+              </span>
+              <input
+                type="password"
+                value={bearerValue}
+                onChange={(e) => setBearerValue(e.target.value)}
+                placeholder="Tempel API key atau Personal Access Token dari provider..."
+                required
+              />
+            </label>
+            <p className="custom-form-hint" style={{ marginTop: 0 }}>
+              {bearerTarget.note}
+            </p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                type="submit"
+                className="custom-submit-btn"
+                disabled={authBusyId === bearerTarget.id}
+              >
+                Save Token
+              </button>
+              <button
+                type="button"
+                className="glass-chip-btn"
+                onClick={() => setBearerTarget(null)}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </form>
       )}
 
       {loading ? (
@@ -337,6 +532,7 @@ export default function MyMcpPanel() {
               "";
             const isCustom = item.source === "custom" || Boolean(item.custom_server_id);
             const enabled = Boolean(item.enabled);
+            const isAuthorizing = authBusyId === item.id;
             return (
               <article key={item.id} className="my-mcp-row-card">
                 <div className="my-mcp-row-main">
@@ -350,6 +546,21 @@ export default function MyMcpPanel() {
                     </div>
                     <p>{endpoint || item.server?.description || "Connected via DRIVE MCP"}</p>
                     <div className="my-mcp-row-actions">
+                      {endpoint && (
+                        <button
+                          type="button"
+                          className="glass-chip-btn"
+                          onClick={() => authorizeUpstream(item)}
+                          disabled={isAuthorizing}
+                        >
+                          {isAuthorizing ? (
+                            <LoaderCircle size={11} className="spin" />
+                          ) : (
+                            <ArrowUpRight size={11} />
+                          )}
+                          {isAuthorizing ? "Checking..." : "Authorize"}
+                        </button>
+                      )}
                       {endpoint && (
                         <button
                           type="button"

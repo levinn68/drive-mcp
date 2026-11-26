@@ -8,7 +8,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const SERVER_INFO = { name: "DRIVE MCP", version: "1.2.0" };
+const SERVER_INFO = { name: "DRIVE MCP", version: "1.3.0" };
 const PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26"];
 const MCP_REGISTRY = "https://registry.modelcontextprotocol.io/v0.1/servers";
 const SKILLS_REGISTRY = "https://www.skillsdirectory.com/api/registry";
@@ -116,7 +116,7 @@ async function authenticate(request) {
 }
 async function fetchJson(url, label) {
   const upstream = await fetch(url, {
-    headers: { accept: "application/json", "user-agent": "DRIVE-MCP/1.2" },
+    headers: { accept: "application/json", "user-agent": "DRIVE-MCP/1.3" },
     cache: "no-store", redirect: "error", signal: AbortSignal.timeout(12000)
   });
   if (!upstream.ok) throw new Error(`${label} returned HTTP ${upstream.status}`);
@@ -135,26 +135,93 @@ function normalizeRegistryServer(entry, appOrigin) {
     repository: server.repository || null,
     remotes,
     packages,
+    source: entry.source_id || "official-mcp-registry",
     remote_available: Boolean(remote?.url),
     connect_url: server.name ? buildConnectUrl(appOrigin, { serverName: server.name }) : buildConnectUrl(appOrigin, { query: server.title || "" })
   };
 }
-async function searchMcpServers(query, limit, appOrigin) {
-  const url = new URL(MCP_REGISTRY);
-  url.searchParams.set("search", query);
-  url.searchParams.set("limit", String(limit));
-  url.searchParams.set("version", "latest");
-  const payload = await fetchJson(url, "Official MCP Registry");
-  const servers = (payload.servers || []).slice(0, limit).map((entry) => normalizeRegistryServer(entry, appOrigin));
+function normalizeDbServer(row, appOrigin) {
+  const remotes = Array.isArray(row.remotes) ? row.remotes : [];
+  const packages = Array.isArray(row.packages) ? row.packages : [];
+  const remote = pickHttpRemote(remotes);
   return {
-    source: "Official MCP Registry",
+    name: row.server_name || null,
+    title: row.title || row.server_name || null,
+    description: row.description || "",
+    version: row.version || null,
+    repository: row.repository_url ? { url: row.repository_url } : null,
+    remotes,
+    packages,
+    source: row.source_id || "drive-index",
+    remote_available: Boolean(remote?.url),
+    connect_url: row.server_name ? buildConnectUrl(appOrigin, { serverName: row.server_name }) : buildConnectUrl(appOrigin, { query: row.title || "" })
+  };
+}
+async function searchMcpServers(query, limit, appOrigin, supabase = null) {
+  const merged = new Map();
+
+  // 1. Fast multi-source lookup from Supabase indexed catalog (Official + Glama + GitHub + Community)
+  if (supabase) {
+    try {
+      const safeLike = query.replace(/[%_,()]/g, " ").trim();
+      if (safeLike) {
+        const { data } = await supabase
+          .from("mcp_servers")
+          .select("server_name,title,description,version,repository_url,remotes,packages,source_id,is_latest")
+          .or(`server_name.ilike.%${safeLike}%,title.ilike.%${safeLike}%,description.ilike.%${safeLike}%`)
+          .order("is_latest", { ascending: false })
+          .order("updated_at", { ascending: false })
+          .limit(limit);
+        for (const row of data || []) {
+          const item = normalizeDbServer(row, appOrigin);
+          if (item.name && !merged.has(item.name)) merged.set(item.name, item);
+        }
+      }
+    } catch {}
+  }
+
+  // 2. Live Official MCP Registry merge/fallback so freshly published servers are always found
+  if (merged.size < limit) {
+    try {
+      const url = new URL(MCP_REGISTRY);
+      url.searchParams.set("search", query);
+      url.searchParams.set("limit", String(limit));
+      url.searchParams.set("version", "latest");
+      const payload = await fetchJson(url, "Official MCP Registry");
+      for (const entry of (payload.servers || [])) {
+        const item = normalizeRegistryServer(entry, appOrigin);
+        if (item.name && !merged.has(item.name)) merged.set(item.name, item);
+        if (merged.size >= limit) break;
+      }
+    } catch {}
+  }
+
+  // Prioritize remote-ready servers first
+  const servers = [...merged.values()]
+    .sort((a, b) => Number(b.remote_available) - Number(a.remote_available))
+    .slice(0, limit);
+
+  return {
+    source: "DRIVE Multi-Source MCP Marketplace",
     query,
     count: servers.length,
     servers,
     connect_fallback_url: buildConnectUrl(appOrigin, { query })
   };
 }
-async function getMcpServer(serverName, appOrigin) {
+async function getMcpServer(serverName, appOrigin, supabase = null) {
+  if (supabase) {
+    try {
+      const { data } = await supabase
+        .from("mcp_servers")
+        .select("server_name,title,description,version,repository_url,remotes,packages,source_id")
+        .eq("server_name", serverName)
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data) return { found: true, server: normalizeDbServer(data, appOrigin) };
+    } catch {}
+  }
   const url = new URL(MCP_REGISTRY);
   url.searchParams.set("search", serverName);
   url.searchParams.set("limit", "100");
@@ -166,43 +233,84 @@ async function getMcpServer(serverName, appOrigin) {
       found: false,
       server_name: serverName,
       connect_url: buildConnectUrl(appOrigin, { query: serverName }),
-      message: "No exact server name match was found in the official registry. Open connect_url in DRIVE to search or add a custom remote MCP endpoint."
+      message: "No exact server name match was found in the registry. Open connect_url in DRIVE to search or add a custom remote MCP endpoint."
     };
   }
   return { found: true, server: normalizeRegistryServer(match, appOrigin) };
 }
-async function searchSkills(query, limit, appOrigin) {
-  const url = new URL(SKILLS_REGISTRY);
-  url.searchParams.set("limit", String(Math.min(100, limit * 3)));
-  url.searchParams.set("offset", "0");
-  url.searchParams.set("sort", "stars");
-  url.searchParams.set("q", query);
-  const payload = await fetchJson(url, "Skills Directory");
-  const source = payload.skills || payload.data || [];
+async function searchSkills(query, limit, appOrigin, supabase = null) {
   const seen = new Set();
   const skills = [];
-  for (const item of source) {
-    const repository = item.repository || "";
-    const slug = item.slug || "";
-    const id = `${repository}/${slug}`;
-    if (!repository || !slug || !item.name || seen.has(id)) continue;
-    seen.add(id);
-    skills.push({
-      name: item.name,
-      slug,
-      category: item.category || "other",
-      description: item.description || "",
-      author: item.author || null,
-      stars: Number(item.stars || 0),
-      verified: Boolean(item.verified),
-      tags: Array.isArray(item.tags) ? item.tags.slice(0, 12) : [],
-      source: `https://github.com/${repository}`,
-      install_url: buildSkillUrl(appOrigin, slug || item.name)
-    });
-    if (skills.length >= limit) break;
+
+  // 1. Fast multi-source lookup from Supabase skill_catalog
+  if (supabase) {
+    try {
+      const safeLike = query.replace(/[%_,()]/g, " ").trim();
+      if (safeLike) {
+        const { data } = await supabase
+          .from("skill_catalog")
+          .select("id,name,slug,category,description,author,stars,verified,tags,repository,source_url,source_id")
+          .or(`name.ilike.%${safeLike}%,slug.ilike.%${safeLike}%,description.ilike.%${safeLike}%,category.ilike.%${safeLike}%`)
+          .order("verified", { ascending: false })
+          .order("stars", { ascending: false })
+          .limit(limit);
+        for (const item of data || []) {
+          if (!item?.id || seen.has(item.id)) continue;
+          seen.add(item.id);
+          skills.push({
+            name: item.name,
+            slug: item.slug,
+            category: item.category || "other",
+            description: item.description || "",
+            author: item.author || null,
+            stars: Number(item.stars || 0),
+            verified: Boolean(item.verified),
+            tags: Array.isArray(item.tags) ? item.tags.slice(0, 12) : [],
+            source: item.source_url || `https://github.com/${item.repository}`,
+            catalog_source: item.source_id || "drive-index",
+            install_url: buildSkillUrl(appOrigin, item.slug || item.name)
+          });
+        }
+      }
+    } catch {}
   }
+
+  // 2. Live Skills Directory merge/fallback
+  if (skills.length < limit) {
+    try {
+      const url = new URL(SKILLS_REGISTRY);
+      url.searchParams.set("limit", String(Math.min(100, limit * 3)));
+      url.searchParams.set("offset", "0");
+      url.searchParams.set("sort", "stars");
+      url.searchParams.set("q", query);
+      const payload = await fetchJson(url, "Skills Directory");
+      const source = payload.skills || payload.data || [];
+      for (const item of source) {
+        const repository = item.repository || "";
+        const slug = item.slug || "";
+        const id = `${repository}/${slug}`;
+        if (!repository || !slug || !item.name || seen.has(id)) continue;
+        seen.add(id);
+        skills.push({
+          name: item.name,
+          slug,
+          category: item.category || "other",
+          description: item.description || "",
+          author: item.author || null,
+          stars: Number(item.stars || 0),
+          verified: Boolean(item.verified),
+          tags: Array.isArray(item.tags) ? item.tags.slice(0, 12) : [],
+          source: `https://github.com/${repository}`,
+          catalog_source: "skillsdirectory",
+          install_url: buildSkillUrl(appOrigin, slug || item.name)
+        });
+        if (skills.length >= limit) break;
+      }
+    } catch {}
+  }
+
   return {
-    source: "Skills Directory public registry",
+    source: "DRIVE Multi-Source Skills Marketplace",
     query,
     count: skills.length,
     skills,
@@ -288,7 +396,7 @@ async function getConnectUrl(supabase, userId, args, appOrigin) {
   let candidates = [];
   if (lookupTerm) {
     try {
-      const search = await searchMcpServers(lookupTerm, 5, appOrigin);
+      const search = await searchMcpServers(lookupTerm, 5, appOrigin, supabase);
       candidates = search.servers;
       matchedServer = candidates.find((s) => s.name?.toLowerCase() === needle) || candidates[0] || null;
     } catch {
@@ -317,7 +425,7 @@ async function getConnectUrl(supabase, userId, args, appOrigin) {
 }
 async function discoverConnectionTools(connection) {
   if (!connection.endpoint || connection.authType !== "none" || !await publicHttps(connection.endpoint)) return [];
-  const client = new Client({ name: "drive-mcp-gateway", version: "1.2.0" });
+  const client = new Client({ name: "drive-mcp-gateway", version: "1.3.0" });
   let transport;
   try {
     transport = new StreamableHTTPClientTransport(new URL(connection.endpoint), { requestInit: { signal: AbortSignal.timeout(10000) } });
@@ -373,17 +481,17 @@ async function buildTools(supabase, userId, appOrigin) {
     },
     {
       name: "drive_search_mcp_servers",
-      description: "Search the public DRIVE MCP marketplace backed by the Official MCP Registry. Each result includes a direct connect_url to connect it in DRIVE.",
+      description: "Search the multi-source DRIVE MCP marketplace (Official Registry, Glama, GitHub, and community index). Each result includes a direct connect_url to connect it in DRIVE.",
       inputSchema: { type: "object", properties: { query: { type: "string" }, limit: { type: "integer", minimum: 1, maximum: 30 } }, required: ["query"], additionalProperties: false }
     },
     {
       name: "drive_get_mcp_server",
-      description: "Look up a public MCP server by exact registry name and get its direct DRIVE connect_url.",
+      description: "Look up an MCP server by exact registry name and get its direct DRIVE connect_url.",
       inputSchema: { type: "object", properties: { server_name: { type: "string" } }, required: ["server_name"], additionalProperties: false }
     },
     {
       name: "drive_search_skills",
-      description: "Search the public DRIVE Skills marketplace. Returns matching Skills with direct install_url links to open in DRIVE.",
+      description: "Search the multi-source DRIVE Skills marketplace (Skills Directory + curated GitHub SKILL.md index). Returns matching Skills with direct install_url links to open in DRIVE.",
       inputSchema: { type: "object", properties: { query: { type: "string" }, limit: { type: "integer", minimum: 1, maximum: 30 } }, required: ["query"], additionalProperties: false }
     }
   ];
@@ -397,7 +505,7 @@ async function callUpstreamTool(supabase, userId, encodedName, args, appOrigin) 
   if (!connection || !connection.endpoint || connection.authType !== "none" || !await publicHttps(connection.endpoint)) {
     throw new Error("MCP connection is inactive or requires authentication that has not been configured.");
   }
-  const client = new Client({ name: "drive-mcp-gateway", version: "1.2.0" });
+  const client = new Client({ name: "drive-mcp-gateway", version: "1.3.0" });
   let transport;
   try {
     transport = new StreamableHTTPClientTransport(new URL(connection.endpoint), { requestInit: { signal: AbortSignal.timeout(20000) } });
@@ -441,17 +549,17 @@ async function callTool(name, args, context) {
   if (name === "drive_search_mcp_servers") {
     const query = typeof args.query === "string" ? args.query.trim().slice(0, 100) : "";
     if (!query) throw new Error("query is required.");
-    return searchMcpServers(query, clampLimit(args.limit), context.appOrigin);
+    return searchMcpServers(query, clampLimit(args.limit), context.appOrigin, context.supabase);
   }
   if (name === "drive_get_mcp_server") {
     const serverName = typeof args.server_name === "string" ? args.server_name.trim().slice(0, 200) : "";
     if (!serverName) throw new Error("server_name is required.");
-    return getMcpServer(serverName, context.appOrigin);
+    return getMcpServer(serverName, context.appOrigin, context.supabase);
   }
   if (name === "drive_search_skills") {
     const query = typeof args.query === "string" ? args.query.trim().slice(0, 100) : "";
     if (!query) throw new Error("query is required.");
-    return searchSkills(query, clampLimit(args.limit), context.appOrigin);
+    return searchSkills(query, clampLimit(args.limit), context.appOrigin, context.supabase);
   }
   throw new Error(`Unknown tool: ${name}`);
 }
@@ -471,7 +579,7 @@ async function handleMessage(message, context) {
         capabilities: { tools: { listChanged: true } },
         serverInfo: SERVER_INFO,
         instructions: [
-          "DRIVE MCP is this user's personal MCP Gateway, MCP Marketplace, and Skills Hub.",
+          "DRIVE MCP is this user's personal MCP Gateway, Multi-Source MCP Marketplace, and Skills Hub.",
           "1. Always check drive_list_connected_mcps and drive_list_active_skills to inspect the user's installed MCPs and enabled Skills.",
           "2. When a Skill matches the user's request, call drive_get_active_skill to load its full instructions.",
           "3. When the user needs a new MCP or asks to connect one (for example: 'hubungkan mcp dengan figcraft'), call drive_get_connect_url (or drive_search_mcp_servers) and ALWAYS send the returned clickable DRIVE connect_url directly to the user so clicking it opens the DRIVE gateway to connect that MCP.",

@@ -75,7 +75,6 @@ export async function POST(request) {
   if (!await isPublicHttpsUrl(endpointUrl)) {
     return response({ error: "Use a public HTTPS endpoint. Private, local and unresolved hosts are not allowed." }, 400);
   }
-  if (authType !== "none") return response({ error: "Credential setup is not enabled yet. Add the endpoint without credentials first." }, 400);
 
   const { data, error } = await supabase.from("user_custom_mcp_servers").insert({
     user_id: user.id,
@@ -83,20 +82,17 @@ export async function POST(request) {
     endpoint_url: endpointUrl,
     transport: "streamable_http",
     auth_type: authType,
-    status: "pending",
+    status: "verified",
   }).select("id,display_name,endpoint_url,transport,status,created_at").single();
   if (error) return response({ error: "Could not save custom server", detail: error.message }, 400);
 
-  // Keep the custom server and the user's My MCPs list in sync.
-  // The previous flow only inserted user_custom_mcp_servers, while My MCPs
-  // reads user_mcp_connections, so a successful save appeared to disappear.
   const { data: connection, error: connectionError } = await supabase
     .from("user_mcp_connections")
     .upsert({
       user_id: user.id,
       registry_server_id: null,
       custom_server_id: data.id,
-      enabled: false,
+      enabled: true,
     }, { onConflict: "user_id,custom_server_id" })
     .select("id,registry_server_id,custom_server_id,enabled,created_at,updated_at")
     .single();

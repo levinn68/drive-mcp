@@ -21,7 +21,7 @@ const SKILLS_REGISTRY = "https://www.skillsdirectory.com/api/registry";
 const SKILLS_SH_SEARCH = "https://skills.sh/api/search";
 const DEFAULT_APP_URL = "https://drive-mcp-five.vercel.app";
 const MAX_CONNECTIONS = 30;
-const MAX_TOOLS_PER_CONNECTION = 100;
+const MAX_TOOLS_PER_CONNECTION = 150;
 
 const CURATED_REMOTE_MCPS = [
   {
@@ -143,6 +143,66 @@ const CURATED_REMOTE_MCPS = [
     token_portal_url: "https://www.figma.com/developers/api#access-tokens",
   },
   {
+    name: "com.canva/mcp",
+    title: "Canva Official MCP",
+    version: "official",
+    description: "Official Canva remote MCP server to create, edit, and export visual designs via OAuth.",
+    repository: { url: "https://mcp.canva.com/mcp" },
+    remotes: [{ type: "streamable_http", url: "https://mcp.canva.com/mcp", authentication: { required: true, type: "oauth2" } }],
+    aliases: ["canva", "canva mcp"],
+    auth_mode: "oauth2",
+  },
+  {
+    name: "com.make/mcp",
+    title: "Make.com Official MCP",
+    version: "official",
+    description: "Official Make.com remote MCP server to trigger and orchestrate automated multi-app scenarios.",
+    repository: { url: "https://mcp.make.com/v2" },
+    remotes: [{ type: "streamable_http", url: "https://mcp.make.com/v2", authentication: { required: true, type: "oauth2" } }],
+    aliases: ["make", "make.com", "make mcp"],
+    auth_mode: "oauth2",
+  },
+  {
+    name: "dev.firecrawl/mcp",
+    title: "Firecrawl MCP Server",
+    version: "official",
+    description: "Turn websites into clean Markdown, structured JSON, or full-site crawls for AI agents.",
+    repository: { url: "https://github.com/mendableai/firecrawl-mcp-server" },
+    remotes: [{ type: "streamable_http", url: "https://mcp.firecrawl.dev/v2/mcp" }],
+    aliases: ["firecrawl", "firecrawl mcp"],
+    auth_mode: "none",
+  },
+  {
+    name: "com.tavily/mcp",
+    title: "Tavily Search MCP",
+    version: "official",
+    description: "AI-tuned real-time web search and content extraction remote MCP server.",
+    repository: { url: "https://github.com/tavily-ai/tavily-mcp" },
+    remotes: [{ type: "streamable_http", url: "https://mcp.tavily.com/mcp/" }],
+    aliases: ["tavily", "tavily mcp"],
+    auth_mode: "none",
+  },
+  {
+    name: "com.slack/mcp",
+    title: "Slack Official MCP",
+    version: "official",
+    description: "Official Slack remote MCP server to search messages and channels, send messages, and create canvases.",
+    repository: { url: "https://mcp.slack.com/mcp" },
+    remotes: [{ type: "streamable_http", url: "https://mcp.slack.com/mcp", authentication: { required: true, type: "oauth2" } }],
+    aliases: ["slack", "slack mcp"],
+    auth_mode: "oauth2",
+  },
+  {
+    name: "com.miro/mcp",
+    title: "Miro Official MCP",
+    version: "official",
+    description: "Summarize Miro boards, build diagrams, and act on comments.",
+    repository: { url: "https://miro.com" },
+    remotes: [{ type: "streamable_http", url: "https://mcp.miro.com/mcp", authentication: { required: true, type: "oauth2" } }],
+    aliases: ["miro", "miro mcp"],
+    auth_mode: "oauth2",
+  },
+  {
     name: "tech.neon/mcp",
     title: "Neon Postgres MCP",
     version: "official",
@@ -159,7 +219,7 @@ const CURATED_REMOTE_MCPS = [
     version: "official",
     description: "Official Atlassian remote MCP server for Jira tickets, sprints, and Confluence pages.",
     repository: { url: "https://support.atlassian.com/rovo/docs/setting-up-ides/" },
-    remotes: [{ type: "streamable_http", url: "https://mcp.atlassian.com/v1/sse", authentication: { required: true, type: "oauth2" } }],
+    remotes: [{ type: "streamable_http", url: "https://mcp.atlassian.com/v2/mcp", authentication: { required: true, type: "oauth2" } }],
     aliases: ["atlassian", "jira", "confluence"],
     auth_mode: "oauth2",
   },
@@ -177,9 +237,10 @@ const CURATED_REMOTE_MCPS = [
     name: "com.asana/mcp",
     title: "Asana Official MCP",
     version: "official",
+    category: "productivity",
     description: "Official Asana remote MCP server for tasks, projects, timelines, and team collaboration.",
     repository: { url: "https://developers.asana.com/docs/mcp-server" },
-    remotes: [{ type: "streamable_http", url: "https://mcp.asana.com/sse", authentication: { required: true, type: "oauth2" } }],
+    remotes: [{ type: "streamable_http", url: "https://mcp.asana.com/v2/mcp", authentication: { required: true, type: "oauth2" } }],
     aliases: ["asana", "asana mcp"],
     auth_mode: "oauth2",
   },
@@ -1095,6 +1156,7 @@ async function getUserConnections(supabase, user, { enabledOnly = false, appOrig
     .map((row) => {
       const server = row.registry_server_id ? rmap.get(row.registry_server_id) : cmap.get(row.custom_server_id);
       if (!server) return null;
+      const hasSavedToken = Boolean(getUserMcpToken(user, row.id));
       let endpoint = "";
       let authType = "none";
       let status = "active";
@@ -1105,12 +1167,11 @@ async function getUserConnections(supabase, user, { enabledOnly = false, appOrig
         status = endpoint ? "ready" : "no_remote_endpoint";
       } else {
         endpoint = server.endpoint_url || "";
-        authType = server.auth_type || "none";
-        status = server.status || "pending";
-        if (server.status !== "verified") endpoint = "";
+        authType = server.auth_type || (hasSavedToken ? "bearer" : "none");
+        status = hasSavedToken && (server.status === "pending" || !server.status) ? "verified" : server.status || "pending";
+        if (!["verified", "ready", "active"].includes(status) && !hasSavedToken) endpoint = "";
       }
       const name = server.server_name || server.display_name || "MCP server";
-      const hasSavedToken = Boolean(getUserMcpToken(user, row.id));
       return {
         id: row.id,
         kind: row.registry_server_id ? "registry" : "custom",
@@ -1182,7 +1243,6 @@ async function connectMcpDirectly(context, args) {
     throw new Error("Provide query, server_name, or endpoint_url to connect an MCP server.");
   }
 
-  // 1. Check if already connected
   const existingConnections = await getUserConnections(supabase, user, { enabledOnly: false, appOrigin });
   const needle = lookupTerm.toLowerCase();
   const existingConn = existingConnections.find((c) => {
@@ -1237,7 +1297,6 @@ async function connectMcpDirectly(context, args) {
     };
   }
 
-  // 2. Resolve target server
   let resolvedServer = null;
   let curatedHint = null;
 
@@ -1686,7 +1745,7 @@ async function buildTools(supabase, user, appOrigin) {
     {
       name: "drive_get_active_skill",
       description:
-        "Read the complete SKILL.md instructions of one enabled Agent Skill. Use this when a Skill is relevant to the user's task.",
+        "Read the complete SKILL.md instructions of one enabled Agent Skill. Use this when a Skill matches the user's task.",
       inputSchema: {
         type: "object",
         properties: { skill_id: { type: "string", description: "Skill ID returned by drive_list_active_skills." } },

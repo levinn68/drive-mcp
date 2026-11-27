@@ -202,6 +202,54 @@ const VERIFIED_POPULAR_MCPS = [
   },
   {
     verifiedPopular: true,
+    category: "design",
+    authType: "pat",
+    stars: 12000,
+    sourceLabel: "Official",
+    server: {
+      name: "com.forgegui/forgegui-mcp",
+      title: "ForgeGUI MCP",
+      version: "official",
+      description: "AI game GUI, 3D model, icon, and thumbnail generator MCP for Roblox, Unity, and Unreal.",
+      repository: { url: "https://forgegui.com/" },
+      remotes: [],
+      packages: [{ registryType: "github", identifier: "elwinhe/forgegui-plugins" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "design",
+    authType: "none",
+    stars: 11200,
+    sourceLabel: "Official",
+    server: {
+      name: "com.tylertech/forge-mcp",
+      title: "Tyler Forge UI MCP",
+      version: "official",
+      description: "Official Tyler Forge web components & design system MCP server with /forge-design skill.",
+      repository: { url: "https://github.com/tyler-technologies-oss/forge-mcp" },
+      remotes: [],
+      packages: [{ registryType: "npm", identifier: "@tylertech/forge-mcp" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "design",
+    authType: "none",
+    stars: 10600,
+    sourceLabel: "Official",
+    server: {
+      name: "com.forgespace/ui-mcp",
+      title: "Forge Space UI MCP",
+      version: "official",
+      description: "Forge Space UI generation & context MCP server for structured frontend component workflows.",
+      repository: { url: "https://github.com/Forge-Space/core" },
+      remotes: [],
+      packages: [{ registryType: "github", identifier: "Forge-Space/core" }],
+    },
+  },
+  {
+    verifiedPopular: true,
     category: "productivity",
     authType: "oauth",
     stars: 11800,
@@ -711,7 +759,7 @@ const MCP_CATEGORY_RULES = [
   { id: "browser", rx: /\b(playwright|puppeteer|selenium|browser|chrome|crawl|firecrawl|apify|scrape|scraping|web ?fetch|headless|browserbase|stagehand)\b/i },
   { id: "finance", rx: /\b(stripe|paypal|plaid|finance|payment|invoice|billing|stock|trading|market|sec\b|edgar|bank|accounting|yahoo finance|alphavantage|quickbooks|xero|forex|portfolio)\b/i },
   { id: "web3", rx: /\b(crypto|blockchain|ethereum|solana|web3|wallet|defi|nft|token|onchain|evm|bitcoin|binance|coinbase|uniswap|polygon|arbitrum|sui|aptos)\b/i },
-  { id: "design", rx: /\b(figma|figcraft|vectorcraft|photocraft|texturecraft|materialcraft|canva|miro|design|webflow|storybook|ui|ux|css|tailwind|blender|3d|svg|font|color|sketch|framer|penpot|excalidraw|mermaid)\b/i },
+  { id: "design", rx: /\b(figma|figcraft|forgegui|forge-mcp|vectorcraft|photocraft|texturecraft|materialcraft|canva|miro|design|webflow|storybook|ui|ux|css|tailwind|blender|3d|svg|font|color|sketch|framer|penpot|excalidraw|mermaid)\b/i },
   { id: "media", rx: /\b(video|audio|music|effectcraft|soundcraft|youtube|spotify|ffmpeg|image|photo|podcast|remotion|elevenlabs|tts|speech|whisper|midjourney|flux|comfyui|stable diffusion|plex|vimeo)\b/i },
   { id: "ecommerce", rx: /\b(shopify|square|woocommerce|ecommerce|e-commerce|store|cart|product catalog|inventory|order|amazon|ebay|etsy|magento|bigcommerce)\b/i },
   { id: "crm", rx: /\b(hubspot|salesforce|crm|pipedrive|zoho|lead|sales|marketing|mailchimp|klaviyo|apollo|attio|zendesk|freshdesk|ads|seo|semrush|ahrefs)\b/i },
@@ -756,7 +804,7 @@ async function fetchOfficialRegistry(apiSearch, maxPages = 85) {
 
     try {
       const response = await fetch(`${REGISTRY}/v0.1/servers?${params}`, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/5.0" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/5.1" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(4500),
       });
@@ -781,7 +829,7 @@ const GLAMA_HIGH_SIGNAL_QUERIES = [
   "playwright", "puppeteer", "browser", "scraper", "firecrawl", "selenium", "crawl", "chrome", "fetch", "http",
   "stripe", "paypal", "finance", "stock", "trading", "accounting", "invoice", "bank", "plaid", "quickbooks", "forex",
   "crypto", "ethereum", "solana", "binance", "blockchain", "defi", "wallet", "bitcoin", "polygon", "web3",
-  "figma", "blender", "unity", "design", "svg", "3d", "canva", "miro", "craft", "webflow", "mermaid", "excalidraw", "diagram",
+  "figma", "blender", "unity", "design", "svg", "3d", "canva", "miro", "craft", "forge", "webflow", "mermaid", "excalidraw", "diagram",
   "youtube", "spotify", "video", "audio", "ffmpeg", "image", "whisper", "tts", "music", "podcast", "ocr",
   "shopify", "woocommerce", "amazon", "ecommerce", "inventory", "square",
   "hubspot", "salesforce", "zendesk", "crm", "seo", "marketing", "ads", "analytics", "mailchimp",
@@ -808,7 +856,7 @@ async function fetchGlamaDirectory(apiSearch) {
       if (cursor) params.set("after", cursor);
       try {
         const res = await fetch(`${GLAMA_API}?${params}`, {
-          headers: { accept: "application/json", "user-agent": "DRIVE-MCP/5.0" },
+          headers: { accept: "application/json", "user-agent": "DRIVE-MCP/5.1" },
           next: { revalidate: 3600 },
           signal: AbortSignal.timeout(4500),
         });
@@ -835,7 +883,7 @@ async function fetchGlamaDirectory(apiSearch) {
             batchTerms.map(async (term) => {
               const params = new URLSearchParams({ first: "100", query: term });
               const res = await fetch(`${GLAMA_API}?${params}`, {
-                headers: { accept: "application/json", "user-agent": "DRIVE-MCP/5.0" },
+                headers: { accept: "application/json", "user-agent": "DRIVE-MCP/5.1" },
                 next: { revalidate: 3600 },
                 signal: AbortSignal.timeout(4500),
               });
@@ -884,7 +932,7 @@ const NPM_BALANCED_MCP_QUERIES = [
   "mcp aws", "mcp azure", "mcp gcp", "mcp docker", "mcp kubernetes", "mcp cloudflare", "mcp vercel", "mcp terraform",
   "mcp playwright", "mcp puppeteer", "mcp browser", "mcp firecrawl", "mcp scraper", "mcp fetch",
   "mcp stripe", "mcp paypal", "mcp finance", "mcp stock", "mcp crypto", "mcp solana", "mcp ethereum", "mcp web3",
-  "mcp figma", "mcp design", "mcp craft", "mcp video", "mcp youtube", "mcp image", "mcp audio", "mcp ffmpeg",
+  "mcp figma", "mcp design", "mcp craft", "mcp forge", "mcp video", "mcp youtube", "mcp image", "mcp audio", "mcp ffmpeg",
   "mcp shopify", "mcp hubspot", "mcp salesforce", "mcp crm", "mcp maps", "mcp weather", "mcp travel",
   "mcp security", "mcp auth", "mcp analytics", "mcp datadog", "mcp grafana", "mcp sentry",
   "mcp slack", "mcp discord", "mcp telegram", "mcp whatsapp", "mcp gmail", "mcp email", "mcp twitter",
@@ -912,7 +960,7 @@ async function fetchNpmMcpServers(apiSearch) {
         url.searchParams.set("size", "250");
         url.searchParams.set("from", String(from));
         const res = await fetch(url, {
-          headers: { accept: "application/json", "user-agent": "DRIVE-MCP/5.0" },
+          headers: { accept: "application/json", "user-agent": "DRIVE-MCP/5.1" },
           next: { revalidate: 3600 },
           signal: AbortSignal.timeout(5000),
         });
@@ -961,7 +1009,7 @@ async function fetchPulseMcpServers(apiSearch) {
       url.searchParams.set("offset", String(page * 100));
       if (apiSearch) url.searchParams.set("query", apiSearch);
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/5.0" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/5.1" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(5500),
       });
@@ -1019,7 +1067,7 @@ async function fetchDockerHubMcps(apiSearch) {
       url.searchParams.set("page_size", "100");
       url.searchParams.set("page", String(page));
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/5.0" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/5.1" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(5500),
       });
@@ -1078,7 +1126,7 @@ async function fetchCratesIoMcps(apiSearch) {
       url.searchParams.set("page", String(page));
       url.searchParams.set("sort", "downloads");
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/5.0 (https://drive-mcp-five.vercel.app)" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/5.1 (https://drive-mcp-five.vercel.app)" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(5500),
       });
@@ -1120,7 +1168,7 @@ async function fetchCratesIoMcps(apiSearch) {
 async function fetchGithubPopularMcps(apiSearch) {
   const headers = {
     accept: "application/vnd.github+json",
-    "user-agent": "DRIVE-MCP/5.0",
+    "user-agent": "DRIVE-MCP/5.1",
   };
   if (process.env.GITHUB_TOKEN) {
     headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`;

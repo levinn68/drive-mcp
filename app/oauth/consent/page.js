@@ -164,9 +164,15 @@ export default function OAuthConsentPage() {
     setError("");
     setNotice("");
     try {
+      // Pass skipBrowserRedirect: true so Supabase SDK does not hijack navigation back to the OAuth client
+      // before we redirect the user to the DRIVE Dashboard when openDashboardFirst is true.
       const { data, error: decisionError } = allow
-        ? await supabase.auth.oauth.approveAuthorization(authorizationId)
-        : await supabase.auth.oauth.denyAuthorization(authorizationId);
+        ? await supabase.auth.oauth.approveAuthorization(authorizationId, {
+            skipBrowserRedirect: true,
+          })
+        : await supabase.auth.oauth.denyAuthorization(authorizationId, {
+            skipBrowserRedirect: true,
+          });
       if (decisionError) throw decisionError;
       const redirectUrl = data?.redirect_url;
       if (!redirectUrl) throw new Error("Supabase did not return the OAuth callback URL.");

@@ -14,7 +14,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const SERVER_INFO = { name: "DRIVE MCP", version: "2.3.0" };
+const SERVER_INFO = { name: "DRIVE MCP", version: "2.3.1" };
 const PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26"];
 const MCP_REGISTRY = "https://registry.modelcontextprotocol.io/v0.1/servers";
 const SKILLS_REGISTRY = "https://www.skillsdirectory.com/api/registry";
@@ -329,7 +329,7 @@ const PROJECT_STACK_RULES = [
   },
   {
     id: "design-ui-figma",
-    rx: /\b(figma|figcraft|canva|miro|ui\/ux|design system|wireframe|prototype)\b/i,
+    rx: /\b(figma|figcraft|forgegui|canva|miro|ui\/ux|design system|wireframe|prototype)\b/i,
     skills: [
       { repository: "vercel-labs/agent-skills", slug: "web-design-guidelines", name: "Web Design Guidelines" },
       { repository: "nextlevelbuilder/ui-ux-pro-max-skill", slug: "ui-ux-pro-max", name: "UI UX Pro Max" },
@@ -1300,8 +1300,8 @@ async function getUserConnections(supabase, user, { enabledOnly = false, appOrig
       } else {
         endpoint = server.endpoint_url || "";
         authType = server.auth_type || (hasSavedToken ? "bearer" : "none");
-        status = hasSavedToken && (server.status === "pending" || !server.status) ? "verified" : server.status || "pending";
-        if (!["verified", "ready", "active"].includes(status) && !hasSavedToken) endpoint = "";
+        status = server.status === "blocked" ? "blocked" : endpoint ? "verified" : "pending";
+        if (status === "blocked") endpoint = "";
       }
       const name = server.server_name || server.display_name || "MCP server";
       return {
@@ -1344,7 +1344,7 @@ async function probeRemoteMcp(endpointUrl, bearerToken = "") {
         params: {
           protocolVersion: "2025-03-26",
           capabilities: {},
-          clientInfo: { name: "DRIVE MCP", version: "2.3.0" },
+          clientInfo: { name: "DRIVE MCP", version: "2.3.1" },
         },
       }),
       signal: AbortSignal.timeout(6000),
@@ -1882,7 +1882,7 @@ async function discoverConnectionTools(connection, user) {
   const upstreamToken = getUserMcpToken(user, connection.id);
   if (connection.authType !== "none" && !upstreamToken) return [];
 
-  const client = new Client({ name: "drive-mcp-gateway", version: "2.3.0" });
+  const client = new Client({ name: "drive-mcp-gateway", version: "2.3.1" });
   let transport;
   try {
     const headers = upstreamToken ? { Authorization: `Bearer ${upstreamToken}` } : undefined;
@@ -2269,7 +2269,7 @@ async function callUpstreamTool(supabase, user, encodedName, args, appOrigin) {
     );
   }
 
-  const client = new Client({ name: "drive-mcp-gateway", version: "2.3.0" });
+  const client = new Client({ name: "drive-mcp-gateway", version: "2.3.1" });
   let transport;
   try {
     const headers = upstreamToken ? { Authorization: `Bearer ${upstreamToken}` } : undefined;

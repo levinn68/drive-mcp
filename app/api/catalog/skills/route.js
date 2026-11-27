@@ -11,8 +11,8 @@ const HUGGINGFACE_DATASETS_API = "https://huggingface.co/api/datasets";
 const CRATES_IO_API = "https://crates.io/api/v1/crates";
 const DOCKER_HUB_API = "https://hub.docker.com/v2/search/repositories/";
 
-const TARGET_SKILLS_COUNT = 22500;
-const PER_CATEGORY_PASS1_CAP = 2500;
+const TARGET_SKILLS_COUNT = 25000;
+const PER_CATEGORY_PASS1_CAP = 1600;
 
 const JUNK_SKILL_RX = /^(test|demo|hello[-_]?world|example|sample|foo|bar|tmp|temp)[-_0-9]*$/i;
 
@@ -154,7 +154,7 @@ const CURATED_POPULAR_SKILLS = [
     name: "Cloudflare Workers Best Practices",
     slug: "workers-best-practices",
     source: "cloudflare/skills",
-    category: "devops",
+    category: "cloud",
     description: "Official Cloudflare Workers, Durable Objects, R2, D1, and edge caching patterns.",
     stars: 9800,
     installs: 46000,
@@ -166,7 +166,7 @@ const CURATED_POPULAR_SKILLS = [
     name: "Stripe Payments Best Practices",
     slug: "stripe-best-practices",
     source: "stripe/ai",
-    category: "backend",
+    category: "finance",
     description: "Official Stripe Checkout, webhooks, idempotency, subscriptions, and billing security.",
     stars: 12100,
     installs: 61000,
@@ -197,6 +197,42 @@ const CURATED_POPULAR_SKILLS = [
     verified: true,
     sourceLabel: "Official",
   },
+  {
+    id: "mendableai/skills/firecrawl-scrape",
+    name: "Firecrawl Web Research",
+    slug: "firecrawl-scrape",
+    source: "mendableai/skills",
+    category: "search",
+    description: "Extract clean Markdown, structured JSON, and deep site crawls for research workflows.",
+    stars: 14100,
+    installs: 63000,
+    verified: true,
+    sourceLabel: "Official",
+  },
+  {
+    id: "getsentry/skills/sentry-triage",
+    name: "Sentry Error Triage",
+    slug: "sentry-triage",
+    source: "getsentry/skills",
+    category: "observability",
+    description: "Diagnose production stack traces, trace bottlenecks, and automate issue triage.",
+    stars: 12400,
+    installs: 51000,
+    verified: true,
+    sourceLabel: "Official",
+  },
+  {
+    id: "shopify/skills/shopify-hydrogen",
+    name: "Shopify Storefront & Hydrogen",
+    slug: "shopify-hydrogen",
+    source: "shopify/skills",
+    category: "ecommerce",
+    description: "Build fast Shopify storefronts, checkout extensions, and Admin GraphQL integrations.",
+    stars: 11800,
+    installs: 48000,
+    verified: true,
+    sourceLabel: "Official",
+  },
 ];
 
 const SKILLS_SH_TOPICS = [
@@ -204,18 +240,23 @@ const SKILLS_SH_TOPICS = [
   "node", "express", "fastify", "nestjs", "fastapi", "django", "flask", "rails", "laravel", "spring", "golang", "rust", "graphql", "trpc", "grpc", "openapi", "stripe", "webhook", "auth", "oauth",
   "ai", "agent", "mcp", "llm", "prompt", "rag", "vector", "embedding", "eval", "langchain", "llamaindex", "crewai", "autogen", "openai", "claude", "gemini", "ollama", "vllm", "huggingface", "pydantic",
   "sql", "postgres", "mysql", "sqlite", "supabase", "prisma", "drizzle", "mongodb", "redis", "neon", "clickhouse", "firebase", "duckdb", "neo4j", "qdrant", "pinecone", "convex", "turso",
-  "docker", "kubernetes", "helm", "aws", "lambda", "azure", "gcp", "cloudflare", "vercel", "netlify", "terraform", "pulumi", "ansible", "linux", "nginx", "ci", "deploy", "grafana", "prometheus", "sentry", "datadog",
+  "docker", "kubernetes", "helm", "aws", "lambda", "azure", "gcp", "cloudflare", "vercel", "netlify", "terraform", "pulumi", "ansible", "linux", "nginx", "ci", "deploy",
+  "grafana", "prometheus", "sentry", "datadog", "opentelemetry", "posthog", "logging", "tracing",
   "security", "audit", "owasp", "pentest", "encryption", "compliance", "vulnerability", "snyk", "trivy", "semgrep", "vault", "keycloak", "clerk", "auth0",
   "test", "playwright", "cypress", "puppeteer", "selenium", "vitest", "jest", "pytest", "debug", "tdd", "qa", "benchmark", "k6", "storybook",
-  "design", "ui", "ux", "figma", "accessibility", "typography", "svg", "framer", "webflow", "branding", "wireframe", "excalidraw", "mermaid", "diagram",
+  "design", "ui", "ux", "figma", "canva", "miro", "accessibility", "typography", "svg", "framer", "webflow", "branding", "wireframe", "excalidraw", "mermaid", "diagram",
   "video", "remotion", "animation", "3d", "three", "webgl", "blender", "audio", "image", "voice", "whisper", "ffmpeg", "game", "unity", "godot", "shader", "comfyui",
-  "data", "analytics", "pandas", "dbt", "snowflake", "bigquery", "airflow", "kafka", "chart", "dashboard", "excel", "csv", "posthog", "ml", "pytorch", "jupyter",
+  "data", "analytics", "pandas", "dbt", "snowflake", "bigquery", "airflow", "kafka", "chart", "dashboard", "excel", "csv", "ml", "pytorch", "jupyter",
   "mobile", "ios", "android", "flutter", "expo", "swift", "swiftui", "kotlin", "react-native", "capacitor", "tauri", "electron",
   "docs", "pdf", "docx", "pptx", "markdown", "mdx", "latex", "slides", "writing", "copywriting", "readme", "changelog", "research", "academic", "translation", "blog",
-  "seo", "marketing", "growth", "landing", "saas", "pricing", "onboarding", "newsletter", "ads", "hubspot", "salesforce", "ecommerce", "shopify", "pitch",
+  "seo", "marketing", "growth", "landing", "saas", "pricing", "onboarding", "newsletter", "ads", "hubspot", "salesforce", "pitch",
+  "ecommerce", "shopify", "woocommerce", "checkout", "storefront", "inventory",
+  "finance", "accounting", "invoice", "billing", "fintech", "paypal", "plaid",
   "web3", "solana", "ethereum", "solidity", "foundry", "hardhat", "defi", "wallet", "blockchain", "wagmi",
-  "workflow", "automation", "scrape", "browser", "cron", "queue", "cli", "n8n", "zapier", "telegram", "whatsapp", "twilio", "resend", "apify", "firecrawl",
-  "productivity", "notion", "linear", "jira", "confluence", "asana", "trello", "slack", "discord", "email", "gmail", "calendar", "obsidian", "airtable", "crm", "startup", "finance", "accounting", "interview",
+  "workflow", "automation", "cron", "queue", "cli", "n8n", "zapier", "make", "apify",
+  "search", "scrape", "browser", "exa", "tavily", "firecrawl", "perplexity", "crawler",
+  "comms", "slack", "discord", "telegram", "whatsapp", "twilio", "resend", "email", "gmail",
+  "productivity", "notion", "linear", "jira", "confluence", "asana", "trello", "calendar", "obsidian", "airtable", "crm", "startup", "interview",
   "openclaw", "clawhub", "humanize", "summarize", "daily-brief",
 ];
 
@@ -229,22 +270,28 @@ const AWESOME_README_URLS = [
 ];
 
 const CATEGORY_RULES = [
+  { id: "search", rx: /\b(exa|tavily|firecrawl|perplexity|scrape|scraping|crawler|web search|serper|searx)\b/i },
+  { id: "observability", rx: /\b(sentry|grafana|prometheus|datadog|opentelemetry|otel|posthog|telemetry|tracing|logging|metrics)\b/i },
+  { id: "cloud", rx: /\b(aws|gcp|azure|cloudflare|vercel|netlify|terraform|pulumi|ansible|edge|lambda|s3|r2|iac)\b/i },
+  { id: "finance", rx: /\b(stripe|paypal|invoice|billing|payment|fintech|accounting|quickbooks|xero|plaid|tax|finance)\b/i },
+  { id: "ecommerce", rx: /\b(shopify|woocommerce|magento|ecommerce|storefront|checkout|inventory|amazon)\b/i },
+  { id: "comms", rx: /\b(slack|discord|telegram|whatsapp|twilio|resend|sendgrid|email|gmail|intercom|zendesk)\b/i },
   { id: "frontend", rx: /\b(react|next\.?js|vue|nuxt|svelte|angular|tailwind|css|html|frontend|ui component|shadcn|vite|astro|radix|framer|remix|solidjs)\b/i },
   { id: "media", rx: /\b(remotion|video|audio|animation|motion|three\.?js|webgl|shader|3d|ffmpeg|podcast|image|canvas|music|suno|midjourney|stable diffusion|comfyui|game|unity|godot|blender|whisper|tts)\b/i },
   { id: "database", rx: /\b(sql|postgres|postgresql|mysql|sqlite|supabase|prisma|drizzle|mongo|mongodb|redis|clickhouse|database|schema|migration|neon|planetscale|firebase|duckdb|neo4j|qdrant|pinecone|turso|convex)\b/i },
-  { id: "devops", rx: /\b(docker|kubernetes|k8s|terraform|pulumi|aws|gcp|azure|vercel|cloudflare|ci\/cd|github actions|deploy|linux|nginx|helm|ansible|devops|infra|cloud|sentry|grafana|prometheus|datadog)\b/i },
+  { id: "devops", rx: /\b(docker|kubernetes|k8s|ci\/cd|github actions|deploy|linux|nginx|helm|devops|container)\b/i },
   { id: "security", rx: /\b(security|audit|owasp|pentest|vuln|cve|ssrf|xss|csrf|encrypt|secret|compliance|soc2|rbac|rls|hardening|cybersecurity|snyk|trivy|semgrep|vault|keycloak|clerk|auth0)\b/i },
   { id: "testing", rx: /\b(test|testing|playwright|cypress|puppeteer|selenium|jest|vitest|pytest|qa|e2e|unit test|debug|debugging|tdd|benchmark|lint|k6|storybook)\b/i },
-  { id: "design", rx: /\b(design|ux|figma|canva|typography|color|brand|logo|wireframe|prototype|accessibility|a11y|glass|layout|illustration|sketch|ppt|powerpoint|webflow|excalidraw|mermaid|svg)\b/i },
-  { id: "data", rx: /\b(data|analytics|pandas|numpy|dbt|spark|snowflake|bigquery|tableau|chart|visualization|etl|pipeline|ml|machine learning|pytorch|jupyter|excel|csv|posthog|airflow|kafka|dataset)\b/i },
+  { id: "design", rx: /\b(design|ux|figma|canva|miro|typography|color|brand|logo|wireframe|prototype|accessibility|a11y|glass|layout|illustration|sketch|ppt|powerpoint|webflow|excalidraw|mermaid|svg)\b/i },
+  { id: "data", rx: /\b(data|analytics|pandas|numpy|dbt|spark|snowflake|bigquery|tableau|chart|visualization|etl|pipeline|ml|machine learning|pytorch|jupyter|excel|csv|airflow|kafka|dataset)\b/i },
   { id: "mobile", rx: /\b(mobile|ios|android|swift|swiftui|kotlin|flutter|react native|expo|apk|xcode|capacitor|tauri|electron)\b/i },
   { id: "web3", rx: /\b(web3|blockchain|solana|ethereum|solidity|smart contract|defi|wallet|nft|crypto|foundry|hardhat|wagmi)\b/i },
-  { id: "marketing", rx: /\b(seo|marketing|growth|landing page|conversion|ads|social media|newsletter|email campaign|gtm|brand voice|sales|ecommerce|amazon|shopify|pitch|hubspot|salesforce)\b/i },
+  { id: "marketing", rx: /\b(seo|marketing|growth|landing page|conversion|ads|social media|newsletter|email campaign|gtm|brand voice|sales|pitch|hubspot|salesforce)\b/i },
   { id: "docs", rx: /\b(doc|docs|documentation|readme|markdown|mdx|writing|copywriting|blog|changelog|technical writing|pdf|latex|slides|pptx|docx|translation|academic|essay|summary|humaniz)\b/i },
-  { id: "automation", rx: /\b(automat|workflow|cron|scrape|scraping|crawler|browser|n8n|zapier|make\.com|slack bot|telegram|discord bot|cli|script|webhook|apify|firecrawl|twilio|resend|openclaw|clawhub)\b/i },
-  { id: "backend", rx: /\b(api|backend|node\.?js|express|fastify|nestjs|django|fastapi|flask|go|golang|rust|graphql|trpc|grpc|rest|stripe|payment|auth|oauth|jwt|microservice|php|laravel|rails|spring)\b/i },
+  { id: "automation", rx: /\b(automat|workflow|cron|browser|n8n|zapier|make\.com|cli|script|webhook|apify|openclaw|clawhub)\b/i },
+  { id: "backend", rx: /\b(api|backend|node\.?js|express|fastify|nestjs|django|fastapi|flask|go|golang|rust|graphql|trpc|grpc|rest|auth|oauth|jwt|microservice|php|laravel|rails|spring)\b/i },
   { id: "ai", rx: /\b(ai|llm|agent|mcp|prompt|rag|embedding|vector|openai|claude|gemini|anthropic|langchain|llamaindex|langgraph|crewai|autogen|eval|fine-?tun|ollama|vllm|huggingface)\b/i },
-  { id: "productivity", rx: /\b(productivity|notion|linear|jira|confluence|asana|trello|calendar|email|gmail|meeting|plan|planning|roadmap|project management|kanban|obsidian|airtable|career|interview|finance|accounting|education|tutor|brief)\b/i },
+  { id: "productivity", rx: /\b(productivity|notion|linear|jira|confluence|asana|trello|calendar|meeting|plan|planning|roadmap|project management|kanban|obsidian|airtable|career|interview|education|tutor|brief)\b/i },
 ];
 
 const LOBEHUB_CAT_MAP = {
@@ -292,9 +339,9 @@ function formatTitle(raw, fallback) {
   return base.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-// Non-GitHub Source 1: skills.sh search across 225+ balanced topics
+// Non-GitHub Source 1: skills.sh search across 240+ balanced topics
 async function fetchSkillsShSearch(q) {
-  const headers = { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.3" };
+  const headers = { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/5.0" };
   const queries = q ? [q] : SKILLS_SH_TOPICS;
   const rows = [];
   const deadline = Date.now() + 18000;
@@ -323,7 +370,7 @@ async function fetchSkillsShSearch(q) {
     for (const r of settled) {
       if (r.status === "fulfilled" && r.value.length) rows.push(...r.value);
     }
-    if (rows.length >= 45000) break;
+    if (rows.length >= 50000) break;
   }
   return rows;
 }
@@ -343,7 +390,7 @@ async function fetchSkillsDirectory(q) {
         url.searchParams.set("sort", "stars");
         if (q) url.searchParams.set("q", q);
         const res = await fetch(url, {
-          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.3" },
+          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/5.0" },
           next: { revalidate: q ? 900 : 3600 },
           signal: AbortSignal.timeout(5000),
         });
@@ -363,7 +410,7 @@ async function fetchSkillsDirectory(q) {
 async function fetchLobeHubSkills(q) {
   try {
     const res = await fetch(LOBEHUB_AGENTS_INDEX, {
-      headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.3" },
+      headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/5.0" },
       next: { revalidate: 3600 },
       signal: AbortSignal.timeout(7000),
     });
@@ -417,7 +464,7 @@ async function fetchHuggingFaceSkills(q) {
       url.searchParams.set("direction", "-1");
       url.searchParams.set("limit", "100");
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.3" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/5.0" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(5500),
       });
@@ -473,7 +520,7 @@ async function fetchHuggingFaceDatasets(q) {
       url.searchParams.set("direction", "-1");
       url.searchParams.set("limit", "100");
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.3" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/5.0" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(5500),
       });
@@ -516,7 +563,7 @@ async function fetchHuggingFaceDatasets(q) {
 const CRATES_SKILL_TOPICS = [
   "ai-agent", "llm", "prompt", "cli-tool", "security-audit", "sql-migrate",
   "web-scraper", "markdown", "pdf", "docker", "kubernetes", "benchmark",
-  "formatter", "linter",
+  "formatter", "linter", "observability", "terraform",
 ];
 
 async function fetchCratesIoSkills(q) {
@@ -528,7 +575,7 @@ async function fetchCratesIoSkills(q) {
       url.searchParams.set("per_page", "100");
       url.searchParams.set("sort", "downloads");
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.3 (https://drive-mcp-five.vercel.app)" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/5.0 (https://drive-mcp-five.vercel.app)" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(5500),
       });
@@ -568,7 +615,7 @@ async function fetchCratesIoSkills(q) {
 const DOCKER_SKILL_TOPICS = [
   "ai-agent", "llm", "ollama", "n8n", "playwright", "security-scanner",
   "postgres", "grafana", "prometheus", "terraform", "ffmpeg", "pdf",
-  "airflow", "jupyter",
+  "airflow", "jupyter", "sentry", "shopify",
 ];
 
 async function fetchDockerHubSkills(q) {
@@ -579,7 +626,7 @@ async function fetchDockerHubSkills(q) {
       url.searchParams.set("query", term);
       url.searchParams.set("page_size", "100");
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.3" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/5.0" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(5500),
       });
@@ -619,7 +666,7 @@ async function fetchDockerHubSkills(q) {
   return out;
 }
 
-// Non-GitHub Source 8: npm Public Registry — 96 high-signal useful AI/Agent/Skill/Workflow queries
+// Non-GitHub Source 8: npm Public Registry — 104 high-signal balanced AI/Agent/Skill/Workflow queries
 const NPM_BALANCED_SKILL_QUERIES = [
   "agent-skill", "claude-skill", "codex-skill", "cursor-rules",
   "ai-agent-skills", "skill-md", "copilot-instructions", "windsurf-rules",
@@ -645,6 +692,8 @@ const NPM_BALANCED_SKILL_QUERIES = [
   "notion-sdk", "linear-sdk", "jira-client", "obsidian-plugin",
   "shopify-app", "hubspot-client", "resend-email", "twilio-sdk",
   "n8n-nodes", "cron-scheduler", "bullmq-worker", "i18n-translator",
+  "exa-search", "tavily-search", "firecrawl-sdk", "grafana-plugin",
+  "paypal-sdk", "woocommerce-api", "miro-sdk", "canva-sdk",
 ];
 
 async function fetchNpmSkillPackages(q) {
@@ -667,7 +716,7 @@ async function fetchNpmSkillPackages(q) {
         url.searchParams.set("size", "250");
         url.searchParams.set("from", String(from));
         const res = await fetch(url, {
-          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.3" },
+          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/5.0" },
           next: { revalidate: 3600 },
           signal: AbortSignal.timeout(5000),
         });
@@ -709,7 +758,7 @@ async function fetchAwesomeReadmes(q) {
   const settled = await Promise.allSettled(
     AWESOME_README_URLS.map(async (readmeUrl) => {
       const res = await fetch(readmeUrl, {
-        headers: { "user-agent": "DRIVE-Skills-Catalog/4.3" },
+        headers: { "user-agent": "DRIVE-Skills-Catalog/5.0" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(6000),
       });
@@ -742,27 +791,47 @@ async function fetchAwesomeReadmes(q) {
 }
 
 function balanceByCategory(sortedItems, targetCount, perCategoryCap) {
-  if (sortedItems.length <= targetCount) return sortedItems;
-  const picked = [];
-  const overflow = [];
-  const catCounts = new Map();
+  const byCategory = new Map();
+  const official = [];
 
   for (const item of sortedItems) {
     if (item.sourceLabel === "Official") {
-      picked.push(item);
-      catCounts.set(item.category, (catCounts.get(item.category) || 0) + 1);
+      official.push(item);
       continue;
     }
-    const c = catCounts.get(item.category) || 0;
-    if (c < perCategoryCap) {
-      picked.push(item);
-      catCounts.set(item.category, c + 1);
-    } else {
-      overflow.push(item);
-    }
-    if (picked.length >= targetCount) break;
+    const cat = item.category || "ai";
+    if (!byCategory.has(cat)) byCategory.set(cat, []);
+    byCategory.get(cat).push(item);
   }
 
+  const picked = [...official];
+  const overflow = [];
+  const categories = [...byCategory.keys()];
+  const indices = new Map(categories.map((c) => [c, 0]));
+
+  // Round-robin pass across all categories for balanced default & search results
+  let added = true;
+  while (picked.length < targetCount && added) {
+    added = false;
+    for (const cat of categories) {
+      const list = byCategory.get(cat);
+      const idx = indices.get(cat);
+      if (idx < list.length && idx < perCategoryCap) {
+        picked.push(list[idx]);
+        indices.set(cat, idx + 1);
+        added = true;
+        if (picked.length >= targetCount) break;
+      }
+    }
+  }
+
+  for (const cat of categories) {
+    const list = byCategory.get(cat);
+    const idx = indices.get(cat);
+    if (idx < list.length) overflow.push(...list.slice(idx));
+  }
+
+  overflow.sort((a, b) => b.installs * 2 + b.stars - (a.installs * 2 + a.stars));
   for (const item of overflow) {
     if (picked.length >= targetCount) break;
     picked.push(item);
@@ -960,7 +1029,7 @@ export async function GET(request) {
         items,
         count: items.length,
         totalRawSkills,
-        target: 20000,
+        target: TARGET_SKILLS_COUNT,
         categories: categoryCounts,
         source: "skills.sh + SkillsDirectory + LobeHub + HuggingFace + HF Datasets + Crates.io + Docker Hub + npm + Curated",
         query: q || null,

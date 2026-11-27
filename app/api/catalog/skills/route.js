@@ -78,6 +78,42 @@ const CURATED_POPULAR_SKILLS = [
     sourceLabel: "Official",
   },
   {
+    id: "anthropics/skills/docx",
+    name: "DOCX Document Skill",
+    slug: "docx",
+    source: "anthropics/skills",
+    category: "docs",
+    description: "Create, edit, and format professional Word documents (.docx) with tables, headings, and comments.",
+    stars: 22600,
+    installs: 115000,
+    verified: true,
+    sourceLabel: "Official",
+  },
+  {
+    id: "anthropics/skills/xlsx",
+    name: "XLSX Spreadsheet Skill",
+    slug: "xlsx",
+    source: "anthropics/skills",
+    category: "data",
+    description: "Build, clean, and analyze Excel workbooks (.xlsx) with formulas, charts, and formatting.",
+    stars: 20600,
+    installs: 105000,
+    verified: true,
+    sourceLabel: "Official",
+  },
+  {
+    id: "anthropics/skills/pptx",
+    name: "PPTX Presentation Skill",
+    slug: "pptx",
+    source: "anthropics/skills",
+    category: "design",
+    description: "Design, build, and modify PowerPoint slide decks (.pptx) with clean layouts.",
+    stars: 26400,
+    installs: 132000,
+    verified: true,
+    sourceLabel: "Official",
+  },
+  {
     id: "supabase/agent-skills/supabase-postgres-best-practices",
     name: "Supabase Postgres Best Practices",
     slug: "supabase-postgres-best-practices",
@@ -180,12 +216,16 @@ const SKILLS_SH_TOPICS = [
   "web3", "solana", "ethereum", "solidity", "foundry", "hardhat", "defi", "wallet", "blockchain", "wagmi",
   "workflow", "automation", "scrape", "browser", "cron", "queue", "cli", "n8n", "zapier", "telegram", "whatsapp", "twilio", "resend", "apify", "firecrawl",
   "productivity", "notion", "linear", "jira", "confluence", "asana", "trello", "slack", "discord", "email", "gmail", "calendar", "obsidian", "airtable", "crm", "startup", "finance", "accounting", "interview",
+  "openclaw", "clawhub", "humanize", "summarize", "daily-brief",
 ];
 
 const AWESOME_README_URLS = [
   "https://raw.githubusercontent.com/VoltAgent/awesome-agent-skills/main/README.md",
   "https://raw.githubusercontent.com/heilcheng/awesome-agent-skills/main/README.md",
   "https://raw.githubusercontent.com/travisvn/awesome-claude-skills/main/README.md",
+  "https://raw.githubusercontent.com/ComposioHQ/awesome-claude-skills/master/README.md",
+  "https://raw.githubusercontent.com/karanb192/awesome-claude-skills/main/README.md",
+  "https://raw.githubusercontent.com/LinklyAI/best-skills/main/README.md",
 ];
 
 const CATEGORY_RULES = [
@@ -195,16 +235,16 @@ const CATEGORY_RULES = [
   { id: "devops", rx: /\b(docker|kubernetes|k8s|terraform|pulumi|aws|gcp|azure|vercel|cloudflare|ci\/cd|github actions|deploy|linux|nginx|helm|ansible|devops|infra|cloud|sentry|grafana|prometheus|datadog)\b/i },
   { id: "security", rx: /\b(security|audit|owasp|pentest|vuln|cve|ssrf|xss|csrf|encrypt|secret|compliance|soc2|rbac|rls|hardening|cybersecurity|snyk|trivy|semgrep|vault|keycloak|clerk|auth0)\b/i },
   { id: "testing", rx: /\b(test|testing|playwright|cypress|puppeteer|selenium|jest|vitest|pytest|qa|e2e|unit test|debug|debugging|tdd|benchmark|lint|k6|storybook)\b/i },
-  { id: "design", rx: /\b(design|ux|figma|typography|color|brand|logo|wireframe|prototype|accessibility|a11y|glass|layout|illustration|sketch|ppt|powerpoint|webflow|excalidraw|mermaid|svg)\b/i },
+  { id: "design", rx: /\b(design|ux|figma|canva|typography|color|brand|logo|wireframe|prototype|accessibility|a11y|glass|layout|illustration|sketch|ppt|powerpoint|webflow|excalidraw|mermaid|svg)\b/i },
   { id: "data", rx: /\b(data|analytics|pandas|numpy|dbt|spark|snowflake|bigquery|tableau|chart|visualization|etl|pipeline|ml|machine learning|pytorch|jupyter|excel|csv|posthog|airflow|kafka|dataset)\b/i },
   { id: "mobile", rx: /\b(mobile|ios|android|swift|swiftui|kotlin|flutter|react native|expo|apk|xcode|capacitor|tauri|electron)\b/i },
   { id: "web3", rx: /\b(web3|blockchain|solana|ethereum|solidity|smart contract|defi|wallet|nft|crypto|foundry|hardhat|wagmi)\b/i },
   { id: "marketing", rx: /\b(seo|marketing|growth|landing page|conversion|ads|social media|newsletter|email campaign|gtm|brand voice|sales|ecommerce|amazon|shopify|pitch|hubspot|salesforce)\b/i },
-  { id: "docs", rx: /\b(doc|docs|documentation|readme|markdown|mdx|writing|copywriting|blog|changelog|technical writing|pdf|latex|slides|pptx|docx|translation|academic|essay|summary)\b/i },
-  { id: "automation", rx: /\b(automat|workflow|cron|scrape|scraping|crawler|browser|n8n|zapier|make\.com|slack bot|telegram|discord bot|cli|script|webhook|apify|firecrawl|twilio|resend)\b/i },
+  { id: "docs", rx: /\b(doc|docs|documentation|readme|markdown|mdx|writing|copywriting|blog|changelog|technical writing|pdf|latex|slides|pptx|docx|translation|academic|essay|summary|humaniz)\b/i },
+  { id: "automation", rx: /\b(automat|workflow|cron|scrape|scraping|crawler|browser|n8n|zapier|make\.com|slack bot|telegram|discord bot|cli|script|webhook|apify|firecrawl|twilio|resend|openclaw|clawhub)\b/i },
   { id: "backend", rx: /\b(api|backend|node\.?js|express|fastify|nestjs|django|fastapi|flask|go|golang|rust|graphql|trpc|grpc|rest|stripe|payment|auth|oauth|jwt|microservice|php|laravel|rails|spring)\b/i },
   { id: "ai", rx: /\b(ai|llm|agent|mcp|prompt|rag|embedding|vector|openai|claude|gemini|anthropic|langchain|llamaindex|langgraph|crewai|autogen|eval|fine-?tun|ollama|vllm|huggingface)\b/i },
-  { id: "productivity", rx: /\b(productivity|notion|linear|jira|confluence|asana|trello|calendar|email|gmail|meeting|plan|planning|roadmap|project management|kanban|obsidian|airtable|career|interview|finance|accounting|education|tutor)\b/i },
+  { id: "productivity", rx: /\b(productivity|notion|linear|jira|confluence|asana|trello|calendar|email|gmail|meeting|plan|planning|roadmap|project management|kanban|obsidian|airtable|career|interview|finance|accounting|education|tutor|brief)\b/i },
 ];
 
 const LOBEHUB_CAT_MAP = {
@@ -252,9 +292,9 @@ function formatTitle(raw, fallback) {
   return base.replace(/[-_]+/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-// Non-GitHub Source 1: skills.sh search across 220+ balanced topics
+// Non-GitHub Source 1: skills.sh search across 225+ balanced topics
 async function fetchSkillsShSearch(q) {
-  const headers = { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.2" };
+  const headers = { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.3" };
   const queries = q ? [q] : SKILLS_SH_TOPICS;
   const rows = [];
   const deadline = Date.now() + 18000;
@@ -303,7 +343,7 @@ async function fetchSkillsDirectory(q) {
         url.searchParams.set("sort", "stars");
         if (q) url.searchParams.set("q", q);
         const res = await fetch(url, {
-          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.2" },
+          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.3" },
           next: { revalidate: q ? 900 : 3600 },
           signal: AbortSignal.timeout(5000),
         });
@@ -323,7 +363,7 @@ async function fetchSkillsDirectory(q) {
 async function fetchLobeHubSkills(q) {
   try {
     const res = await fetch(LOBEHUB_AGENTS_INDEX, {
-      headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.2" },
+      headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.3" },
       next: { revalidate: 3600 },
       signal: AbortSignal.timeout(7000),
     });
@@ -377,7 +417,7 @@ async function fetchHuggingFaceSkills(q) {
       url.searchParams.set("direction", "-1");
       url.searchParams.set("limit", "100");
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.2" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.3" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(5500),
       });
@@ -433,7 +473,7 @@ async function fetchHuggingFaceDatasets(q) {
       url.searchParams.set("direction", "-1");
       url.searchParams.set("limit", "100");
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.2" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.3" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(5500),
       });
@@ -488,7 +528,7 @@ async function fetchCratesIoSkills(q) {
       url.searchParams.set("per_page", "100");
       url.searchParams.set("sort", "downloads");
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.2 (https://drive-mcp-five.vercel.app)" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.3 (https://drive-mcp-five.vercel.app)" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(5500),
       });
@@ -539,7 +579,7 @@ async function fetchDockerHubSkills(q) {
       url.searchParams.set("query", term);
       url.searchParams.set("page_size", "100");
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.2" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.3" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(5500),
       });
@@ -627,7 +667,7 @@ async function fetchNpmSkillPackages(q) {
         url.searchParams.set("size", "250");
         url.searchParams.set("from", String(from));
         const res = await fetch(url, {
-          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.2" },
+          headers: { accept: "application/json", "user-agent": "DRIVE-Skills-Catalog/4.3" },
           next: { revalidate: 3600 },
           signal: AbortSignal.timeout(5000),
         });
@@ -664,12 +704,12 @@ async function fetchNpmSkillPackages(q) {
   return parsed;
 }
 
-// Source 9: Curated Awesome Agent Skills Lists
+// Source 9: Curated Awesome Agent Skills Lists (including Composio & OpenClaw / LinklyAI Top 100)
 async function fetchAwesomeReadmes(q) {
   const settled = await Promise.allSettled(
     AWESOME_README_URLS.map(async (readmeUrl) => {
       const res = await fetch(readmeUrl, {
-        headers: { "user-agent": "DRIVE-Skills-Catalog/4.2" },
+        headers: { "user-agent": "DRIVE-Skills-Catalog/4.3" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(6000),
       });

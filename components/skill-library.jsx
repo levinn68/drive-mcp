@@ -32,17 +32,23 @@ const SKILL_CATEGORIES = [
   { id: "frontend", label: "Frontend & UI" },
   { id: "backend", label: "Backend & API" },
   { id: "ai", label: "AI & Agents" },
-  { id: "devops", label: "DevOps & Cloud" },
+  { id: "cloud", label: "Cloud & Edge" },
+  { id: "devops", label: "DevOps & CI" },
   { id: "database", label: "Database & SQL" },
   { id: "security", label: "Security & Audit" },
   { id: "testing", label: "Testing & QA" },
   { id: "design", label: "Design & UX" },
   { id: "media", label: "Video & 3D" },
+  { id: "search", label: "Search & Scrape" },
+  { id: "observability", label: "Observability" },
   { id: "data", label: "Data & Analytics" },
   { id: "mobile", label: "Mobile & Native" },
   { id: "docs", label: "Docs & Writing" },
   { id: "productivity", label: "Productivity" },
+  { id: "comms", label: "Comms & Chat" },
   { id: "marketing", label: "Marketing & SEO" },
+  { id: "ecommerce", label: "E-Commerce" },
+  { id: "finance", label: "Finance & Billing" },
   { id: "web3", label: "Web3 & Crypto" },
   { id: "automation", label: "Automation" },
 ];
@@ -641,7 +647,7 @@ export default function SkillLibrary() {
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search 10,000+ Skills (react, supabase, audit, nextjs...)"
+            placeholder="Search 25,000+ Skills (react, supabase, audit, nextjs...)"
             aria-label="Search Agent Skills"
           />
           <button type="submit">Search</button>

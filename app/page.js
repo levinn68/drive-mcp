@@ -14,8 +14,8 @@ const PULSEMCP_API = "https://api.pulsemcp.com/v0beta/servers";
 const DOCKER_HUB_API = "https://hub.docker.com/v2/search/repositories/";
 const CRATES_IO_API = "https://crates.io/api/v1/crates";
 
-const TARGET_MCP_COUNT = 22500;
-const PER_CATEGORY_PASS1_CAP = 2500;
+const TARGET_MCP_COUNT = 25000;
+const PER_CATEGORY_PASS1_CAP = 1800;
 
 const JUNK_NAME_RX = /^(test|demo|hello[-_]?world|example|sample|my[-_]?first|foo|bar|tmp|temp)[-_0-9]*$/i;
 
@@ -48,6 +48,21 @@ const VERIFIED_POPULAR_MCPS = [
       description: "Official GitHub remote MCP server for repositories, issues, PRs, code search, and Actions.",
       repository: { url: "https://github.com/github/github-mcp-server" },
       remotes: [{ type: "streamable-http", url: "https://api.githubcopilot.com/mcp/" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "github",
+    authType: "pat",
+    stars: 24500,
+    sourceLabel: "Official",
+    server: {
+      name: "com.github/github-mcp-all",
+      title: "GitHub MCP (All 19 Toolsets)",
+      version: "official",
+      description: "Full GitHub remote MCP with all 116+ tools across Actions, Code Security, Projects, Gists, and Orgs.",
+      repository: { url: "https://github.com/github/github-mcp-server" },
+      remotes: [{ type: "streamable-http", url: "https://api.githubcopilot.com/mcp/x/all" }],
     },
   },
   {
@@ -172,6 +187,164 @@ const VERIFIED_POPULAR_MCPS = [
   },
   {
     verifiedPopular: true,
+    category: "design",
+    authType: "oauth",
+    stars: 12100,
+    sourceLabel: "Official",
+    server: {
+      name: "com.miro/miro-mcp",
+      title: "Miro Official MCP",
+      version: "official",
+      description: "Summarize Miro boards, create architecture diagrams, and act on board comments.",
+      repository: { url: "https://miro.com" },
+      remotes: [{ type: "streamable-http", url: "https://mcp.miro.com/mcp" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "productivity",
+    authType: "oauth",
+    stars: 11800,
+    sourceLabel: "Official",
+    server: {
+      name: "do.craft/craft-mcp",
+      title: "Craft.do Official MCP",
+      version: "official",
+      description: "Official Craft.do remote MCP — read, search, and edit Craft documents and knowledge spaces.",
+      repository: { url: "https://www.craft.do/imagine/guide/mcp" },
+      remotes: [{ type: "streamable-http", url: "https://mcp.craft.do/my/mcp" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "design",
+    authType: "none",
+    stars: 11700,
+    sourceLabel: "ArtCraft",
+    server: {
+      name: "com.getartcraft/figcraft",
+      title: "FigCraft MCP (ArtCraft)",
+      version: "official",
+      description: "Open-source Rust Figma alternative with 400+ UI design & prototyping commands via figcraft-cli mcp.",
+      repository: { url: "https://github.com/storytold/figcraft" },
+      remotes: [],
+      packages: [{ registryType: "cargo", identifier: "figcraft-cli" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "media",
+    authType: "none",
+    stars: 10900,
+    sourceLabel: "ArtCraft",
+    server: {
+      name: "com.getartcraft/effectcraft",
+      title: "EffectCraft MCP (ArtCraft)",
+      version: "official",
+      description: "Open-source Rust motion graphics and compositing app controlled via effectcraft-cli mcp.",
+      repository: { url: "https://github.com/storytold/effectcraft" },
+      remotes: [],
+      packages: [{ registryType: "cargo", identifier: "effectcraft-cli" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "design",
+    authType: "none",
+    stars: 10400,
+    sourceLabel: "ArtCraft",
+    server: {
+      name: "com.getartcraft/vectorcraft",
+      title: "VectorCraft MCP (ArtCraft)",
+      version: "official",
+      description: "Open-source ArtCraft vector illustration app controllable via CLI and MCP server.",
+      repository: { url: "https://getartcraft.com/apps" },
+      remotes: [],
+      packages: [{ registryType: "cargo", identifier: "vectorcraft-cli" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "design",
+    authType: "none",
+    stars: 10100,
+    sourceLabel: "ArtCraft",
+    server: {
+      name: "com.getartcraft/photocraft",
+      title: "PhotoCraft MCP (ArtCraft)",
+      version: "official",
+      description: "Open-source ArtCraft raster and photo editing app driven via CLI and MCP server.",
+      repository: { url: "https://getartcraft.com/apps" },
+      remotes: [],
+      packages: [{ registryType: "cargo", identifier: "photocraft-cli" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "design",
+    authType: "none",
+    stars: 9900,
+    sourceLabel: "ArtCraft",
+    server: {
+      name: "com.getartcraft/texturecraft",
+      title: "TextureCraft MCP (ArtCraft)",
+      version: "official",
+      description: "Open-source ArtCraft procedural texture synthesis app with native MCP command interface.",
+      repository: { url: "https://getartcraft.com/apps" },
+      remotes: [],
+      packages: [{ registryType: "cargo", identifier: "texturecraft-cli" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "design",
+    authType: "none",
+    stars: 9700,
+    sourceLabel: "ArtCraft",
+    server: {
+      name: "com.getartcraft/materialcraft",
+      title: "MaterialCraft MCP (ArtCraft)",
+      version: "official",
+      description: "Open-source ArtCraft PBR material authoring tool with native CLI and MCP server.",
+      repository: { url: "https://getartcraft.com/apps" },
+      remotes: [],
+      packages: [{ registryType: "cargo", identifier: "materialcraft-cli" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "media",
+    authType: "none",
+    stars: 9500,
+    sourceLabel: "ArtCraft",
+    server: {
+      name: "com.getartcraft/soundcraft",
+      title: "SoundCraft MCP (ArtCraft)",
+      version: "official",
+      description: "Open-source ArtCraft audio design and synthesis tool driven via CLI and MCP server.",
+      repository: { url: "https://getartcraft.com/apps" },
+      remotes: [],
+      packages: [{ registryType: "cargo", identifier: "soundcraft-cli" }],
+    },
+  },
+  {
+    verifiedPopular: true,
+    category: "productivity",
+    authType: "none",
+    stars: 9400,
+    sourceLabel: "ArtCraft",
+    server: {
+      name: "com.getartcraft/wordcraft",
+      title: "WordCraft MCP (ArtCraft)",
+      version: "official",
+      description: "Open-source ArtCraft publishing and document layout tool controllable via MCP server.",
+      repository: { url: "https://getartcraft.com/apps" },
+      remotes: [],
+      packages: [{ registryType: "cargo", identifier: "wordcraft-cli" }],
+    },
+  },
+  {
+    verifiedPopular: true,
     category: "ai",
     authType: "oauth",
     stars: 11900,
@@ -287,7 +460,7 @@ const VERIFIED_POPULAR_MCPS = [
       version: "official",
       description: "Official Atlassian MCP — search Jira issues, Confluence spaces, and sprint boards.",
       repository: { url: "https://www.atlassian.com/platform/remote-mcp-server" },
-      remotes: [{ type: "streamable-http", url: "https://mcp.atlassian.com/v1/sse" }],
+      remotes: [{ type: "streamable-http", url: "https://mcp.atlassian.com/v2/mcp" }],
     },
   },
   {
@@ -482,7 +655,7 @@ const VERIFIED_POPULAR_MCPS = [
       version: "official",
       description: "Official Asana MCP — tasks, projects, timelines, and team collaboration.",
       repository: { url: "https://developers.asana.com/docs/mcp-server" },
-      remotes: [{ type: "streamable-http", url: "https://mcp.asana.com/sse" }],
+      remotes: [{ type: "streamable-http", url: "https://mcp.asana.com/v2/mcp" }],
     },
   },
   {
@@ -538,8 +711,8 @@ const MCP_CATEGORY_RULES = [
   { id: "browser", rx: /\b(playwright|puppeteer|selenium|browser|chrome|crawl|firecrawl|apify|scrape|scraping|web ?fetch|headless|browserbase|stagehand)\b/i },
   { id: "finance", rx: /\b(stripe|paypal|plaid|finance|payment|invoice|billing|stock|trading|market|sec\b|edgar|bank|accounting|yahoo finance|alphavantage|quickbooks|xero|forex|portfolio)\b/i },
   { id: "web3", rx: /\b(crypto|blockchain|ethereum|solana|web3|wallet|defi|nft|token|onchain|evm|bitcoin|binance|coinbase|uniswap|polygon|arbitrum|sui|aptos)\b/i },
-  { id: "design", rx: /\b(figma|canva|design|webflow|storybook|ui|ux|css|tailwind|blender|3d|svg|font|color|sketch|framer|penpot|excalidraw|mermaid)\b/i },
-  { id: "media", rx: /\b(video|audio|music|youtube|spotify|ffmpeg|image|photo|podcast|remotion|elevenlabs|tts|speech|whisper|midjourney|flux|comfyui|stable diffusion|plex|vimeo)\b/i },
+  { id: "design", rx: /\b(figma|figcraft|vectorcraft|photocraft|texturecraft|materialcraft|canva|miro|design|webflow|storybook|ui|ux|css|tailwind|blender|3d|svg|font|color|sketch|framer|penpot|excalidraw|mermaid)\b/i },
+  { id: "media", rx: /\b(video|audio|music|effectcraft|soundcraft|youtube|spotify|ffmpeg|image|photo|podcast|remotion|elevenlabs|tts|speech|whisper|midjourney|flux|comfyui|stable diffusion|plex|vimeo)\b/i },
   { id: "ecommerce", rx: /\b(shopify|square|woocommerce|ecommerce|e-commerce|store|cart|product catalog|inventory|order|amazon|ebay|etsy|magento|bigcommerce)\b/i },
   { id: "crm", rx: /\b(hubspot|salesforce|crm|pipedrive|zoho|lead|sales|marketing|mailchimp|klaviyo|apollo|attio|zendesk|freshdesk|ads|seo|semrush|ahrefs)\b/i },
   { id: "maps", rx: /\b(maps|geo|location|weather|flight|travel|hotel|route|gps|places|openstreetmap|mapbox|airbnb|uber|transit|gis|geospatial)\b/i },
@@ -547,7 +720,7 @@ const MCP_CATEGORY_RULES = [
   { id: "data", rx: /\b(analytics|posthog|datadog|grafana|prometheus|metabase|tableau|mixpanel|amplitude|chart|excel|sheets|csv|metrics|observability|telemetry|jupyter|pandas|dbt|airflow|kafka)\b/i },
   { id: "messaging", rx: /\b(slack|discord|telegram|whatsapp|email|gmail|outlook|resend|twilio|intercom|chat|sms|social|twitter|x\.com|linkedin|bluesky|mastodon|reddit|teams|zoom)\b/i },
   { id: "automation", rx: /\b(zapier|n8n|make\.com|workflow|automat|cron|webhook|trigger|pipeline|rpa|home assistant|iot|smart home|mqtt|ifttt|temporal)\b/i },
-  { id: "productivity", rx: /\b(notion|linear|jira|confluence|atlassian|asana|trello|monday|clickup|todo|calendar|google drive|airtable|obsidian|evernote|todoist|notes|docs|pdf|docx|pptx)\b/i },
+  { id: "productivity", rx: /\b(notion|craft\.do|wordcraft|linear|jira|confluence|atlassian|asana|trello|monday|clickup|todo|calendar|google drive|airtable|obsidian|evernote|todoist|notes|docs|pdf|docx|pptx)\b/i },
   { id: "search", rx: /\b(search|documentation|wiki|deepwiki|context7|exa|tavily|brave|perplexity|arxiv|wikipedia|pubmed|knowledge|news|rss|weather|scholar|semantic scholar)\b/i },
   { id: "ai", rx: /\b(ai\b|llm|agent|hugging ?face|openai|anthropic|claude|gemini|ollama|langchain|vector|embedding|rag|model|prompt|memory|knowledge graph|mcp-proxy|gateway|reasoning)\b/i },
   { id: "github", rx: /\b(github|gitlab|bitbucket|git\b|pull request|commit|code review|ci\/cd|actions)\b/i },
@@ -572,7 +745,6 @@ function inferAuthType(explicitAuthType, isRemote, text) {
   return "oauth";
 }
 
-// 1. Official MCP Registry
 async function fetchOfficialRegistry(apiSearch, maxPages = 85) {
   const results = [];
   let cursor = "";
@@ -584,7 +756,7 @@ async function fetchOfficialRegistry(apiSearch, maxPages = 85) {
 
     try {
       const response = await fetch(`${REGISTRY}/v0.1/servers?${params}`, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.3" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/5.0" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(4500),
       });
@@ -603,16 +775,15 @@ async function fetchOfficialRegistry(apiSearch, maxPages = 85) {
   return results;
 }
 
-// 2. Glama MCP Registry (130,000+ real MCP servers)
 const GLAMA_HIGH_SIGNAL_QUERIES = [
   "postgres", "mysql", "sqlite", "mongodb", "redis", "supabase", "firebase", "snowflake", "bigquery", "duckdb", "neo4j", "qdrant",
   "aws", "azure", "gcp", "kubernetes", "docker", "terraform", "cloudflare", "vercel", "netlify", "railway", "linux", "ssh",
   "playwright", "puppeteer", "browser", "scraper", "firecrawl", "selenium", "crawl", "chrome", "fetch", "http",
   "stripe", "paypal", "finance", "stock", "trading", "accounting", "invoice", "bank", "plaid", "quickbooks", "forex",
   "crypto", "ethereum", "solana", "binance", "blockchain", "defi", "wallet", "bitcoin", "polygon", "web3",
-  "figma", "blender", "unity", "design", "svg", "3d", "canva", "webflow", "mermaid", "excalidraw", "diagram",
+  "figma", "blender", "unity", "design", "svg", "3d", "canva", "miro", "craft", "webflow", "mermaid", "excalidraw", "diagram",
   "youtube", "spotify", "video", "audio", "ffmpeg", "image", "whisper", "tts", "music", "podcast", "ocr",
-  "shopify", "woocommerce", "amazon", "ecommerce", "inventory", "stripe", "square",
+  "shopify", "woocommerce", "amazon", "ecommerce", "inventory", "square",
   "hubspot", "salesforce", "zendesk", "crm", "seo", "marketing", "ads", "analytics", "mailchimp",
   "maps", "weather", "flight", "travel", "geo", "hotel", "calendar", "time",
   "security", "snyk", "pentest", "owasp", "vault", "auth", "clerk", "semgrep", "audit",
@@ -637,7 +808,7 @@ async function fetchGlamaDirectory(apiSearch) {
       if (cursor) params.set("after", cursor);
       try {
         const res = await fetch(`${GLAMA_API}?${params}`, {
-          headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.3" },
+          headers: { accept: "application/json", "user-agent": "DRIVE-MCP/5.0" },
           next: { revalidate: 3600 },
           signal: AbortSignal.timeout(4500),
         });
@@ -664,7 +835,7 @@ async function fetchGlamaDirectory(apiSearch) {
             batchTerms.map(async (term) => {
               const params = new URLSearchParams({ first: "100", query: term });
               const res = await fetch(`${GLAMA_API}?${params}`, {
-                headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.3" },
+                headers: { accept: "application/json", "user-agent": "DRIVE-MCP/5.0" },
                 next: { revalidate: 3600 },
                 signal: AbortSignal.timeout(4500),
               });
@@ -706,7 +877,6 @@ async function fetchGlamaDirectory(apiSearch) {
   return results;
 }
 
-// 3. npm Public Registry
 const NPM_BALANCED_MCP_QUERIES = [
   "mcp-server", "modelcontextprotocol", "@modelcontextprotocol", "fastmcp",
   "mcp-client", "mcp-proxy", "mcp-bridge", "mcp-tool",
@@ -714,7 +884,7 @@ const NPM_BALANCED_MCP_QUERIES = [
   "mcp aws", "mcp azure", "mcp gcp", "mcp docker", "mcp kubernetes", "mcp cloudflare", "mcp vercel", "mcp terraform",
   "mcp playwright", "mcp puppeteer", "mcp browser", "mcp firecrawl", "mcp scraper", "mcp fetch",
   "mcp stripe", "mcp paypal", "mcp finance", "mcp stock", "mcp crypto", "mcp solana", "mcp ethereum", "mcp web3",
-  "mcp figma", "mcp design", "mcp video", "mcp youtube", "mcp image", "mcp audio", "mcp ffmpeg",
+  "mcp figma", "mcp design", "mcp craft", "mcp video", "mcp youtube", "mcp image", "mcp audio", "mcp ffmpeg",
   "mcp shopify", "mcp hubspot", "mcp salesforce", "mcp crm", "mcp maps", "mcp weather", "mcp travel",
   "mcp security", "mcp auth", "mcp analytics", "mcp datadog", "mcp grafana", "mcp sentry",
   "mcp slack", "mcp discord", "mcp telegram", "mcp whatsapp", "mcp gmail", "mcp email", "mcp twitter",
@@ -742,7 +912,7 @@ async function fetchNpmMcpServers(apiSearch) {
         url.searchParams.set("size", "250");
         url.searchParams.set("from", String(from));
         const res = await fetch(url, {
-          headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.3" },
+          headers: { accept: "application/json", "user-agent": "DRIVE-MCP/5.0" },
           next: { revalidate: 3600 },
           signal: AbortSignal.timeout(5000),
         });
@@ -782,7 +952,6 @@ async function fetchNpmMcpServers(apiSearch) {
   return items;
 }
 
-// 4. PulseMCP Directory
 async function fetchPulseMcpServers(apiSearch) {
   const pages = apiSearch ? [0, 1] : Array.from({ length: 24 }, (_, i) => i);
   const settled = await Promise.allSettled(
@@ -792,7 +961,7 @@ async function fetchPulseMcpServers(apiSearch) {
       url.searchParams.set("offset", String(page * 100));
       if (apiSearch) url.searchParams.set("query", apiSearch);
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.3" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/5.0" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(5500),
       });
@@ -827,7 +996,6 @@ async function fetchPulseMcpServers(apiSearch) {
   return items;
 }
 
-// 5. Docker Hub MCP Containers
 async function fetchDockerHubMcps(apiSearch) {
   const queries = apiSearch
     ? [`${apiSearch} mcp`]
@@ -851,7 +1019,7 @@ async function fetchDockerHubMcps(apiSearch) {
       url.searchParams.set("page_size", "100");
       url.searchParams.set("page", String(page));
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.3" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/5.0" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(5500),
       });
@@ -892,7 +1060,6 @@ async function fetchDockerHubMcps(apiSearch) {
   return items;
 }
 
-// 6. Crates.io Rust MCP Registry
 async function fetchCratesIoMcps(apiSearch) {
   const queries = apiSearch
     ? [`${apiSearch} mcp`]
@@ -911,7 +1078,7 @@ async function fetchCratesIoMcps(apiSearch) {
       url.searchParams.set("page", String(page));
       url.searchParams.set("sort", "downloads");
       const res = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/4.3 (https://drive-mcp-five.vercel.app)" },
+        headers: { accept: "application/json", "user-agent": "DRIVE-MCP/5.0 (https://drive-mcp-five.vercel.app)" },
         next: { revalidate: 3600 },
         signal: AbortSignal.timeout(5500),
       });
@@ -950,11 +1117,10 @@ async function fetchCratesIoMcps(apiSearch) {
   return items;
 }
 
-// 7. Supplemental GitHub High-Star MCPs
 async function fetchGithubPopularMcps(apiSearch) {
   const headers = {
     accept: "application/vnd.github+json",
-    "user-agent": "DRIVE-MCP/4.3",
+    "user-agent": "DRIVE-MCP/5.0",
   };
   if (process.env.GITHUB_TOKEN) {
     headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
@@ -1062,27 +1228,46 @@ function serializeServer(entry) {
 }
 
 function balanceByCategory(sortedItems, targetCount, perCategoryCap) {
-  if (sortedItems.length <= targetCount) return sortedItems;
-  const picked = [];
-  const overflow = [];
-  const catCounts = new Map();
+  const curated = [];
+  const byCategory = new Map();
 
   for (const item of sortedItems) {
     if (item.verifiedPopular) {
-      picked.push(item);
-      catCounts.set(item.category, (catCounts.get(item.category) || 0) + 1);
+      curated.push(item);
       continue;
     }
-    const c = catCounts.get(item.category) || 0;
-    if (c < perCategoryCap) {
-      picked.push(item);
-      catCounts.set(item.category, c + 1);
-    } else {
-      overflow.push(item);
-    }
-    if (picked.length >= targetCount) break;
+    const cat = item.category || "coding";
+    if (!byCategory.has(cat)) byCategory.set(cat, []);
+    byCategory.get(cat).push(item);
   }
 
+  const picked = [...curated];
+  const overflow = [];
+  const categories = [...byCategory.keys()];
+  const indices = new Map(categories.map((c) => [c, 0]));
+
+  let added = true;
+  while (picked.length < targetCount && added) {
+    added = false;
+    for (const cat of categories) {
+      const list = byCategory.get(cat);
+      const idx = indices.get(cat);
+      if (idx < list.length && idx < perCategoryCap) {
+        picked.push(list[idx]);
+        indices.set(cat, idx + 1);
+        added = true;
+        if (picked.length >= targetCount) break;
+      }
+    }
+  }
+
+  for (const cat of categories) {
+    const list = byCategory.get(cat);
+    const idx = indices.get(cat);
+    if (idx < list.length) overflow.push(...list.slice(idx));
+  }
+
+  overflow.sort((a, b) => (b.stars || 0) - (a.stars || 0));
   for (const item of overflow) {
     if (picked.length >= targetCount) break;
     picked.push(item);
@@ -1129,7 +1314,7 @@ async function getServers(query) {
     if (!key || seen.has(key)) continue;
     seen.add(key);
     all.push(entry);
-    if (all.length >= 38000) break;
+    if (all.length >= 42000) break;
   }
 
   const serialized = all.map(serializeServer);

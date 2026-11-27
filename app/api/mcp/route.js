@@ -14,7 +14,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const SERVER_INFO = { name: "DRIVE MCP", version: "2.1.0" };
+const SERVER_INFO = { name: "DRIVE MCP", version: "2.2.0" };
 const PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26"];
 const MCP_REGISTRY = "https://registry.modelcontextprotocol.io/v0.1/servers";
 const SKILLS_REGISTRY = "https://www.skillsdirectory.com/api/registry";
@@ -42,7 +42,7 @@ const CURATED_REMOTE_MCPS = [
     description: "Official Supabase remote MCP server for database queries, migrations, Edge Functions, logs, and project management.",
     repository: { url: "https://supabase.com/docs/guides/getting-started/mcp" },
     remotes: [{ type: "streamable_http", url: "https://mcp.supabase.com/mcp", authentication: { required: true, type: "oauth2" } }],
-    aliases: ["supabase", "supabase mcp"],
+    aliases: ["supabase", "supabase mcp", "postgres"],
     auth_mode: "oauth2",
     token_portal_url: "https://supabase.com/dashboard/account/tokens",
   },
@@ -64,7 +64,7 @@ const CURATED_REMOTE_MCPS = [
     description: "Official Vercel remote MCP server for deployments, build logs, projects, domains, and documentation.",
     repository: { url: "https://vercel.com/docs/mcp/vercel-mcp" },
     remotes: [{ type: "streamable_http", url: "https://mcp.vercel.com", authentication: { required: true, type: "oauth2" } }],
-    aliases: ["vercel", "vercel mcp"],
+    aliases: ["vercel", "vercel mcp", "nextjs"],
     auth_mode: "oauth2",
     token_portal_url: "https://vercel.com/account/tokens",
   },
@@ -106,7 +106,7 @@ const CURATED_REMOTE_MCPS = [
     description: "Official Stripe remote MCP server for payments, customers, invoices, subscriptions, and Stripe documentation.",
     repository: { url: "https://docs.stripe.com/mcp" },
     remotes: [{ type: "streamable_http", url: "https://mcp.stripe.com", authentication: { required: true, type: "oauth2" } }],
-    aliases: ["stripe", "stripe mcp"],
+    aliases: ["stripe", "stripe mcp", "payment", "billing"],
     auth_mode: "oauth2",
     token_portal_url: "https://dashboard.stripe.com/apikeys",
   },
@@ -117,7 +117,7 @@ const CURATED_REMOTE_MCPS = [
     description: "Official Sentry remote MCP server to inspect errors, stack traces, issues, and performance telemetry.",
     repository: { url: "https://docs.sentry.io/product/sentry-mcp/" },
     remotes: [{ type: "streamable_http", url: "https://mcp.sentry.dev/mcp", authentication: { required: true, type: "oauth2" } }],
-    aliases: ["sentry", "sentry mcp"],
+    aliases: ["sentry", "sentry mcp", "observability"],
     auth_mode: "oauth2",
     token_portal_url: "https://sentry.io/settings/account/api/auth-tokens/",
   },
@@ -128,7 +128,7 @@ const CURATED_REMOTE_MCPS = [
     description: "Official Cloudflare documentation MCP server for Workers, R2, D1, Pages, and Zero Trust (zero auth required).",
     repository: { url: "https://github.com/cloudflare/mcp-server-cloudflare" },
     remotes: [{ type: "streamable_http", url: "https://docs.mcp.cloudflare.com/mcp" }],
-    aliases: ["cloudflare", "cloudflare docs", "cloudflare mcp"],
+    aliases: ["cloudflare", "cloudflare docs", "cloudflare mcp", "workers"],
     auth_mode: "none",
   },
   {
@@ -138,7 +138,7 @@ const CURATED_REMOTE_MCPS = [
     description: "Official Figma remote MCP server to inspect design frames, tokens, components, and layouts.",
     repository: { url: "https://developers.figma.com/docs/figma-mcp-server/" },
     remotes: [{ type: "streamable_http", url: "https://mcp.figma.com/mcp", authentication: { required: true, type: "oauth2" } }],
-    aliases: ["figma", "figma mcp"],
+    aliases: ["figma", "figma mcp", "ui design"],
     auth_mode: "oauth2",
     token_portal_url: "https://www.figma.com/developers/api#access-tokens",
   },
@@ -150,6 +150,16 @@ const CURATED_REMOTE_MCPS = [
     repository: { url: "https://mcp.canva.com/mcp" },
     remotes: [{ type: "streamable_http", url: "https://mcp.canva.com/mcp", authentication: { required: true, type: "oauth2" } }],
     aliases: ["canva", "canva mcp"],
+    auth_mode: "oauth2",
+  },
+  {
+    name: "do.craft/mcp",
+    title: "Craft.do Official MCP",
+    version: "official",
+    description: "Official Craft.do remote MCP server to read, search, and edit Craft documents and knowledge spaces.",
+    repository: { url: "https://www.craft.do/imagine/guide/mcp" },
+    remotes: [{ type: "streamable_http", url: "https://mcp.craft.do/my/mcp", authentication: { required: true, type: "oauth2" } }],
+    aliases: ["craft", "craft.do", "craft mcp"],
     auth_mode: "oauth2",
   },
   {
@@ -169,7 +179,7 @@ const CURATED_REMOTE_MCPS = [
     description: "Turn websites into clean Markdown, structured JSON, or full-site crawls for AI agents.",
     repository: { url: "https://github.com/mendableai/firecrawl-mcp-server" },
     remotes: [{ type: "streamable_http", url: "https://mcp.firecrawl.dev/v2/mcp" }],
-    aliases: ["firecrawl", "firecrawl mcp"],
+    aliases: ["firecrawl", "firecrawl mcp", "scrape", "crawl"],
     auth_mode: "none",
   },
   {
@@ -209,7 +219,7 @@ const CURATED_REMOTE_MCPS = [
     description: "Official Neon serverless Postgres remote MCP server for branching, SQL execution, and schema management.",
     repository: { url: "https://neon.tech/docs/ai/neon-mcp-server" },
     remotes: [{ type: "streamable_http", url: "https://mcp.neon.tech/mcp", authentication: { required: true, type: "oauth2" } }],
-    aliases: ["neon", "neon mcp", "postgres"],
+    aliases: ["neon", "neon mcp"],
     auth_mode: "oauth2",
     token_portal_url: "https://console.neon.tech/app/settings/api-keys",
   },
@@ -237,7 +247,6 @@ const CURATED_REMOTE_MCPS = [
     name: "com.asana/mcp",
     title: "Asana Official MCP",
     version: "official",
-    category: "productivity",
     description: "Official Asana remote MCP server for tasks, projects, timelines, and team collaboration.",
     repository: { url: "https://developers.asana.com/docs/mcp-server" },
     remotes: [{ type: "streamable_http", url: "https://mcp.asana.com/v2/mcp", authentication: { required: true, type: "oauth2" } }],
@@ -263,6 +272,121 @@ const CURATED_REMOTE_MCPS = [
     remotes: [{ type: "streamable_http", url: "https://mcp.exa.ai/mcp" }],
     aliases: ["exa", "exa mcp", "web search"],
     auth_mode: "none",
+  },
+];
+
+// Blueprint rules for drive_setup_project_stack to match any project to real functioning Skills & Remote MCPs
+const PROJECT_STACK_RULES = [
+  {
+    id: "nextjs-react",
+    rx: /\b(next\.?js|react|frontend|web ?app|tailwind|shadcn|saas|dashboard|landing)\b/i,
+    skills: [
+      { repository: "vercel-labs/agent-skills", slug: "react-best-practices", name: "React Best Practices" },
+      { repository: "anthropics/skills", slug: "frontend-design", name: "Frontend Design" },
+    ],
+    mcps: ["com.context7/mcp", "com.vercel/mcp"],
+  },
+  {
+    id: "supabase-postgres",
+    rx: /\b(supabase|postgres|postgresql|sql|database|db|rls|auth)\b/i,
+    skills: [
+      { repository: "supabase/agent-skills", slug: "supabase-postgres-best-practices", name: "Supabase Postgres Best Practices" },
+    ],
+    mcps: ["com.supabase/mcp"],
+  },
+  {
+    id: "cloudflare-edge",
+    rx: /\b(cloudflare|workers|wrangler|r2|d1|edge)\b/i,
+    skills: [
+      { repository: "cloudflare/skills", slug: "workers-best-practices", name: "Cloudflare Workers Best Practices" },
+    ],
+    mcps: ["com.cloudflare/docs-mcp"],
+  },
+  {
+    id: "video-remotion-motion",
+    rx: /\b(remotion|video|motion|animation|gsap|tiktok|reels|shorts|stickman)\b/i,
+    skills: [
+      { repository: "remotion-dev/skills", slug: "remotion-best-practices", name: "Remotion Best Practices" },
+      { repository: "greensock/gsap-skills", slug: "gsap-react", name: "GSAP React" },
+    ],
+    mcps: ["com.context7/mcp"],
+  },
+  {
+    id: "mobile-expo-android",
+    rx: /\b(mobile|android|ios|expo|react[- ]native|flutter|apk|kotlin|swift)\b/i,
+    skills: [
+      { repository: "expo/skills", slug: "building-native-ui", name: "Expo Native UI" },
+    ],
+    mcps: ["com.context7/mcp"],
+  },
+  {
+    id: "design-ui-figma",
+    rx: /\b(figma|figcraft|canva|miro|ui\/ux|design system|wireframe|prototype)\b/i,
+    skills: [
+      { repository: "vercel-labs/agent-skills", slug: "web-design-guidelines", name: "Web Design Guidelines" },
+      { repository: "nextlevelbuilder/ui-ux-pro-max-skill", slug: "ui-ux-pro-max", name: "UI UX Pro Max" },
+    ],
+    mcps: ["com.figma/mcp", "com.canva/mcp"],
+  },
+  {
+    id: "testing-qa-debug",
+    rx: /\b(test|testing|playwright|qa|debug|bug|audit|e2e)\b/i,
+    skills: [
+      { repository: "anthropics/skills", slug: "webapp-testing", name: "Webapp Testing" },
+      { repository: "obra/superpowers", slug: "systematic-debugging", name: "Systematic Debugging" },
+    ],
+    mcps: ["io.sentry/mcp"],
+  },
+  {
+    id: "security-audit",
+    rx: /\b(security|owasp|pentest|hardening|vulnerability|ssrf|cve)\b/i,
+    skills: [
+      { repository: "trailofbits/skills", slug: "security-audit", name: "Trail of Bits Security Audit" },
+    ],
+    mcps: ["io.sentry/mcp"],
+  },
+  {
+    id: "payments-stripe-ecommerce",
+    rx: /\b(stripe|payment|billing|checkout|subscription|paypal|shopify|ecommerce)\b/i,
+    skills: [
+      { repository: "stripe/ai", slug: "stripe-best-practices", name: "Stripe Payments Best Practices" },
+    ],
+    mcps: ["com.stripe/mcp"],
+  },
+  {
+    id: "research-scraping-web",
+    rx: /\b(scrape|scraping|crawl|research|firecrawl|exa|tavily|news|seo)\b/i,
+    skills: [
+      { repository: "openclaw/openclaw", slug: "summarize", name: "Summarize" },
+    ],
+    mcps: ["dev.firecrawl/mcp", "ai.exa/mcp"],
+  },
+  {
+    id: "mcp-agent-builder",
+    rx: /\b(mcp|agent|llm|ai assistant|gateway|rag|chatbot|claude|gemini)\b/i,
+    skills: [
+      { repository: "anthropics/skills", slug: "mcp-builder", name: "MCP Builder" },
+      { repository: "anthropics/skills", slug: "skill-creator", name: "Skill Creator" },
+    ],
+    mcps: ["com.context7/mcp", "com.deepwiki/mcp"],
+  },
+  {
+    id: "docs-office-productivity",
+    rx: /\b(docx|xlsx|pptx|excel|word|powerpoint|slides|notion|craft|linear|jira|slack|docs)\b/i,
+    skills: [
+      { repository: "anthropics/skills", slug: "docx", name: "DOCX Document Skill" },
+      { repository: "anthropics/skills", slug: "xlsx", name: "XLSX Spreadsheet Skill" },
+      { repository: "anthropics/skills", slug: "pptx", name: "PPTX Presentation Skill" },
+    ],
+    mcps: ["com.notion/mcp", "do.craft/mcp"],
+  },
+  {
+    id: "github-codebase",
+    rx: /\b(github|repo|repository|git|pull request|commit|ci\/cd)\b/i,
+    skills: [
+      { repository: "obra/superpowers", slug: "systematic-debugging", name: "Systematic Debugging" },
+    ],
+    mcps: ["com.github/mcp", "com.deepwiki/mcp"],
   },
 ];
 
@@ -415,7 +539,7 @@ async function authenticate(request) {
 }
 async function fetchJson(url, label, timeoutMs = 10000) {
   const upstream = await fetch(url, {
-    headers: { accept: "application/json", "user-agent": "DRIVE-MCP/2.1" },
+    headers: { accept: "application/json", "user-agent": "DRIVE-MCP/2.2" },
     cache: "no-store",
     redirect: "follow",
     signal: AbortSignal.timeout(timeoutMs),
@@ -426,7 +550,7 @@ async function fetchJson(url, label, timeoutMs = 10000) {
 function githubHeaders() {
   const headers = {
     accept: "application/vnd.github+json",
-    "user-agent": "DRIVE-MCP/2.1",
+    "user-agent": "DRIVE-MCP/2.2",
   };
   if (process.env.GITHUB_TOKEN) {
     headers.authorization = `Bearer ${process.env.GITHUB_TOKEN}`;
@@ -483,7 +607,7 @@ async function scanSkillContent(skillMd) {
     status: flagged ? "blocked" : "safe",
     hash,
     report: { mode: "builtin-static-check", flagged },
-    version: "drive-builtin-2.1",
+    version: "drive-builtin-2.2",
   };
 }
 
@@ -1197,7 +1321,7 @@ async function probeRemoteMcp(endpointUrl, bearerToken = "") {
   const headers = {
     "Content-Type": "application/json",
     Accept: "application/json, text/event-stream",
-    "User-Agent": "DRIVE-MCP-Gateway/2.1",
+    "User-Agent": "DRIVE-MCP-Gateway/2.2",
   };
   if (bearerToken) headers.Authorization = `Bearer ${bearerToken}`;
 
@@ -1212,7 +1336,7 @@ async function probeRemoteMcp(endpointUrl, bearerToken = "") {
         params: {
           protocolVersion: "2025-03-26",
           capabilities: {},
-          clientInfo: { name: "DRIVE MCP", version: "2.1.0" },
+          clientInfo: { name: "DRIVE MCP", version: "2.2.0" },
         },
       }),
       signal: AbortSignal.timeout(6000),
@@ -1500,6 +1624,150 @@ async function connectMcpDirectly(context, args) {
   };
 }
 
+async function setupProjectStackDirectly(context, args) {
+  const { supabase, user, appOrigin } = context;
+  const projectDesc = String(args.project_description || "").trim();
+  const stackTags = Array.isArray(args.tech_stack)
+    ? args.tech_stack.map((s) => String(s || "").trim()).filter(Boolean)
+    : [];
+  const autoInstall = args.auto_install !== false;
+  const maxSkills = Math.min(10, Math.max(1, Number(args.max_skills || 6)));
+  const maxMcps = Math.min(8, Math.max(1, Number(args.max_mcps || 4)));
+
+  const combinedText = `${projectDesc} ${stackTags.join(" ")}`.trim();
+  if (!combinedText) {
+    throw new Error("Provide project_description or tech_stack so DRIVE can recommend and install matching Skills & MCPs.");
+  }
+
+  const [activeSkills, existingConns] = await Promise.all([
+    getActiveSkills(supabase, user.id),
+    getUserConnections(supabase, user, { enabledOnly: false, appOrigin }),
+  ]);
+
+  const installedSkillKeys = new Set(
+    activeSkills.flatMap((s) => [
+      String(s.name || "").toLowerCase(),
+      String(s.source_repo || "").toLowerCase(),
+    ])
+  );
+  const connectedMcpKeys = new Set(
+    existingConns.flatMap((c) => [
+      String(c.name || "").toLowerCase(),
+      String(c.title || "").toLowerCase(),
+      String(c.endpoint || "").toLowerCase(),
+    ])
+  );
+
+  const matchedProfiles = [];
+  const candidateSkills = [];
+  const candidateMcps = [];
+  const seenSkill = new Set();
+  const seenMcp = new Set();
+
+  for (const rule of PROJECT_STACK_RULES) {
+    if (rule.rx.test(combinedText)) {
+      matchedProfiles.push(rule.id);
+      for (const sk of rule.skills) {
+        const key = `${sk.repository}/${sk.slug}`.toLowerCase();
+        if (!seenSkill.has(key)) {
+          seenSkill.add(key);
+          candidateSkills.push(sk);
+        }
+      }
+      for (const mcpName of rule.mcps) {
+        if (!seenMcp.has(mcpName)) {
+          seenMcp.add(mcpName);
+          candidateMcps.push(mcpName);
+        }
+      }
+    }
+  }
+
+  // Fallback live catalog search for any custom stack keywords not covered by blueprint rules
+  if (candidateSkills.length < maxSkills && stackTags.length > 0) {
+    const searchTerms = stackTags.slice(0, 3);
+    const searchResults = await Promise.allSettled(
+      searchTerms.map((term) => searchSkills(term, 3, appOrigin, supabase))
+    );
+    for (const r of searchResults) {
+      if (r.status !== "fulfilled") continue;
+      for (const sk of r.value.skills || []) {
+        const key = `${sk.repository}/${sk.slug}`.toLowerCase();
+        if (!seenSkill.has(key) && sk.repository) {
+          seenSkill.add(key);
+          candidateSkills.push({ repository: sk.repository, slug: sk.slug, name: sk.name });
+        }
+      }
+    }
+  }
+
+  const selectedSkills = candidateSkills.slice(0, maxSkills);
+  const selectedMcps = candidateMcps.slice(0, maxMcps);
+
+  const skillsInstalled = [];
+  const skillsAlreadyActive = [];
+  const skillsFailed = [];
+  const mcpsConnected = [];
+  const mcpsAlreadyConnected = [];
+  const mcpsFailed = [];
+
+  if (autoInstall) {
+    for (const sk of selectedSkills) {
+      if (installedSkillKeys.has(sk.name.toLowerCase())) {
+        skillsAlreadyActive.push(sk);
+        continue;
+      }
+      const res = await installOneSkillItem(supabase, user.id, sk, appOrigin);
+      if (res.ok) skillsInstalled.push(...res.skills);
+      else skillsFailed.push({ ...sk, error: res.error });
+    }
+
+    for (const mcpName of selectedMcps) {
+      const curated = findCuratedMcp(mcpName);
+      const curatedUrl = curated ? pickHttpRemote(curated.remotes)?.url?.toLowerCase() : "";
+      if (
+        connectedMcpKeys.has(mcpName.toLowerCase()) ||
+        (curated && connectedMcpKeys.has(curated.title.toLowerCase())) ||
+        (curatedUrl && connectedMcpKeys.has(curatedUrl))
+      ) {
+        mcpsAlreadyConnected.push(curated?.title || mcpName);
+        continue;
+      }
+      try {
+        const res = await connectMcpDirectly(context, { server_name: mcpName, enabled: true });
+        mcpsConnected.push({
+          title: res.title || mcpName,
+          ready: res.ready,
+          auth_required: res.auth_required,
+          authorize_url: res.authorize_url || null,
+        });
+      } catch (err) {
+        mcpsFailed.push({ server_name: mcpName, error: err?.message || "Failed to connect MCP" });
+      }
+    }
+  }
+
+  return {
+    auto_installed: autoInstall,
+    detected_profiles: matchedProfiles,
+    recommended_skills: selectedSkills,
+    recommended_mcps: selectedMcps,
+    skills_installed: skillsInstalled,
+    skills_already_active: skillsAlreadyActive,
+    skills_failed: skillsFailed,
+    mcps_connected: mcpsConnected,
+    mcps_already_connected: mcpsAlreadyConnected,
+    mcps_failed: mcpsFailed,
+    workspace_urls: {
+      mcp: `${appOrigin}/mcp`,
+      skills: `${appOrigin}/skills`,
+    },
+    message: autoInstall
+      ? `Project stack analyzed (${matchedProfiles.join(", ") || "general"}): installed ${skillsInstalled.length} new Skill(s) (${skillsAlreadyActive.length} already active) and connected ${mcpsConnected.length} new MCP(s) (${mcpsAlreadyConnected.length} already connected).`
+      : `Recommended ${selectedSkills.length} Skill(s) and ${selectedMcps.length} MCP(s) for this project. Call again with auto_install: true to install them automatically.`,
+  };
+}
+
 async function manageMcpDirectly(supabase, user, args, appOrigin) {
   const action = String(args.action || "").trim().toLowerCase();
   const connectionId = typeof args.connection_id === "string" ? args.connection_id.trim() : "";
@@ -1607,7 +1875,7 @@ async function discoverConnectionTools(connection, user) {
   const upstreamToken = getUserMcpToken(user, connection.id);
   if (connection.authType !== "none" && !upstreamToken) return [];
 
-  const client = new Client({ name: "drive-mcp-gateway", version: "2.1.0" });
+  const client = new Client({ name: "drive-mcp-gateway", version: "2.2.0" });
   let transport;
   try {
     const headers = upstreamToken ? { Authorization: `Bearer ${upstreamToken}` } : undefined;
@@ -1646,10 +1914,169 @@ async function getActiveSkills(supabase, userId) {
   return data || [];
 }
 
+async function buildResources(supabase, user, appOrigin) {
+  const [skills, connections] = await Promise.all([
+    getActiveSkills(supabase, user.id),
+    getUserConnections(supabase, user, { enabledOnly: false, appOrigin }),
+  ]);
+  const resources = [
+    {
+      uri: "drive://workspace/overview",
+      name: "DRIVE Workspace Overview (Active Skills & Connected MCPs)",
+      description: `Live index of ${connections.length} MCP connections and ${skills.length} active Agent Skills. Read this first at the start of any task.`,
+      mimeType: "application/json",
+    },
+    ...skills.map((s) => ({
+      uri: `drive://skills/${s.id}`,
+      name: `Skill: ${s.name}`,
+      description: s.description || `Active Agent Skill (${s.source_repo || "DRIVE"})`,
+      mimeType: "text/markdown",
+    })),
+  ];
+  return resources;
+}
+
+async function readResource(uri, context) {
+  const { supabase, user, appOrigin } = context;
+  if (uri === "drive://workspace/overview") {
+    const [skills, connections] = await Promise.all([
+      getActiveSkills(supabase, user.id),
+      getUserConnections(supabase, user, { enabledOnly: false, appOrigin }),
+    ]);
+    return {
+      contents: [
+        {
+          uri,
+          mimeType: "application/json",
+          text: JSON.stringify(
+            {
+              workspace: appOrigin,
+              active_skills: skills.map((s) => ({
+                id: s.id,
+                name: s.name,
+                description: s.description,
+                uri: `drive://skills/${s.id}`,
+              })),
+              connected_mcps: connections.map((c) => ({
+                id: c.id,
+                title: c.title,
+                enabled: c.enabled,
+                active_in_gateway: c.active_in_gateway,
+                authorized: c.authorized,
+              })),
+            },
+            null,
+            2
+          ),
+        },
+      ],
+    };
+  }
+  const skillMatch = String(uri || "").match(/^drive:\/\/skills\/([a-zA-Z0-9-]+)$/);
+  if (skillMatch) {
+    const skills = await getActiveSkills(supabase, user.id);
+    const skill = skills.find((s) => s.id === skillMatch[1]);
+    if (!skill) throw new Error("Skill resource not found or disabled.");
+    return {
+      contents: [
+        {
+          uri,
+          mimeType: "text/markdown",
+          text: skill.skill_md || `# ${skill.name}\n\n${skill.description || ""}`,
+        },
+      ],
+    };
+  }
+  throw new Error(`Resource not found: ${uri}`);
+}
+
+function buildPrompts() {
+  return [
+    {
+      name: "drive_auto_setup_project",
+      description:
+        "Analyze the user's current project or tech stack, find the best matching real Skills & Remote MCPs in DRIVE, and install/connect them automatically.",
+      arguments: [
+        {
+          name: "project_description",
+          description: "Short description of the project or tech stack (e.g. 'Next.js + Supabase + Stripe SaaS').",
+          required: true,
+        },
+      ],
+    },
+    {
+      name: "drive_load_workspace_context",
+      description:
+        "Load all active DRIVE Skills and connected MCP servers before starting work so the AI agent uses the user's full toolkit.",
+      arguments: [],
+    },
+  ];
+}
+
+function getPrompt(name, args = {}) {
+  if (name === "drive_auto_setup_project") {
+    const desc = String(args.project_description || "current software project").trim();
+    return {
+      description: "Auto-discover and install matching Skills & MCPs for the project via DRIVE MCP.",
+      messages: [
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: `Analyze this project and immediately call drive_setup_project_stack with auto_install: true to find, install, and connect the best matching real Skills and Remote MCPs in my DRIVE workspace:\n\nProject: ${desc}\n\nAfter installing, list what was activated and share any 1-tap authorize links if OAuth is needed.`,
+          },
+        },
+      ],
+    };
+  }
+  if (name === "drive_load_workspace_context") {
+    return {
+      description: "Load active DRIVE Skills and MCP connections.",
+      messages: [
+        {
+          role: "user",
+          content: {
+            type: "text",
+            text: "Before answering, call drive_list_connected_mcps and drive_list_active_skills (or read drive://workspace/overview), then load any relevant active Skill with drive_get_active_skill and use my connected MCP tools.",
+          },
+        },
+      ],
+    };
+  }
+  throw new Error(`Prompt not found: ${name}`);
+}
+
 async function buildTools(supabase, user, appOrigin) {
   const connections = await getUserConnections(supabase, user, { enabledOnly: true, appOrigin });
   const discovered = await Promise.all(connections.map((conn) => discoverConnectionTools(conn, user)));
   const gatewayTools = [
+    {
+      name: "drive_setup_project_stack",
+      description:
+        "AUTONOMOUS PROJECT SETUP: Analyze a user's project description or tech stack (e.g. Next.js, Supabase, Remotion, Stripe, Expo, Figma, Cloudflare, Security, Scraping), automatically find the highest-signal real functioning Skills AND Remote MCP servers, and immediately install & connect them into the user's DRIVE workspace in one step. Call this whenever the user starts a project or asks to find and install the best Skills & MCPs for a project.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          project_description: {
+            type: "string",
+            description: "Description of the project, goals, or repository being worked on.",
+          },
+          tech_stack: {
+            type: "array",
+            description: "Optional list of frameworks, databases, or tools (e.g. ['nextjs', 'supabase', 'stripe', 'playwright']).",
+            items: { type: "string" },
+          },
+          auto_install: {
+            type: "boolean",
+            description: "If true (default), immediately installs matched Skills and connects matched Remote MCPs.",
+          },
+          max_skills: { type: "integer", minimum: 1, maximum: 10 },
+          max_mcps: { type: "integer", minimum: 1, maximum: 8 },
+        },
+        required: ["project_description"],
+        additionalProperties: false,
+      },
+    },
     {
       name: "drive_install_skill",
       description:
@@ -1702,7 +2129,7 @@ async function buildTools(supabase, user, appOrigin) {
     {
       name: "drive_connect_mcp",
       description:
-        "DIRECTLY connect, register, and enable an MCP server (such as Notion, Supabase, GitHub, Vercel, Context7, Linear, Stripe, Sentry, Figma, Cloudflare, Neon, or any custom HTTPS MCP URL) into this user's DRIVE workspace. ALWAYS call this tool when the user commands you to connect/konekin/pasang an MCP server. If OAuth login is required, it returns a 1-tap authorize_url that jumps straight to the provider's Allow screen.",
+        "DIRECTLY connect, register, and enable an MCP server (such as Notion, Supabase, GitHub, Vercel, Context7, Linear, Stripe, Sentry, Figma, Canva, Craft.do, Cloudflare, Neon, Firecrawl, Exa, or any custom HTTPS MCP URL) into this user's DRIVE workspace. ALWAYS call this tool when the user commands you to connect/konekin/pasang an MCP server. If OAuth login is required, it returns a 1-tap authorize_url that jumps straight to the provider's Allow screen.",
       inputSchema: {
         type: "object",
         properties: {
@@ -1818,7 +2245,7 @@ async function callUpstreamTool(supabase, user, encodedName, args, appOrigin) {
     );
   }
 
-  const client = new Client({ name: "drive-mcp-gateway", version: "2.1.0" });
+  const client = new Client({ name: "drive-mcp-gateway", version: "2.2.0" });
   let transport;
   try {
     const headers = upstreamToken ? { Authorization: `Bearer ${upstreamToken}` } : undefined;
@@ -1846,6 +2273,9 @@ async function callTool(name, args, context) {
   }
   if (name.startsWith("mcp_")) {
     return callUpstreamTool(context.supabase, context.user, name, args, context.appOrigin);
+  }
+  if (name === "drive_setup_project_stack") {
+    return setupProjectStackDirectly(context, args);
   }
   if (name === "drive_install_skill") {
     return installSkillsDirectly(context.supabase, context.user.id, args, context.appOrigin);
@@ -1938,16 +2368,18 @@ async function handleMessage(message, context) {
     return {
       response: jsonRpc(id, {
         protocolVersion,
-        capabilities: { tools: { listChanged: true } },
+        capabilities: {
+          tools: { listChanged: true },
+          resources: { listChanged: true },
+          prompts: { listChanged: true },
+        },
         serverInfo: SERVER_INFO,
         instructions: [
-          "DRIVE MCP is this user's personal MCP Gateway, Multi-Source MCP Marketplace, and Agent Skills Hub.",
-          "1. You CAN directly install and activate Skills on user command using drive_install_skill (supports single skill or batch `skills` array). NEVER tell the user that skill installation must be done manually.",
-          "2. You CAN directly connect and enable MCP servers on user command using drive_connect_mcp (supports Notion, Supabase, GitHub, Vercel, Context7, Linear, Stripe, Sentry, Figma, Cloudflare, Neon, registry servers, and custom HTTPS endpoints). NEVER refuse or say you can only send links — ALWAYS call drive_connect_mcp first.",
-          "3. If drive_connect_mcp returns auth_required: true with an authorize_url, confirm that the MCP is ALREADY connected and enabled in DRIVE, and share that 1-tap authorize_url which jumps straight to the provider's official OAuth Allow screen. Once the user clicks Allow, all upstream tools become immediately available through DRIVE.",
-          "4. Use drive_manage_skill and drive_manage_mcp to directly enable, pause/disable, or remove Skills and MCP connections.",
-          "5. Always check drive_list_connected_mcps and drive_list_active_skills to inspect active integrations, and call drive_get_active_skill when a Skill matches the user's task.",
-          "6. Active remote MCP tools (both zero-auth and OAuth/PAT authorized) are exposed directly with the mcp_<id>__<tool> prefix.",
+          "ALWAYS consult DRIVE MCP at the start of any coding, design, research, or automation task.",
+          "1. AUTO-DISCOVER WORKSPACE FIRST: Read resource drive://workspace/overview (or call drive_list_connected_mcps + drive_list_active_skills) to see what MCPs and Skills are already active, and call drive_get_active_skill whenever an active Skill matches the user's task.",
+          "2. AUTONOMOUS PROJECT STACK SETUP: Whenever the user starts a new project, shares a repo/stack, or asks for the right tools/skills for a project, IMMEDIATELY call drive_setup_project_stack (with auto_install: true) to search, select, install real Skills, and connect matching Remote MCP servers automatically.",
+          "3. DIRECT INSTALL & CONNECT: You CAN directly install Skills via drive_install_skill and directly connect MCPs via drive_connect_mcp. NEVER tell the user to install manually. If OAuth is needed, share the returned 1-tap authorize_url.",
+          "4. ACTIVE UPSTREAM TOOLS: Proxied remote MCP tools are exposed directly as mcp_<id>__<tool> — prefer using them whenever relevant.",
         ].join(" "),
       }),
     };
@@ -1957,6 +2389,33 @@ async function handleMessage(message, context) {
   }
   if (!hasId) return { notification: true };
   if (message.method === "ping") return { response: jsonRpc(id, {}) };
+  if (message.method === "resources/list") {
+    try {
+      const resources = await buildResources(context.supabase, context.user, context.appOrigin);
+      return { response: jsonRpc(id, { resources }) };
+    } catch (error) {
+      return { response: jsonRpcError(id, -32603, error.message || "Could not list DRIVE resources.") };
+    }
+  }
+  if (message.method === "resources/read") {
+    try {
+      const result = await readResource(message.params?.uri, context);
+      return { response: jsonRpc(id, result) };
+    } catch (error) {
+      return { response: jsonRpcError(id, -32602, error.message || "Could not read DRIVE resource.") };
+    }
+  }
+  if (message.method === "prompts/list") {
+    return { response: jsonRpc(id, { prompts: buildPrompts() }) };
+  }
+  if (message.method === "prompts/get") {
+    try {
+      const result = getPrompt(message.params?.name, message.params?.arguments || {});
+      return { response: jsonRpc(id, result) };
+    } catch (error) {
+      return { response: jsonRpcError(id, -32602, error.message || "Prompt not found.") };
+    }
+  }
   if (message.method === "tools/list") {
     try {
       const catalog = await buildTools(context.supabase, context.user, context.appOrigin);

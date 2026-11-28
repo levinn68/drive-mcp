@@ -69,7 +69,7 @@ export async function GET(request) {
     }
 
     // Mark connection enabled AND persist encrypted upstream token in user's Supabase account
-    // so AI clients (Grok, Claude, ChatGPT) can directly proxy this OAuth MCP's tools!
+    // so AI clients (Grok, Claude, Gemini, ChatGPT) can directly proxy this OAuth MCP's tools!
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     if (supabaseUrl && supabaseKey && pending.userToken && pending.connectionId) {
@@ -88,6 +88,8 @@ export async function GET(request) {
       if (user) {
         await saveUserMcpToken(supabase, user, pending.connectionId, tokenData.access_token, {
           expiresIn: tokenData.expires_in,
+          userToken: pending.userToken,
+          endpointUrl: pending.resource || "",
         });
       }
     }

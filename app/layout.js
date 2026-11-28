@@ -4,10 +4,15 @@ import OAuthReturnBanner from "../components/oauth-return-banner";
 
 export const metadata = {
   title: "DRIVE | One Hub. Every Connection.",
-  description: "Universal MCP & Agent Skills Hub — connect 13,000+ MCP servers and Agent Skills from one Liquid Glass workspace.",
+  description: "Universal MCP & Agent Skills Hub — connect 25,000+ MCP servers and Agent Skills from one Liquid Glass workspace.",
   icons: {
-    icon: "/drive-logo.svg",
-    apple: "/drive-logo.svg",
+    icon: [
+      { url: "/drive-logo.png", type: "image/png", sizes: "256x256" },
+      { url: "/favicon.ico", sizes: "64x64" },
+      { url: "/drive-logo.svg", type: "image/svg+xml" },
+    ],
+    shortcut: "/drive-logo.png",
+    apple: "/drive-logo.png",
   },
 };
 

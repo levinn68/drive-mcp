@@ -33,19 +33,14 @@ export default function OAuthConsentPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
+  const [autoRedirecting, setAutoRedirecting] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      const params = new URLSearchParams(window.location.search);
-      const id = params.get("authorization_id") || "";
-      setAuthorizationId(id);
-      setAuthContextReady(true);
-      const callbackError = params.get("auth_error");
-      if (callbackError) setError(callbackError);
-    }, 0);
-
+    const params = new URLSearchParams(window.location.search);
+    setAuthorizationId(params.get("authorization_id") || "");
+    const timer = window.setTimeout(() => setAuthContextReady(true), 120);
     if (!supabase) return () => window.clearTimeout(timer);
 
     supabase.auth.getSession().then(({ data }) => setSession(data.session || null));
@@ -71,8 +66,19 @@ export default function OAuthConsentPage() {
       .getAuthorizationDetails(authorizationId)
       .then(({ data, error: detailsError }) => {
         if (cancelled) return;
-        if (detailsError) setError(detailsError.message || "Unable to load authorization details.");
-        else setDetails(data);
+        if (detailsError) {
+          setError(detailsError.message || "Unable to load authorization details.");
+          return;
+        }
+        // Supabase auto-approves repeat authorizations for an already-consented client
+        // and returns { redirect_url } without authorization_id or client details.
+        // Redirect immediately instead of showing a stale consent form that errors on approve.
+        if (data?.redirect_url && !data?.authorization_id && !data?.client) {
+          setAutoRedirecting(true);
+          window.location.replace(data.redirect_url);
+          return;
+        }
+        setDetails(data);
       })
       .catch((e) => {
         if (!cancelled) setError(e.message || "Unable to load authorization details.");
@@ -158,14 +164,25 @@ export default function OAuthConsentPage() {
     }
   }
 
-  async function decide(allow, openDashboardFirst = true) {
-    if (!authorizationId || busy || !supabase) return;
+  async function decide(allow, openDashboardFirst = false) {
+    if (!supabase || !authorizationId) return;
     setBusy(true);
     setError("");
     setNotice("");
     try {
-      // Pass skipBrowserRedirect: true so Supabase SDK does not hijack navigation back to the OAuth client
-      // before we redirect the user to the DRIVE Dashboard when openDashboardFirst is true.
+      if (allow && details?.redirect_url) {
+        if (openDashboardFirst) {
+          const clientName = details?.client?.name || "";
+          const dest = new URL("/mcp", window.location.origin);
+          dest.searchParams.set("oauth_callback", details.redirect_url);
+          if (clientName) dest.searchParams.set("oauth_client", clientName);
+          window.location.replace(dest.toString());
+        } else {
+          window.location.replace(details.redirect_url);
+        }
+        return;
+      }
+
       const { data, error: decisionError } = allow
         ? await supabase.auth.oauth.approveAuthorization(authorizationId, {
             skipBrowserRedirect: true,
@@ -189,15 +206,16 @@ export default function OAuthConsentPage() {
         window.location.replace(dest.toString());
         return;
       }
-
       window.location.replace(redirectUrl);
     } catch (e) {
-      setError(e?.message || "Could not complete authorization. Please try again.");
+      setError(e?.message || "Could not complete authorization.");
       setBusy(false);
     }
   }
 
-  const scopes = (details?.scope || "").split(/\s+/).filter(Boolean);
+  const scopes = String(details?.scope || "")
+    .split(/\s+/)
+    .filter(Boolean);
   const clientLabel = details?.client?.name || "MCP client";
 
   return (
@@ -347,6 +365,10 @@ export default function OAuthConsentPage() {
               <span>Your sign-in is protected by Supabase. DRIVE never stores your password.</span>
             </div>
           </>
+        ) : autoRedirecting ? (
+          <div className="oauth-loading">
+            <LoaderCircle className="spin" size={18} /> Completing authorization and returning to your AI client…
+          </div>
         ) : details ? (
           <>
             <div className="oauth-account-switch">
@@ -416,6 +438,12 @@ export default function OAuthConsentPage() {
               </button>
             </div>
           </>
+        ) : error ? (
+          <div className="oauth-actions" style={{ marginTop: 8 }}>
+            <a href="/mcp" className="oauth-secondary-button" style={{ textDecoration: "none" }}>
+              <LayoutGrid size={15} /> Open DRIVE Dashboard
+            </a>
+          </div>
         ) : (
           <div className="oauth-loading">
             <LoaderCircle className="spin" size={18} /> Loading authorization request…
@@ -425,7 +453,10 @@ export default function OAuthConsentPage() {
         {error && (
           <div role="alert" className="oauth-error">
             <AlertCircle size={16} style={{ flex: "none", marginTop: 2 }} />
-            <span>{error}</span>
+            <span>
+              {error} — Request otorisasi ini sudah kedaluwarsa atau sudah dipakai. Tutup halaman ini
+              lalu klik Connect/Reconnect ulang dari aplikasi AI kamu.
+            </span>
           </div>
         )}
         {notice && (

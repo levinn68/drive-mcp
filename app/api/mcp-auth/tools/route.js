@@ -1,6 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
-import { getUserMcpToken, isSafeHttpsUrl } from "../../../../lib/mcp-token-store";
+import { getUserMcpToken, isSafeHttpsUrl, saveUserMcpToken } from "../../../../lib/mcp-token-store";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -70,9 +70,18 @@ export async function POST(request) {
   }
 
   const cookieToken = request.cookies.get(`drive_mcp_tok_${connectionId.slice(0, 12)}`)?.value || "";
-  const storedToken = getUserMcpToken(user, connectionId);
-  const upstreamToken =
-    (cookieToken && cookieToken !== "__public__" ? cookieToken : "") || storedToken || "";
+  const storedToken = getUserMcpToken(user, connectionId, endpointUrl);
+  const validCookieToken = cookieToken && cookieToken !== "__public__" ? cookieToken : "";
+  const upstreamToken = validCookieToken || storedToken || "";
+
+  // Auto-backfill existing browser cookie token into Supabase user_metadata so AI gateway clients
+  // (Gemini, Grok, Claude) immediately get the token without asking the user to re-paste PAT.
+  if (validCookieToken && !storedToken) {
+    await saveUserMcpToken(supabase, user, connectionId, validCookieToken, {
+      userToken: token,
+      endpointUrl,
+    });
+  }
 
   const baseHeaders = {
     "Content-Type": "application/json",

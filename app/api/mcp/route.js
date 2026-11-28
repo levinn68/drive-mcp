@@ -14,7 +14,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-const SERVER_INFO = { name: "DRIVE MCP", version: "2.3.1" };
+const SERVER_INFO = { name: "DRIVE MCP", version: "2.3.2" };
 const PROTOCOL_VERSIONS = ["2025-11-25", "2025-06-18", "2025-03-26"];
 const MCP_REGISTRY = "https://registry.modelcontextprotocol.io/v0.1/servers";
 const SKILLS_REGISTRY = "https://www.skillsdirectory.com/api/registry";
@@ -1288,7 +1288,6 @@ async function getUserConnections(supabase, user, { enabledOnly = false, appOrig
     .map((row) => {
       const server = row.registry_server_id ? rmap.get(row.registry_server_id) : cmap.get(row.custom_server_id);
       if (!server) return null;
-      const hasSavedToken = Boolean(getUserMcpToken(user, row.id));
       let endpoint = "";
       let authType = "none";
       let status = "active";
@@ -1299,9 +1298,12 @@ async function getUserConnections(supabase, user, { enabledOnly = false, appOrig
         status = endpoint ? "ready" : "no_remote_endpoint";
       } else {
         endpoint = server.endpoint_url || "";
-        authType = server.auth_type || (hasSavedToken ? "bearer" : "none");
         status = server.status === "blocked" ? "blocked" : endpoint ? "verified" : "pending";
         if (status === "blocked") endpoint = "";
+      }
+      const hasSavedToken = Boolean(getUserMcpToken(user, row.id, endpoint));
+      if (!row.registry_server_id) {
+        authType = server.auth_type || (hasSavedToken ? "bearer" : "none");
       }
       const name = server.server_name || server.display_name || "MCP server";
       return {
@@ -1344,7 +1346,7 @@ async function probeRemoteMcp(endpointUrl, bearerToken = "") {
         params: {
           protocolVersion: "2025-03-26",
           capabilities: {},
-          clientInfo: { name: "DRIVE MCP", version: "2.3.1" },
+          clientInfo: { name: "DRIVE MCP", version: "2.3.2" },
         },
       }),
       signal: AbortSignal.timeout(6000),
@@ -1396,9 +1398,12 @@ async function connectMcpDirectly(context, args) {
         .eq("user_id", userId);
     }
 
-    let activeToken = apiKey || getUserMcpToken(user, existingConn.id);
+    let activeToken = apiKey || getUserMcpToken(user, existingConn.id, existingConn.endpoint);
     if (apiKey) {
-      await saveUserMcpToken(supabase, user, existingConn.id, apiKey);
+      await saveUserMcpToken(supabase, user, existingConn.id, apiKey, {
+        userToken,
+        endpointUrl: existingConn.endpoint,
+      });
     }
 
     const probe = existingConn.endpoint
@@ -1599,10 +1604,13 @@ async function connectMcpDirectly(context, args) {
   }
 
   if (apiKey) {
-    await saveUserMcpToken(supabase, user, connectionRow.id, apiKey);
+    await saveUserMcpToken(supabase, user, connectionRow.id, apiKey, {
+      userToken,
+      endpointUrl,
+    });
   }
 
-  const savedToken = apiKey || getUserMcpToken(user, connectionRow.id);
+  const savedToken = apiKey || getUserMcpToken(user, connectionRow.id, endpointUrl);
   const needsAuth = authType !== "none" && (!savedToken || probe.authRequired);
   const directAuthorizeUrl = needsAuth
     ? buildOneTapAuthorizeUrl(appOrigin, {
@@ -1877,21 +1885,88 @@ async function getConnectUrl(supabase, user, args, appOrigin) {
   };
 }
 
-async function discoverConnectionTools(connection, user) {
-  if (!connection.endpoint || !(await publicHttps(connection.endpoint))) return [];
-  const upstreamToken = getUserMcpToken(user, connection.id);
-  if (connection.authType !== "none" && !upstreamToken) return [];
-
-  const client = new Client({ name: "drive-mcp-gateway", version: "2.3.1" });
-  let transport;
+async function parseUpstreamMcpResponse(res) {
+  const ct = (res.headers.get("content-type") || "").toLowerCase();
+  const text = await res.text();
+  if (!text.trim()) return null;
+  if (ct.includes("text/event-stream") || text.includes("data:")) {
+    let lastJson = null;
+    for (const line of text.split(/\r?\n/)) {
+      if (!line.startsWith("data:")) continue;
+      const payload = line.slice(5).trim();
+      if (!payload || payload === "[DONE]") continue;
+      try {
+        const parsed = JSON.parse(payload);
+        if (parsed?.result || parsed?.error) lastJson = parsed;
+      } catch {}
+    }
+    return lastJson;
+  }
   try {
-    const headers = upstreamToken ? { Authorization: `Bearer ${upstreamToken}` } : undefined;
-    transport = new StreamableHTTPClientTransport(new URL(connection.endpoint), {
-      requestInit: { headers, signal: AbortSignal.timeout(10000) },
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+async function openUpstreamHttpSession(endpointUrl, upstreamToken, timeoutMs = 10000) {
+  const baseHeaders = {
+    "Content-Type": "application/json",
+    Accept: "application/json, text/event-stream",
+    "User-Agent": "DRIVE-MCP-Gateway/2.3.2",
+  };
+  if (upstreamToken) baseHeaders.Authorization = `Bearer ${upstreamToken}`;
+
+  const initRes = await fetch(endpointUrl, {
+    method: "POST",
+    headers: baseHeaders,
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+      params: {
+        protocolVersion: "2025-03-26",
+        capabilities: {},
+        clientInfo: { name: "DRIVE MCP", version: "2.3.2" },
+      },
+    }),
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  if (!initRes.ok) {
+    throw new Error(`Upstream MCP initialize returned HTTP ${initRes.status}`);
+  }
+  const sessionId = initRes.headers.get("mcp-session-id") || "";
+  const sessionHeaders = { ...baseHeaders };
+  if (sessionId) sessionHeaders["Mcp-Session-Id"] = sessionId;
+
+  fetch(endpointUrl, {
+    method: "POST",
+    headers: sessionHeaders,
+    body: JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }),
+    signal: AbortSignal.timeout(3000),
+  }).catch(() => {});
+
+  return sessionHeaders;
+}
+
+async function fetchUpstreamToolsDirect(connection, upstreamToken) {
+  try {
+    const headers = await openUpstreamHttpSession(connection.endpoint, upstreamToken, 8000);
+    const listRes = await fetch(connection.endpoint, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 2,
+        method: "tools/list",
+        params: {},
+      }),
+      signal: AbortSignal.timeout(10000),
     });
-    await client.connect(transport);
-    const result = await client.listTools();
-    return (result.tools || []).slice(0, MAX_TOOLS_PER_CONNECTION).map((tool) => ({
+    if (!listRes.ok) return [];
+    const parsed = await parseUpstreamMcpResponse(listRes);
+    const rawTools = Array.isArray(parsed?.result?.tools) ? parsed.result.tools : [];
+    return rawTools.slice(0, MAX_TOOLS_PER_CONNECTION).map((tool) => ({
       name: connectionToolName(connection.id, tool.name),
       description: `[${connection.title || connection.name}] ${String(tool.description || tool.name).slice(0, 1000)}`,
       inputSchema: tool.inputSchema || { type: "object", properties: {} },
@@ -1899,6 +1974,63 @@ async function discoverConnectionTools(connection, user) {
     }));
   } catch {
     return [];
+  }
+}
+
+async function callUpstreamToolDirect(connection, upstreamToken, safeTargetName, args) {
+  const headers = await openUpstreamHttpSession(connection.endpoint, upstreamToken, 10000);
+  const listRes = await fetch(connection.endpoint, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ jsonrpc: "2.0", id: 2, method: "tools/list", params: {} }),
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!listRes.ok) throw new Error(`Upstream tools/list returned HTTP ${listRes.status}`);
+  const listed = await parseUpstreamMcpResponse(listRes);
+  const rawTools = Array.isArray(listed?.result?.tools) ? listed.result.tools : [];
+  const original = rawTools.find((tool) => safeToolName(tool.name) === safeTargetName);
+  if (!original) throw new Error("The original MCP tool is no longer available.");
+
+  const callRes = await fetch(connection.endpoint, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: 3,
+      method: "tools/call",
+      params: { name: original.name, arguments: args || {} },
+    }),
+    signal: AbortSignal.timeout(25000),
+  });
+  if (!callRes.ok) throw new Error(`Upstream tool call returned HTTP ${callRes.status}`);
+  const parsed = await parseUpstreamMcpResponse(callRes);
+  if (parsed?.error) throw new Error(parsed.error.message || "Upstream MCP returned an error.");
+  return parsed?.result || { content: [{ type: "text", text: "OK" }] };
+}
+
+async function discoverConnectionTools(connection, user) {
+  if (!connection.endpoint || !(await publicHttps(connection.endpoint))) return [];
+  const upstreamToken = getUserMcpToken(user, connection.id, connection.endpoint);
+  if (connection.authType !== "none" && !upstreamToken) return [];
+
+  const client = new Client({ name: "drive-mcp-gateway", version: "2.3.2" });
+  let transport;
+  try {
+    const headers = upstreamToken ? { Authorization: `Bearer ${upstreamToken}` } : undefined;
+    transport = new StreamableHTTPClientTransport(new URL(connection.endpoint), {
+      requestInit: { headers, signal: AbortSignal.timeout(12000) },
+    });
+    await client.connect(transport);
+    const result = await client.listTools();
+    const mapped = (result.tools || []).slice(0, MAX_TOOLS_PER_CONNECTION).map((tool) => ({
+      name: connectionToolName(connection.id, tool.name),
+      description: `[${connection.title || connection.name}] ${String(tool.description || tool.name).slice(0, 1000)}`,
+      inputSchema: tool.inputSchema || { type: "object", properties: {} },
+      _drive: { connectionId: connection.id, originalToolName: tool.name },
+    }));
+    if (mapped.length > 0) return mapped;
+  } catch {
+    // Fall through to direct Streamable HTTP JSON-RPC fallback
   } finally {
     try {
       await client.close();
@@ -1907,6 +2039,8 @@ async function discoverConnectionTools(connection, user) {
       await transport?.close();
     } catch {}
   }
+
+  return fetchUpstreamToolsDirect(connection, upstreamToken);
 }
 
 async function getActiveSkills(supabase, userId) {
@@ -2262,14 +2396,14 @@ async function callUpstreamTool(supabase, user, encodedName, args, appOrigin) {
   if (!connection || !connection.endpoint || !(await publicHttps(connection.endpoint))) {
     throw new Error("MCP connection is inactive or has no valid remote endpoint.");
   }
-  const upstreamToken = getUserMcpToken(user, connection.id);
+  const upstreamToken = getUserMcpToken(user, connection.id, connection.endpoint);
   if (connection.authType !== "none" && !upstreamToken) {
     throw new Error(
       `${connection.title || connection.name} requires authorization. Call drive_connect_mcp to get a 1-tap authorize link.`
     );
   }
 
-  const client = new Client({ name: "drive-mcp-gateway", version: "2.3.1" });
+  const client = new Client({ name: "drive-mcp-gateway", version: "2.3.2" });
   let transport;
   try {
     const headers = upstreamToken ? { Authorization: `Bearer ${upstreamToken}` } : undefined;
@@ -2281,6 +2415,12 @@ async function callUpstreamTool(supabase, user, encodedName, args, appOrigin) {
     const original = listed.tools?.find((tool) => safeToolName(tool.name) === match[2]);
     if (!original) throw new Error("The original MCP tool is no longer available.");
     return await client.callTool({ name: original.name, arguments: args || {} });
+  } catch (sdkErr) {
+    try {
+      return await callUpstreamToolDirect(connection, upstreamToken, match[2], args || {});
+    } catch {
+      throw sdkErr;
+    }
   } finally {
     try {
       await client.close();

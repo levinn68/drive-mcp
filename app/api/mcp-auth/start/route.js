@@ -81,9 +81,12 @@ export async function POST(request) {
       return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    await saveUserMcpToken(auth.supabase, auth.user, connectionId, bearerToken);
+    const persisted = await saveUserMcpToken(auth.supabase, auth.user, connectionId, bearerToken, {
+      userToken: auth.token,
+      endpointUrl,
+    });
 
-    const res = NextResponse.json({ mode: "bearer_saved", authorized: true });
+    const res = NextResponse.json({ mode: "bearer_saved", authorized: true, persisted });
     res.cookies.set(`drive_mcp_tok_${connectionId.slice(0, 12)}`, bearerToken, {
       httpOnly: true,
       secure: true,
